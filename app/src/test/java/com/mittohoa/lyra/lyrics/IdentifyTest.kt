@@ -121,8 +121,27 @@ class IdentifyTest {
     @Test
     fun `do giong nhau bo qua dau va phan thua`() {
         assertEquals(1.0, titleSimilarity("Nơi Này Có Anh", "noi nay co anh"), 0.001)
-        assertEquals(1.0, titleSimilarity("Nơi Này Có Anh", "Nơi Này Có Anh (Remix)"), 0.001)
+        // Ban Remix dai hon mot chut - van phai coi la cung bai
+        assertTrue(titleSimilarity("Nơi Này Có Anh", "Nơi Này Có Anh (Remix)") > 0.85)
         assertTrue(titleSimilarity("Nơi Này Có Anh", "Chúng Ta Của Hiện Tại") < 0.3)
         assertEquals(0.0, titleSimilarity("", "abc"), 0.001)
+    }
+
+    @Test
+    fun `ten ngan lot trong ten dai khong duoc coi la khop`() {
+        // Bay that da sap tren dien thoai: YouTube phat mot bai, ma ten concert
+        // trong tieu de lai trung ten mot bai KHAC. Cong thuc cu chia cho ve nho
+        // hon nen cham 1.0 va app hien nham loi ca buoi.
+        val video =
+            "Nhà Tôi Có Treo Một Lá Cờ - Noo Phước Thịnh tại Concert Tổ Quốc Trong Tim Live bản đầy đủ"
+        val score = titleSimilarity("Tổ Quốc Trong Tim", video)
+        assertTrue("ten concert khong duoc coi la ten bai: $score", score < 0.6)
+
+        // Con ten bai that thi van phai duoc nhan ra
+        assertEquals(
+            1.0,
+            titleSimilarity("Nhà Tôi Có Treo Một Lá Cờ", "Nhà Tôi Có Treo Một Lá Cờ"),
+            0.001
+        )
     }
 }

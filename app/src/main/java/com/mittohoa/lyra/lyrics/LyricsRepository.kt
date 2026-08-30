@@ -6,6 +6,7 @@ import com.mittohoa.lyra.media.NowPlaying
 import com.mittohoa.lyra.sources.LrclibClient
 import com.mittohoa.lyra.sources.NctClient
 import com.mittohoa.lyra.sources.ZingClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -72,7 +73,12 @@ class LyricsRepository(
             val found = resolve(now)
             _lyrics.value = found ?: Lyrics.NONE
             _loading.value = false
-            if (found != null) cache?.put(now.artist, now.title, found)
+            if (found != null) {
+                cache?.put(now.artist, now.title, found)
+                Log.i(TAG, "Khop: '${found.matchedArtist}' - '${found.matchedTitle}' tu ${found.from}")
+            } else {
+                Log.i(TAG, "Khong tim ra loi cho '${now.artist}' - '${now.title}'")
+            }
         }
     }
 
@@ -105,6 +111,13 @@ class LyricsRepository(
                     async {
                         try {
                             fetch(c.artist, c.title, now.duration)
+                        } catch (e: CancellationException) {
+                            // Doi bai giua chung thi lan tra cu bi huy - phai NEM
+                            // TIEP, khong duoc nuot. Nuot ngoai le huy la pha vo
+                            // co che huy co cau truc cua coroutine: cong viec cu
+                            // van chay tiep sau khi da bi huy, va nhat ky thi ghi
+                            // nham thanh "nguon khong tra loi duoc".
+                            throw e
                         } catch (e: Exception) {
                             Log.d(TAG, "$name khong tra loi duoc", e)
                             null
@@ -146,7 +159,15 @@ class LyricsRepository(
         /** Duoi nguong nay coi nhu tra nham bai. */
         const val MIN_SIMILARITY = 0.6
 
-        /** Chi thu vai phuong an dau - moi lan thu la ba lan goi mang. */
-        const val MAX_CANDIDATES = 3
+        /**
+         * So phuong an dam thu. Moi phuong an la ba lan goi mang chay song song.
+         *
+         * Phai la 4 chu khong phai 3. Ten video kieu
+         *   "Nhà Tôi Có Treo Một Lá Cờ - Noo Phước Thịnh tại Concert ..."
+         * co TEN BAI dung truoc, trong khi quy tac cua dau "-" gia dinh nghe si
+         * dung truoc. Phuong an dao chieu - cai DUNG - xep hang 4, cat o 3 la
+         * mat han. Da gap that tren may.
+         */
+        const val MAX_CANDIDATES = 4
     }
 }
