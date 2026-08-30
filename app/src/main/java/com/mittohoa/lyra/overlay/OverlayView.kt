@@ -43,17 +43,32 @@ class OverlayView(context: Context) : View(context) {
     fun setLyrics(lines: List<LyricLine>, offset: Long) {
         this.lines = lines
         this.offset = offset
+        drawnIndex = Int.MIN_VALUE // bai khac roi, buoc ve lai
         invalidate()
     }
 
     /** Ten bai hien khi chua co loi, cho do trong. */
     fun setIdleText(text: String) {
+        if (idleText == text) return
         idleText = text
         invalidate()
     }
 
+    /** Dong dang hat o lan ve truoc - de biet khi nao that su can ve lai. */
+    private var drawnIndex = Int.MIN_VALUE
+
+    /**
+     * Cap nhat vi tri phat.
+     *
+     * Duoc goi 10 lan moi giay, nhung chi ve lai khi DOI DONG. Ve lai vo ich
+     * moi 100ms la mot dong ho danh thuc GPU suot ca bai hat - dung thu ta doi
+     * mot dong chu thi khong dang.
+     */
     fun setPosition(position: Long) {
         this.position = position
+        val index = activeLineIndex(lines, position, offset)
+        if (index == drawnIndex) return
+        drawnIndex = index
         invalidate()
     }
 

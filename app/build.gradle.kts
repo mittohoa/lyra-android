@@ -10,7 +10,10 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.mittohoa.lyra"
+        // Cung mot id voi ban Windows. Khac `namespace` o tren - `namespace`
+        // la goi ma nguon, con day la danh tinh cua app tren may va tren Play.
+        // Hai thu nay khong bat buoc phai trung nhau.
+        applicationId = "com.mittohoa.lyra_player"
         // 26 la moc toi thieu that su: TYPE_APPLICATION_OVERLAY chi co tu day.
         // Cac kieu cua so overlay cu hon deu da bi Android chan.
         minSdk = 26

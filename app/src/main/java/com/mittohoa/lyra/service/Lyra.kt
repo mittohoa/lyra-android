@@ -3,6 +3,7 @@ package com.mittohoa.lyra.service
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import com.mittohoa.lyra.data.LyricCache
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.LyricsRepository
 import com.mittohoa.lyra.media.MediaSessionWatcher
@@ -28,8 +29,17 @@ object Lyra {
     private val handler = Handler(Looper.getMainLooper())
 
     val watcher = MediaSessionWatcher()
-    val lyricsRepo = LyricsRepository(scope)
     val overlay = OverlayHost()
+
+    /**
+     * Bo nho dem gan sau, vi no can Context ma singleton thi khong co.
+     * Chua gan thi van chay duoc, chi la lan nao cung phai goi mang.
+     */
+    private var cache: LyricCache? = null
+    private var lyricsRepoOrNull: LyricsRepository? = null
+
+    private val lyricsRepo: LyricsRepository
+        get() = lyricsRepoOrNull ?: LyricsRepository(scope, cache).also { lyricsRepoOrNull = it }
 
     val now: StateFlow<NowPlaying?> get() = watcher.now
     val lyrics: StateFlow<Lyrics> get() = lyricsRepo.lyrics
@@ -88,6 +98,7 @@ object Lyra {
      * thay ket qua luon, khong phai doi.
      */
     fun refresh(context: Context) {
+        if (cache == null) cache = LyricCache(context.applicationContext)
         wire()
         watcher.start(context.applicationContext, LyraNotificationListener::class.java)
     }
