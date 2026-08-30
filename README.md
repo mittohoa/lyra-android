@@ -19,7 +19,8 @@ dò lời, rồi vẽ lên một khung nổi đè trên app bạn đang dùng.
 | 2 | Khung lời nổi, kéo thả được | ✅ xong |
 | 3 | Dò lời từ LRCLIB | ✅ xong |
 | 4 | Thêm nguồn Zing MP3 và NhacCuaTui | ✅ xong |
-| 5 | Bảng tinh chỉnh + ô Quick Settings | chưa |
+| 5 | Giao diện riêng, logo động, tối ưu tốc độ | ✅ xong |
+| 5b | Bảng tinh chỉnh + ô Quick Settings | chưa |
 | 6 | Sửa lời tay, chỉnh lệch, nhớ lại | chưa |
 | 7 | Dịch lời | chưa |
 
@@ -35,6 +36,41 @@ LRCLIB: 59 dòng, có mốc thời gian
 Zing:  103 dòng, có mốc thời gian     ← chữ ký HMAC đúng
 NCT:    59 dòng, có mốc thời gian     ← giải mã RC4 thành công
 ```
+
+---
+
+## Giao diện
+
+Không thanh tiêu đề, không thanh điều hướng, không ngăn kéo. Toàn bộ chrome của
+app là **một viên thuốc nổi** ở đáy màn hình — chạm để đổi trang, hoặc vuốt
+ngang trên nội dung.
+
+Lý do không phải để lạ: ba trang đều là một dòng nội dung chạy theo bài hát.
+Đặt một thanh cố định lên trên là cắt đôi dòng đó và che đúng phần đang xem.
+Nền lấy màu từ ảnh bìa và chuyển màu từ từ khi đổi bài.
+
+Dấu hiệu Lyra thay chỗ cho thanh tiêu đề, và **cử động khi app đang tìm lời** —
+cặp nốt lắc như bắt nhịp, thanh lời chạy từ trái sang, cùng chu kỳ 1,5 giây như
+bản Windows. Không bận thì đứng yên hẳn.
+
+---
+
+## Sáu chỗ đã làm cho nhanh
+
+Chậm và giật là thứ dễ mất người dùng nhất, nên đây là phần được chăm nhất.
+
+| Chỗ | Trước | Sau |
+|---|---|---|
+| Tra lời | tối đa **9 lần gọi mạng nối tiếp** | ba nguồn **song song**; chờ bằng lần chậm nhất |
+| Nghe lại một bài | gọi mạng lại từ đầu | **hiện ngay** từ bộ nhớ đệm RAM + đĩa |
+| Khung nổi | vẽ lại **10 lần/giây** | chỉ vẽ khi **đổi dòng** |
+| Trang lời | dựng lại danh sách 10 lần/giây | `derivedStateOf` — chỉ khi đổi dòng |
+| Đồng hồ vị trí | bộ đếm chạy cả khi màn hình tắt | theo nhịp vẽ, **tự dừng** |
+| Màu ảnh bìa | đọc ảnh gốc nghìn pixel | đọc ảnh thu nhỏ 24×24 |
+
+Chi tiết đáng nói nhất: bộ nhớ đệm trả về **trước khi** vào trạng thái "đang
+tìm". Nhấp nháy một khung trống rồi mới hiện chữ là cảm giác chậm nhất, dù thật
+ra chỉ tốn vài mili-giây.
 
 ---
 
@@ -86,7 +122,11 @@ sources/   LrclibClient
            Crypto                    sha256 / hmac512 / rc4
 overlay/   OverlayView               View thuần, tự vẽ, có viền chữ
            OverlayHost               dựng cửa sổ, kéo thả, chạm xuyên qua
-ui/        MainActivity              Compose
+ui/        MainActivity              Compose, đồng hồ vị trí theo nhịp vẽ
+           HomeScreen                ba trang + viên thuốc nổi
+           LyraMark                  logo, cử động khi đang tìm
+           Artwork                   lấy màu chủ đạo của ảnh bìa
+data/      LyricCache                nhớ lời đã tìm (RAM + đĩa)
 ```
 
 ---
