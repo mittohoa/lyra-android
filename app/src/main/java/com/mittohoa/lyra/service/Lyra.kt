@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.mittohoa.lyra.data.LyricCache
+import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.LyricsRepository
 import com.mittohoa.lyra.media.MediaSessionWatcher
@@ -36,10 +37,12 @@ object Lyra {
      * Chua gan thi van chay duoc, chi la lan nao cung phai goi mang.
      */
     private var cache: LyricCache? = null
+    private var offsets: OffsetStore? = null
     private var lyricsRepoOrNull: LyricsRepository? = null
 
     private val lyricsRepo: LyricsRepository
-        get() = lyricsRepoOrNull ?: LyricsRepository(scope, cache).also { lyricsRepoOrNull = it }
+        get() = lyricsRepoOrNull
+            ?: LyricsRepository(scope, cache, offsets).also { lyricsRepoOrNull = it }
 
     val now: StateFlow<NowPlaying?> get() = watcher.now
     val lyrics: StateFlow<Lyrics> get() = lyricsRepo.lyrics
@@ -99,6 +102,7 @@ object Lyra {
      */
     fun refresh(context: Context) {
         if (cache == null) cache = LyricCache(context.applicationContext)
+        if (offsets == null) offsets = OffsetStore(context.applicationContext)
         wire()
         watcher.start(context.applicationContext, LyraNotificationListener::class.java)
     }
@@ -114,6 +118,12 @@ object Lyra {
         handler.removeCallbacks(tick)
         overlay.hide()
     }
+
+    /** Nguoi dung cham vao dong dang hat de can lai ca bai. */
+    fun syncToLine(index: Int) = lyricsRepo.syncToLine(index, watcher.livePosition())
+
+    /** Bo do lech da chinh. */
+    fun clearOffset() = lyricsRepo.clearOffset()
 
     fun toggleOverlay(context: Context): Boolean {
         if (overlay.isShowing) hideOverlay() else showOverlay(context)

@@ -102,7 +102,8 @@ object LrclibClient {
 
         return parseLrc(content, from = "lrclib").copy(
             matchedTitle = trackName,
-            matchedArtist = artistName
+            matchedArtist = artistName,
+            sourceDuration = (duration * 1000).toLong()
         )
     }
 

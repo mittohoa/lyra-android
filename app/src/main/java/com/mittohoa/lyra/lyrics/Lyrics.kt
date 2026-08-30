@@ -14,7 +14,21 @@ data class Lyrics(
     val matchedTitle: String = "",
     val matchedArtist: String = "",
     /** Chinh lech thu cong, mili-giay. Duong = loi hien som hon. */
-    val offset: Long = 0
+    val offset: Long = 0,
+    /** Do dai ban thu ma nguon tra ve, mili-giay; 0 khi nguon khong noi. */
+    val sourceDuration: Long = 0,
+    /**
+     * Moc thoi gian dang ngo.
+     *
+     * Tim dung TEN bai khong co nghia la dung BAN THU. Loi cua ban thu phong
+     * dap len mot ban hat live thi lech tu dau den cuoi - nhip khac, dao dau
+     * khac, co khi con noi chuyen truoc khi hat.
+     *
+     * Bat co nay thi giao dien hien loi dang chu tron: khong to sang, khong tu
+     * cuon, va noi ro la moc co the lech. Hien sai mot cach tu tin con te hon
+     * hien that tha la khong chac.
+     */
+    val timingSuspect: Boolean = false
 ) {
     val isEmpty: Boolean get() = lines.isEmpty()
 

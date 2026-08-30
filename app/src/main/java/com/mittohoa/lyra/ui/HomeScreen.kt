@@ -78,7 +78,9 @@ fun HomeScreen(
     overlayOn: Boolean,
     onOpenNotificationSettings: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
-    onToggleOverlay: () -> Unit
+    onToggleOverlay: () -> Unit,
+    onSyncToLine: (Int) -> Unit,
+    onClearOffset: () -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -132,7 +134,9 @@ fun HomeScreen(
             ) { page ->
                 when (page) {
                     0 -> NowPlayingPane(now, accent, hasNotificationAccess, onOpenNotificationSettings)
-                    1 -> LyricsPane(lyrics, loading, position, accent)
+                    1 -> LyricsPane(
+                        lyrics, loading, position, accent, onSyncToLine, onClearOffset
+                    )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
                         overlayOn = overlayOn,
@@ -304,20 +308,26 @@ private fun LyricsPane(
     lyrics: Lyrics,
     loading: Boolean,
     position: State<Long>,
-    accent: Color
+    accent: Color,
+    onSyncToLine: (Int) -> Unit,
+    onClearOffset: () -> Unit
 ) {
-    // `derivedStateOf`: vi tri phat doi 10 lan moi giay, nhung dong dang hat
+    // `derivedStateOf`: vi tri phat doi 5 lan moi giay, nhung dong dang hat
     // thi vai giay moi doi mot lan. Khong boc thi ca danh sach bi dung lai
-    // muoi lan moi giay - day chinh la cho de sinh giat nhat.
+    // lien tuc - day chinh la cho de sinh giat nhat.
     val active by remember(lyrics) {
         derivedStateOf { activeLineIndex(lyrics.lines, position.value, lyrics.offset) }
     }
 
+    // Moc dang ngo thi KHONG to sang va KHONG tu cuon. To sang nham mot dong
+    // suot ca bai con te hon la khong to gi - nguoi dung tin vao no roi phat
+    // hien bi lua. Cham mot cai la khop lai, va tu do tro di chay binh thuong.
+    val trustTiming = lyrics.synced && !lyrics.timingSuspect
     val listState = rememberLazyListState()
 
     // Keo dong dang hat ve giua man hinh
-    LaunchedEffect(active) {
-        if (active >= 0 && lyrics.lines.isNotEmpty()) {
+    LaunchedEffect(active, trustTiming) {
+        if (trustTiming && active >= 0 && lyrics.lines.isNotEmpty()) {
             listState.animateScrollToItem(active.coerceAtLeast(0), scrollOffset = -260)
         }
     }
@@ -337,34 +347,87 @@ private fun LyricsPane(
         return
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 26.dp, vertical = 120.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        itemsIndexed(lyrics.lines, key = { i, _ -> i }) { i, line ->
-            val isActive = i == active
-            val scale by animateFloatAsState(if (isActive) 1f else 0.92f, tween(280), label = "s$i")
-            val alpha by animateFloatAsState(if (isActive) 1f else 0.34f, tween(280), label = "a$i")
-
-            Text(
-                text = line.text.ifEmpty { "♪" },
-                color = if (isActive) Color.White else Color.White,
-                fontSize = if (isActive) 23.sp else 20.sp,
-                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                lineHeight = 30.sp,
-                modifier = Modifier.graphicsLayer {
-                    // Doi trong `graphicsLayer` bang lambda: chi cap nhat mot lop
-                    // ve, khong dung lai cay giao dien
-                    scaleX = scale
-                    scaleY = scale
-                    this.alpha = alpha
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
-                }
+    Column(Modifier.fillMaxSize()) {
+        if (lyrics.timingSuspect) {
+            Notice(
+                accent,
+                "Lời của bản thu khác nên mốc thời gian có thể lệch. " +
+                    "Chạm vào câu đang hát để căn lại."
+            )
+        } else if (lyrics.offset != 0L) {
+            Notice(
+                accent,
+                "Đã căn lệch " + offsetLabel(lyrics.offset) +
+                    ". Chạm câu khác để căn lại, hoặc bấm đây để bỏ.",
+                onClick = onClearOffset
             )
         }
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 26.dp, vertical = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            itemsIndexed(lyrics.lines, key = { i, _ -> i }) { i, line ->
+                val isActive = trustTiming && i == active
+                val scale by animateFloatAsState(
+                    if (isActive) 1f else 0.92f, tween(280), label = "s$i"
+                )
+                // Moc dang ngo thi moi dong deu ro nhu nhau - khong co dong nao
+                // duoc quyen sang hon, vi ta khong biet dong nao dung
+                val alpha by animateFloatAsState(
+                    if (isActive) 1f else if (trustTiming) 0.34f else 0.72f,
+                    tween(280),
+                    label = "a$i"
+                )
+
+                Text(
+                    text = line.text.ifEmpty { "♪" },
+                    color = Color.White,
+                    fontSize = if (isActive) 23.sp else 20.sp,
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                    lineHeight = 30.sp,
+                    modifier = Modifier
+                        // Cham vao cau dang hat de can lai ca bai - mot cu cham
+                        // thay cho hang chuc lan bam +/- nua giay
+                        .clickable { onSyncToLine(i) }
+                        .graphicsLayer {
+                            // Doi trong `graphicsLayer` bang lambda: chi cap nhat
+                            // mot lop ve, khong dung lai cay giao dien
+                            scaleX = scale
+                            scaleY = scale
+                            this.alpha = alpha
+                            transformOrigin =
+                                androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+                        }
+                )
+            }
+        }
     }
+}
+
+/** Dai bao nho tren dau trang loi. */
+@Composable
+private fun Notice(accent: Color, text: String, onClick: (() -> Unit)? = null) {
+    Box(
+        Modifier
+            .padding(horizontal = 20.dp, vertical = 6.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(accent.copy(alpha = 0.22f))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 11.dp)
+    ) {
+        Text(text, color = Color.White.copy(alpha = 0.9f), fontSize = 12.5.sp, lineHeight = 18.sp)
+    }
+}
+
+/** "+1,5 giây" hoặc "−0,8 giây" — dấu cho biết lời hiện sớm hay muộn hơn. */
+private fun offsetLabel(ms: Long): String {
+    val seconds = kotlin.math.abs(ms) / 1000.0
+    val sign = if (ms >= 0) "+" else "−"
+    return sign + String.format("%.1f", seconds).replace('.', ',') + " giây"
 }
 
 @Composable

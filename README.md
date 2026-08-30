@@ -21,7 +21,7 @@ dò lời, rồi vẽ lên một khung nổi đè trên app bạn đang dùng.
 | 4 | Thêm nguồn Zing MP3 và NhacCuaTui | ✅ xong |
 | 5 | Giao diện riêng, logo động, tối ưu tốc độ | ✅ xong |
 | 5b | Bảng tinh chỉnh + ô Quick Settings | chưa |
-| 6 | Sửa lời tay, chỉnh lệch, nhớ lại | chưa |
+| 6 | Căn lệch bằng một cú chạm, nhớ theo bài | ✅ xong |
 | 7 | Dịch lời | chưa |
 
 Kiểm chứng: **35 phép kiểm tra** cho phần logic thuần, đều đạt.
@@ -97,6 +97,27 @@ debug — R8 rút gọn 90%. Đã soát trong file dex để chắc `kotlinx.ser
 không bị xoá nhầm: mọi tên trường JSON (`encodeId`, `keyDecryptLyric`,
 `syncedLyrics`…) đều còn nguyên. Các lớp nội bộ bị đổi tên là đúng — chỉ
 `LyraNotificationListener` giữ tên vì manifest gọi nó bằng tên.
+
+---
+
+## Khi lời không khớp tiếng hát
+
+Tìm đúng **tên bài** không có nghĩa là đúng **bản thu**. Lời của bản thu phòng
+đắp lên một bản hát live thì lệch từ đầu đến cuối — nhịp khác, dạo đầu khác, có
+khi còn nói chuyện trước khi hát.
+
+Ba lớp xử lý:
+
+**Không giả vờ khớp khi biết là không khớp.** Độ dài bài chênh quá 15 giây so
+với bản tìm được thì mốc thời gian chắc chắn sai. Lúc đó lời hiện dạng chữ trơn
+— không tô sáng, không tự cuộn — kèm một dòng nói rõ lý do. Tô sáng nhầm một
+dòng suốt cả bài còn tệ hơn không tô gì: người dùng tin vào nó rồi mới phát hiện
+bị lừa.
+
+**Chạm vào câu đang hát để căn lại.** Một cú chạm khớp lại cả bài, thay cho hàng
+chục lần bấm +/- nửa giây như bản Windows.
+
+**Nhớ độ lệch theo từng bài.** Chỉnh một lần, lần sau nghe lại là đúng luôn.
 
 ---
 

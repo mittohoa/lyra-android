@@ -95,7 +95,8 @@ object NctClient {
 
             decode(lyric)?.copy(
                 matchedTitle = best.name,
-                matchedArtist = best.artistName
+                matchedArtist = best.artistName,
+                sourceDuration = best.duration * 1000L
             )
         }
 

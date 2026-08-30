@@ -75,7 +75,9 @@ class MainActivity : ComponentActivity() {
                         )
                     )
                 },
-                onToggleOverlay = { overlayOn = Lyra.toggleOverlay(this) }
+                onToggleOverlay = { overlayOn = Lyra.toggleOverlay(this) },
+                onSyncToLine = { Lyra.syncToLine(it) },
+                onClearOffset = { Lyra.clearOffset() }
             )
         }
     }

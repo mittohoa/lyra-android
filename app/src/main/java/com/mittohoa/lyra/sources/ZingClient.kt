@@ -129,7 +129,8 @@ object ZingClient {
 
             parseLrc(content, from = "zing").copy(
                 matchedTitle = best.title,
-                matchedArtist = best.artistsNames
+                matchedArtist = best.artistsNames,
+                sourceDuration = best.duration * 1000L
             )
         }
 

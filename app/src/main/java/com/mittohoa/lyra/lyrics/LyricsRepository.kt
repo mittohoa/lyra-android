@@ -2,6 +2,7 @@ package com.mittohoa.lyra.lyrics
 
 import android.util.Log
 import com.mittohoa.lyra.data.LyricCache
+import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.media.NowPlaying
 import com.mittohoa.lyra.sources.LrclibClient
 import com.mittohoa.lyra.sources.NctClient
@@ -32,8 +33,12 @@ import kotlinx.coroutines.launch
  */
 class LyricsRepository(
     private val scope: CoroutineScope,
-    private val cache: LyricCache?
+    private val cache: LyricCache?,
+    private val offsets: OffsetStore?
 ) {
+
+    /** Bai dang phat, giu lai de con nho do lech theo dung bai. */
+    private var current: NowPlaying? = null
 
     private val _lyrics = MutableStateFlow(Lyrics.NONE)
     val lyrics: StateFlow<Lyrics> = _lyrics.asStateFlow()
@@ -49,6 +54,7 @@ class LyricsRepository(
         val key = now?.key
         if (key == resolvedKey) return
         resolvedKey = key
+        current = now
 
         job?.cancel()
 
@@ -62,7 +68,7 @@ class LyricsRepository(
         // mot khung trong roi moi hien chu la cam giac cham nhat, du that ra
         // chi ton vai mili-giay
         cache?.get(now.artist, now.title)?.let {
-            _lyrics.value = it
+            _lyrics.value = dress(it, now)
             _loading.value = false
             return
         }
@@ -71,7 +77,7 @@ class LyricsRepository(
         _loading.value = true
         job = scope.launch {
             val found = resolve(now)
-            _lyrics.value = found ?: Lyrics.NONE
+            _lyrics.value = found?.let { dress(it, now) } ?: Lyrics.NONE
             _loading.value = false
             if (found != null) {
                 cache?.put(now.artist, now.title, found)
@@ -143,8 +149,67 @@ class LyricsRepository(
         return plainFallback
     }
 
+    /**
+     * Gan do lech da nho va co "moc dang ngo" vao ket qua.
+     *
+     * Tach rieng khoi `resolve` vi hai viec khac han: `resolve` di tim NOI DUNG
+     * loi, con day la doi chieu no voi bai DANG PHAT. Bo nho dem chi luu noi
+     * dung, nen phan nay phai chay lai moi lan - do dai bai va do lech thuoc ve
+     * lan nghe nay, khong thuoc ve loi.
+     */
+    private fun dress(lyrics: Lyrics, now: NowPlaying): Lyrics = lyrics.copy(
+        offset = offsets?.get(now.artist, now.title) ?: 0L,
+        timingSuspect = lyrics.synced && isSuspect(lyrics.sourceDuration, now.duration)
+    )
+
+    /**
+     * Do dai lech nhieu nghia la KHAC BAN THU.
+     *
+     * Tim dung ten bai khong co nghia la dung ban thu. Loi cua ban thu phong dap
+     * len mot ban hat live thi lech tu dau den cuoi. Do dai la manh moi re nhat
+     * va dang tin nhat de biet dieu do.
+     *
+     * Nguong 15 giay: hai ban phat hanh cua cung mot bai hiem khi lech qua chung
+     * do, con ban live hay ban co dao dau dai thi gan nhu luon vuot.
+     */
+    private fun isSuspect(sourceMs: Long, playingMs: Long): Boolean {
+        if (sourceMs <= 0 || playingMs <= 0) return false
+        return kotlin.math.abs(sourceMs - playingMs) > SUSPECT_GAP_MS
+    }
+
+    /**
+     * Can lai theo dong nguoi dung vua cham.
+     *
+     * Nguoi dung nghe thay dang hat cau nao thi cham vao cau do - mot cu cham la
+     * khop lai ca bai. Hon han kieu bam +/- nua giay mot lan.
+     *
+     * `activeLineIndex` so `position + offset` voi moc cua tung dong, nen de
+     * dong `index` thanh dong dang hat thi do lech chinh la hieu giua moc cua no
+     * va vi tri hien tai.
+     */
+    fun syncToLine(index: Int, positionMs: Long) {
+        val lyrics = _lyrics.value
+        val line = lyrics.lines.getOrNull(index) ?: return
+        val now = current ?: return
+
+        val offset = line.time - positionMs
+        _lyrics.value = lyrics.copy(offset = offset, timingSuspect = false)
+        offsets?.put(now.artist, now.title, offset)
+        Log.i(TAG, "Can lai theo dong $index: lech ${offset}ms")
+    }
+
+    /** Bo do lech da chinh, tra ve dung moc goc cua nguon. */
+    fun clearOffset() {
+        val now = current ?: return
+        _lyrics.value = _lyrics.value.copy(offset = 0)
+        offsets?.put(now.artist, now.title, 0)
+    }
+
     private companion object {
         const val TAG = "LyraLyrics"
+
+        /** Do dai lech qua nguong nay thi coi la khac ban thu (mili-giay). */
+        const val SUSPECT_GAP_MS = 15_000L
 
         /**
          * Thu tu chi con y nghia khi nhieu nguon cung tra ve ban co moc: luc do
