@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose tu lo phan mau; day chi la khung toi thieu de he thong dung Activity -->
+    <style name="Theme.Lyra" parent="android:Theme.Material.NoActionBar" />
+</resources>

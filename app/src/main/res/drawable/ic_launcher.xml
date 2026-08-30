@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Dau hieu Lyra: cap not va thanh loi ben duoi.
+  Hinh hoc dong bo voi resources/icon.svg cua ban Windows - sua ben do thi sua
+  ca ben nay. Toa do goc trong khung 512, o day thu ve 108 (chuan icon Android)
+  nen moi so deu chia cho 4,74.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <path
+        android:pathData="M16,132 L16,132 A116,116 0 0 1 132,16 L380,16 A116,116 0 0 1 496,132 L496,380 A116,116 0 0 1 380,496 L132,496 A116,116 0 0 1 16,380 Z"
+        android:fillColor="#5B2FD6" />
+
+    <group android:translateX="9" android:translateY="-6">
+        <path android:pathData="M207.4,125 h19 v179 h-19 z" android:fillColor="#FFFFFF" />
+        <path android:pathData="M357.4,97 h19 v179 h-19 z" android:fillColor="#FFFFFF" />
+        <path android:pathData="M207.4,125 L376.4,97 L376.4,137 L207.4,165 Z" android:fillColor="#FFFFFF" />
+        <group android:pivotX="172" android:pivotY="300" android:rotation="-25">
+            <path android:pathData="M114,300 a58,33 0 1 0 116,0 a58,33 0 1 0 -116,0 z" android:fillColor="#FFFFFF" />
+        </group>
+        <group android:pivotX="322" android:pivotY="272" android:rotation="-25">
+            <path android:pathData="M264,272 a58,33 0 1 0 116,0 a58,33 0 1 0 -116,0 z" android:fillColor="#FFFFFF" />
+        </group>
+    </group>
+
+    <path
+        android:pathData="M176,372 L336,372 A24,24 0 0 1 336,420 L176,420 A24,24 0 0 1 176,372 Z"
+        android:fillColor="#FFFFFF" />
+</vector>
