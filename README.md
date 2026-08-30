@@ -92,6 +92,12 @@ Studio ở `C:\Program Files\Android\Android Studio\jbr`.
 dùng dấu `/` chứ không dùng `\`: trong file `.properties`, `\` là ký tự thoát
 nên `C:\Users` bị đọc thành `C:Users`.
 
+Bản release (có rút gọn mã) đã dựng và kiểm: **1,1 MB** so với 10,9 MB bản
+debug — R8 rút gọn 90%. Đã soát trong file dex để chắc `kotlinx.serialization`
+không bị xoá nhầm: mọi tên trường JSON (`encodeId`, `keyDecryptLyric`,
+`syncedLyrics`…) đều còn nguyên. Các lớp nội bộ bị đổi tên là đúng — chỉ
+`LyraNotificationListener` giữ tên vì manifest gọi nó bằng tên.
+
 ---
 
 ## Hai quyền phải tự bật
