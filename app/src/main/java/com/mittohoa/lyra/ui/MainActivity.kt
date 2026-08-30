@@ -1,6 +1,7 @@
 package com.mittohoa.lyra.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -23,6 +24,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -33,6 +37,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mittohoa.lyra.lyrics.RawNowPlaying
 import com.mittohoa.lyra.lyrics.candidatesFrom
+import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.media.NowPlaying
 import com.mittohoa.lyra.service.Lyra
 
@@ -53,7 +58,17 @@ class MainActivity : ComponentActivity() {
                     hasNotificationAccess = hasNotificationAccess(),
                     onOpenNotificationSettings = {
                         startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                    }
+                    },
+                    canDrawOverlay = Settings.canDrawOverlays(this),
+                    onOpenOverlaySettings = {
+                        startActivity(
+                            Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:" + packageName)
+                            )
+                        )
+                    },
+                    onToggleOverlay = { Lyra.toggleOverlay(this) }
                 )
             }
         }
@@ -72,9 +87,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun HomeScreen(
     hasNotificationAccess: Boolean,
-    onOpenNotificationSettings: () -> Unit
+    onOpenNotificationSettings: () -> Unit,
+    canDrawOverlay: Boolean,
+    onOpenOverlaySettings: () -> Unit,
+    onToggleOverlay: () -> Boolean
 ) {
     val now by Lyra.now.collectAsStateWithLifecycle()
+    val lyrics by Lyra.lyrics.collectAsStateWithLifecycle()
+    val loading by Lyra.loading.collectAsStateWithLifecycle()
+    var overlayOn by remember { mutableStateOf(Lyra.overlay.isShowing) }
 
     Column(
         modifier = Modifier
@@ -102,7 +123,15 @@ private fun HomeScreen(
             PermissionCard(onOpenNotificationSettings)
         } else {
             NowPlayingCard(now)
+            LyricsCard(lyrics, loading)
         }
+
+        OverlayCard(
+            canDrawOverlay = canDrawOverlay,
+            overlayOn = overlayOn,
+            onOpenSettings = onOpenOverlaySettings,
+            onToggle = { overlayOn = onToggleOverlay() }
+        )
     }
 }
 
@@ -170,6 +199,83 @@ private fun NowPlayingCard(now: NowPlaying?) {
                     color = Color(0xFFC4B5FD),
                     fontFamily = FontFamily.Monospace
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LyricsCard(lyrics: Lyrics, loading: Boolean) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Lời bài hát", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+
+            when {
+                loading -> Text(
+                    "Đang tìm…",
+                    fontSize = 13.sp,
+                    color = Color(0xFFC9C2D6)
+                )
+
+                lyrics.isEmpty -> Text(
+                    "Chưa tìm thấy lời cho bài này.",
+                    fontSize = 13.sp,
+                    color = Color(0xFFC9C2D6)
+                )
+
+                else -> {
+                    Text(
+                        "${lyrics.lines.size} dòng · " +
+                            (if (lyrics.synced) "có mốc thời gian" else "không có mốc") +
+                            " · từ ${lyrics.from}",
+                        fontSize = 12.sp,
+                        color = Color(0xFF9A92A9)
+                    )
+                    Text(
+                        "khớp với: ${lyrics.matchedArtist} — ${lyrics.matchedTitle}",
+                        fontSize = 12.sp,
+                        color = Color(0xFFC4B5FD),
+                        fontFamily = FontFamily.Monospace
+                    )
+                    // Vài dòng đầu cho thấy đúng bài chưa, khỏi phải bật khung nổi lên mới biết
+                    lyrics.lines.take(3).forEach {
+                        Text(it.text, fontSize = 13.sp, color = Color(0xFFC9C2D6))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OverlayCard(
+    canDrawOverlay: Boolean,
+    overlayOn: Boolean,
+    onOpenSettings: () -> Unit,
+    onToggle: () -> Unit
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Khung lời nổi", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+
+            if (!canDrawOverlay) {
+                Text(
+                    "Cần quyền vẽ đè lên app khác thì lời mới hiện được khi bạn đang ở " +
+                        "trong Spotify hay YouTube.",
+                    fontSize = 13.sp,
+                    color = Color(0xFFC9C2D6)
+                )
+                Button(onClick = onOpenSettings) { Text("Mở Cài đặt để bật") }
+            } else {
+                Text(
+                    if (overlayOn) "Đang hiện. Kéo để dời chỗ."
+                    else "Bật lên rồi mở app nhạc — lời sẽ nổi trên màn hình.",
+                    fontSize = 13.sp,
+                    color = Color(0xFFC9C2D6)
+                )
+                Button(onClick = onToggle) {
+                    Text(if (overlayOn) "Tắt lời nổi" else "Bật lời nổi")
+                }
             }
         }
     }
