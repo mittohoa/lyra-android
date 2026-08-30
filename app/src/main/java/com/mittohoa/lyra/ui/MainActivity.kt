@@ -15,18 +15,38 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameMillis
 import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.mittohoa.lyra.service.Lyra
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 class MainActivity : ComponentActivity() {
+
+    /**
+     * Trang thai hai quyen, giu o day chu KHONG hoi lai trong than composable.
+     *
+     * Ca hai ham kiem quyen deu la loi goi qua binder toi he thong -
+     * `getEnabledListenerPackages` con phai truy van mot content provider. Goi
+     * chung trong than composable nghia la moi lan dung lai giao dien lai hoi
+     * he thong mot lan; voi mot man hinh co dong ho chay thi thanh hang chuc
+     * lan moi giay tren LUONG CHINH, va app treo (ANR).
+     *
+     * Hai quyen nay chi doi khi nguoi dung roi app di bat, nen doc lai o
+     * `onResume` la du va dung.
+     */
+    private var hasNotificationAccess by mutableStateOf(false)
+    private var canDrawOverlay by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Ve tran ra sat vien: nen mau lay tu anh bia phai chay het man hinh,
         // khong bi cat ngang boi hai dai he thong
         enableEdgeToEdge()
+        readPermissions()
 
         setContent {
             val now by Lyra.now.collectAsStateWithLifecycle()
@@ -41,8 +61,8 @@ class MainActivity : ComponentActivity() {
                 lyrics = lyrics,
                 loading = loading,
                 position = position,
-                hasNotificationAccess = hasNotificationAccess(),
-                canDrawOverlay = Settings.canDrawOverlays(this),
+                hasNotificationAccess = hasNotificationAccess,
+                canDrawOverlay = canDrawOverlay,
                 overlayOn = overlayOn,
                 onOpenNotificationSettings = {
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
@@ -62,36 +82,41 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        readPermissions()
         // Nguoi dung vua bat quyen xong quay lai - doc lai ngay, khong bat doi
-        if (hasNotificationAccess()) Lyra.refresh(this)
+        if (hasNotificationAccess) Lyra.refresh(this)
     }
 
-    private fun hasNotificationAccess(): Boolean =
-        NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
+    private fun readPermissions() {
+        hasNotificationAccess =
+            NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
+        canDrawOverlay = Settings.canDrawOverlays(this)
+    }
 }
 
 /**
- * Vi tri phat, cap nhat theo nhip ve cua he thong.
+ * Vi tri phat, cap nhat moi 200ms va chi khi man hinh dang hien.
  *
- * Dung `withFrameMillis` chu khong dung bo dem rieng: no chay dung nhip ve, va
- * TU DUNG khi man hinh khong con ve (app xuong nen, man hinh tat). Mot bo dem
- * 100ms thi cu chay tiep du khong ai nhin - hao pin ma khong duoc gi.
+ * `repeatOnLifecycle(STARTED)` tu dung vong lap khi app xuong nen va tu chay
+ * lai khi quay ve - khong ton pin dem thoi gian cho mot man hinh khong ai nhin.
  *
- * Chi doc lai moi 200ms: hoi day hon khong lam loi chay muot hon, vi cai quyet
- * dinh la DONG nao dang hat chu khong phai mili-giay thu bao nhieu.
+ * Da thu dung `withFrameMillis` de bam theo nhip ve, nhung no bat he thong ve
+ * lien tuc 60 khung mot giay suot ca bai hat du chu chi doi vai giay mot lan.
+ * `delay` de he thong ranh giua hai lan doc.
+ *
+ * 200ms la du: cai quyet dinh la DONG nao dang hat, chu khong phai mili-giay
+ * thu bao nhieu.
  */
 @Composable
 private fun rememberPlaybackPosition(): State<Long> {
     val position = remember { mutableLongStateOf(0L) }
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(Unit) {
-        var last = 0L
-        while (true) {
-            withFrameMillis { frame ->
-                if (frame - last >= 200) {
-                    last = frame
-                    position.longValue = Lyra.watcher.livePosition()
-                }
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (isActive) {
+                position.longValue = Lyra.watcher.livePosition()
+                delay(200)
             }
         }
     }
