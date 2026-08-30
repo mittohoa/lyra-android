@@ -2,6 +2,7 @@ package com.mittohoa.lyra.lyrics
 
 import android.util.Log
 import com.mittohoa.lyra.data.LyricCache
+import com.mittohoa.lyra.data.ManualLyricStore
 import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.media.NowPlaying
 import com.mittohoa.lyra.sources.LrclibClient
@@ -34,7 +35,8 @@ import kotlinx.coroutines.launch
 class LyricsRepository(
     private val scope: CoroutineScope,
     private val cache: LyricCache?,
-    private val offsets: OffsetStore?
+    private val offsets: OffsetStore?,
+    private val manual: ManualLyricStore?
 ) {
 
     /** Bai dang phat, giu lai de con nho do lech theo dung bai. */
@@ -60,6 +62,14 @@ class LyricsRepository(
 
         if (now == null || now.title.isBlank()) {
             _lyrics.value = Lyrics.NONE
+            _loading.value = false
+            return
+        }
+
+        // Loi TU NHAP di truoc moi thu, ke ca bo nho dem. Nguoi dung da bo
+        // cong go thi khong the de mot lan tra mang ghi de len.
+        manual?.get(now.artist, now.title)?.let { raw ->
+            _lyrics.value = dress(parseLrc(raw, from = "tự nhập"), now)
             _loading.value = false
             return
         }
@@ -196,6 +206,47 @@ class LyricsRepository(
         _lyrics.value = lyrics.copy(offset = offset, timingSuspect = false)
         offsets?.put(now.artist, now.title, offset)
         Log.i(TAG, "Can lai theo dong $index: lech ${offset}ms")
+    }
+
+    /**
+     * Luu loi nguoi dung tu nhap va dung no ngay.
+     *
+     * Nhan ca chuoi tho: co the la loi chu tron, co the la .lrc day du moc
+     * thoi gian dan tu noi khac. `parseLrc` lo ca hai - khong co moc thi tra
+     * ve dang chu tron, va giao dien tu biet khong to sang dong nao.
+     */
+    fun saveManual(raw: String) {
+        val now = current ?: return
+        manual?.put(now.artist, now.title, raw)
+
+        if (raw.isBlank()) {
+            // Xoa loi tu nhap thi tra lai dung bai, khong de man hinh trong
+            resolvedKey = null
+            onNowPlaying(now)
+            return
+        }
+        _lyrics.value = dress(parseLrc(raw, from = "tự nhập"), now)
+        _loading.value = false
+        Log.i(TAG, "Da luu loi tu nhap cho '${now.title}'")
+    }
+
+    /** Chuoi tho de mo ra sua; rong neu chua tung nhap. */
+    fun manualDraft(): String {
+        val now = current ?: return ""
+        manual?.get(now.artist, now.title)?.let { return it }
+
+        // Chua nhap thi mo san bang loi dang co, de nguoi dung SUA thay vi go
+        // lai tu dau - phan lon truong hop chi sai vai dong
+        val lyrics = _lyrics.value
+        if (lyrics.isEmpty) return ""
+        return lyrics.lines.joinToString("\n") { line ->
+            if (lyrics.synced) "[%02d:%02d.%02d]%s".format(
+                line.time / 60_000,
+                (line.time / 1000) % 60,
+                (line.time % 1000) / 10,
+                line.text
+            ) else line.text
+        }
     }
 
     /** Bo do lech da chinh, tra ve dung moc goc cua nguon. */

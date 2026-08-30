@@ -55,6 +55,8 @@ class MainActivity : ComponentActivity() {
 
             var overlayOn by remember { mutableStateOf(Lyra.overlay.isShowing) }
             var look by remember { mutableStateOf(Lyra.overlay.currentLook(this)) }
+            // Chuoi dang soan; null nghia la khong mo man hinh soan
+            var draft by remember { mutableStateOf<String?>(null) }
             val position = rememberPlaybackPosition()
 
             HomeScreen(
@@ -79,6 +81,7 @@ class MainActivity : ComponentActivity() {
                 onToggleOverlay = { overlayOn = Lyra.toggleOverlay(this) },
                 onSyncToLine = { Lyra.syncToLine(it) },
                 onClearOffset = { Lyra.clearOffset() },
+                onEditLyrics = { draft = Lyra.manualDraft() },
                 look = look,
                 onLookChange = {
                     // Ve lai khung dang noi NGAY, roi moi ghi xuong. Cho ghi
@@ -87,6 +90,23 @@ class MainActivity : ComponentActivity() {
                     Lyra.overlay.applyLook(this, it)
                 }
             )
+
+            // Man hinh soan phu len tren, khong phai mot Activity rieng: no chi
+            // la mot trang thai cua man hinh nay, va thoat ra thi ve dung cho cu
+            draft?.let { current ->
+                LyricEditor(
+                    initial = current,
+                    accent = androidx.compose.ui.graphics.Color(0xFF6D28D9),
+                    songLabel = now?.let { n ->
+                        if (n.artist.isNotEmpty()) n.artist + " — " + n.title else n.title
+                    } ?: "Chưa phát bài nào",
+                    onSave = {
+                        Lyra.saveManualLyrics(it)
+                        draft = null
+                    },
+                    onCancel = { draft = null }
+                )
+            }
         }
     }
 

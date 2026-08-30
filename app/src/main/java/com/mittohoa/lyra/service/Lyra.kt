@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.mittohoa.lyra.data.LyricCache
+import com.mittohoa.lyra.data.ManualLyricStore
 import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.LyricsRepository
@@ -38,11 +39,12 @@ object Lyra {
      */
     private var cache: LyricCache? = null
     private var offsets: OffsetStore? = null
+    private var manual: ManualLyricStore? = null
     private var lyricsRepoOrNull: LyricsRepository? = null
 
     private val lyricsRepo: LyricsRepository
         get() = lyricsRepoOrNull
-            ?: LyricsRepository(scope, cache, offsets).also { lyricsRepoOrNull = it }
+            ?: LyricsRepository(scope, cache, offsets, manual).also { lyricsRepoOrNull = it }
 
     val now: StateFlow<NowPlaying?> get() = watcher.now
     val lyrics: StateFlow<Lyrics> get() = lyricsRepo.lyrics
@@ -103,6 +105,7 @@ object Lyra {
     fun refresh(context: Context) {
         if (cache == null) cache = LyricCache(context.applicationContext)
         if (offsets == null) offsets = OffsetStore(context.applicationContext)
+        if (manual == null) manual = ManualLyricStore(context.applicationContext)
         wire()
         watcher.start(context.applicationContext, LyraNotificationListener::class.java)
     }
@@ -124,6 +127,12 @@ object Lyra {
 
     /** Bo do lech da chinh. */
     fun clearOffset() = lyricsRepo.clearOffset()
+
+    /** Luu loi nguoi dung tu go hoac dan vao. */
+    fun saveManualLyrics(raw: String) = lyricsRepo.saveManual(raw)
+
+    /** Chuoi de mo ra sua - loi da nhap, hoac loi dang co de sua lai. */
+    fun manualDraft(): String = lyricsRepo.manualDraft()
 
     fun toggleOverlay(context: Context): Boolean {
         if (overlay.isShowing) hideOverlay() else showOverlay(context)

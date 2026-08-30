@@ -86,7 +86,8 @@ fun HomeScreen(
     onSyncToLine: (Int) -> Unit,
     onClearOffset: () -> Unit,
     look: OverlayLook,
-    onLookChange: (OverlayLook) -> Unit
+    onLookChange: (OverlayLook) -> Unit,
+    onEditLyrics: () -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -141,7 +142,8 @@ fun HomeScreen(
                 when (page) {
                     0 -> NowPlayingPane(now, accent, hasNotificationAccess, onOpenNotificationSettings)
                     1 -> LyricsPane(
-                        lyrics, loading, position, accent, onSyncToLine, onClearOffset
+                        lyrics, loading, position, accent,
+                        onSyncToLine, onClearOffset, onEditLyrics
                     )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
@@ -318,7 +320,8 @@ private fun LyricsPane(
     position: State<Long>,
     accent: Color,
     onSyncToLine: (Int) -> Unit,
-    onClearOffset: () -> Unit
+    onClearOffset: () -> Unit,
+    onEditLyrics: () -> Unit
 ) {
     // `derivedStateOf`: vi tri phat doi 5 lan moi giay, nhung dong dang hat
     // thi vai giay moi doi mot lan. Khong boc thi ca danh sach bi dung lai
@@ -350,26 +353,46 @@ private fun LyricsPane(
                     color = Color.White.copy(alpha = 0.6f),
                     fontSize = 14.sp
                 )
+                if (!loading) {
+                    Spacer(Modifier.height(22.dp))
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(accent)
+                            .clickable(onClick = onEditLyrics)
+                            .padding(horizontal = 28.dp, vertical = 14.dp)
+                    ) {
+                        Text(
+                            "Tự nhập lời",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
         }
         return
     }
 
     Column(Modifier.fillMaxSize()) {
-        if (lyrics.timingSuspect) {
-            Notice(
-                accent,
-                "Lời của bản thu khác nên mốc thời gian có thể lệch. " +
-                    "Chạm vào câu đang hát để căn lại."
-            )
-        } else if (lyrics.offset != 0L) {
-            Notice(
-                accent,
-                "Đã căn lệch " + offsetLabel(lyrics.offset) +
-                    ". Chạm câu khác để căn lại, hoặc bấm đây để bỏ.",
-                onClick = onClearOffset
-            )
-        }
+        // Mot dai bao duy nhat, va no LUON co loi vao cho sua loi. Truoc day
+        // khi dang co do lech thi dai bao chiem cho va nguoi dung mat han duong
+        // toi cho tu nhap - dung luc can nhat, vi loi sai thuong di kem lech.
+        Notice(
+            accent = accent,
+            text = when {
+                lyrics.timingSuspect ->
+                    "Lời của bản thu khác nên mốc có thể lệch. Chạm câu đang hát để căn lại."
+                lyrics.offset != 0L ->
+                    "Đã căn lệch " + offsetLabel(lyrics.offset) + ". Bấm để bỏ."
+                lyrics.from == "tự nhập" -> "Lời bạn tự nhập."
+                else -> "Lời từ " + lyrics.from + "."
+            },
+            onClick = if (lyrics.offset != 0L) onClearOffset else null,
+            action = if (lyrics.from == "tự nhập") "Sửa lời" else "Tự nhập",
+            onAction = onEditLyrics
+        )
 
         LazyColumn(
             state = listState,
@@ -415,19 +438,44 @@ private fun LyricsPane(
     }
 }
 
-/** Dai bao nho tren dau trang loi. */
+/** Dai bao nho tren dau trang loi, kem mot nut o ben phai. */
 @Composable
-private fun Notice(accent: Color, text: String, onClick: (() -> Unit)? = null) {
-    Box(
+private fun Notice(
+    accent: Color,
+    text: String,
+    onClick: (() -> Unit)? = null,
+    action: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Row(
         Modifier
             .padding(horizontal = 20.dp, vertical = 6.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(accent.copy(alpha = 0.22f))
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 11.dp)
+            .padding(start = 16.dp, end = 8.dp, top = 9.dp, bottom = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text, color = Color.White.copy(alpha = 0.9f), fontSize = 12.5.sp, lineHeight = 18.sp)
+        Text(
+            text,
+            color = Color.White.copy(alpha = 0.9f),
+            fontSize = 12.5.sp,
+            lineHeight = 18.sp,
+            modifier = Modifier.weight(1f)
+        )
+        if (action != null && onAction != null) {
+            Box(
+                Modifier
+                    .padding(start = 10.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.16f))
+                    .clickable(onClick = onAction)
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
+            ) {
+                Text(action, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
     }
 }
 
@@ -668,5 +716,6 @@ private fun appLabel(packageName: String): String = when {
     else -> packageName.substringAfterLast('.')
 }
 
-private val BACKDROP = Color(0xFF0E0B14)
+/** Nen goc cua ca app; man hinh soan loi dung chung de nhin lien mach. */
+internal val BACKDROP = Color(0xFF0E0B14)
 private val FALLBACK = Color(0xFF6D28D9)
