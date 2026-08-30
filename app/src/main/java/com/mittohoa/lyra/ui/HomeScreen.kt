@@ -31,6 +31,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +48,9 @@ import androidx.compose.material3.Text
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.media.NowPlaying
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Man hinh chinh.
@@ -79,7 +82,14 @@ fun HomeScreen(
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
-    val target = remember(now?.key) { dominantColor(now?.artwork) } ?: FALLBACK
+    //
+    // Tinh tren LUONG NEN. Doc diem anh la viec cua CPU, lam trong than
+    // composable nghia la lam tren luong chinh giua luc dang dung giao dien -
+    // dung mot nhip ngay khi doi bai, va do la luc nguoi dung dang nhin nhat.
+    val target by produceState(FALLBACK, now?.key) {
+        val art = now?.artwork
+        value = withContext(Dispatchers.Default) { dominantColor(art) } ?: FALLBACK
+    }
     val accent by animateColorAsState(target, tween(900), label = "accent")
 
     val pager = rememberPagerState(pageCount = { PANES.size })
