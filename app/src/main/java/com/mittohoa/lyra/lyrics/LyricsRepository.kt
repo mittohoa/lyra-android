@@ -3,6 +3,8 @@ package com.mittohoa.lyra.lyrics
 import android.util.Log
 import com.mittohoa.lyra.media.NowPlaying
 import com.mittohoa.lyra.sources.LrclibClient
+import com.mittohoa.lyra.sources.NctClient
+import com.mittohoa.lyra.sources.ZingClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +56,17 @@ class LyricsRepository(private val scope: CoroutineScope) {
         }
     }
 
+    /**
+     * Thu tung phuong an qua tung nguon.
+     *
+     * Thu tu nguon: LRCLIB truoc vi no nhanh nhat va co ca nhac quoc te; roi
+     * Zing va NCT - hai nguon nay manh han o nhac Viet, va loi cua chinh ho
+     * thuong khop dung ban thu am dang phat.
+     *
+     * Duyet theo PHUONG AN o vong ngoai chu khong theo nguon: phuong an nang
+     * nhat (thu app khai bao) dang duoc thu o ca ba nguon truoc khi ha xuong
+     * phuong an doan mo hon.
+     */
     private suspend fun resolve(now: NowPlaying): Lyrics? {
         val candidates = candidatesFrom(
             RawNowPlaying(
@@ -63,21 +76,37 @@ class LyricsRepository(private val scope: CoroutineScope) {
             )
         ).take(MAX_CANDIDATES)
 
+        val sources: List<Pair<String, suspend (String, String, Long) -> Lyrics?>> = listOf(
+            "lrclib" to LrclibClient::fetch,
+            "zing" to ZingClient::fetch,
+            "nct" to NctClient::fetch
+        )
+
         var plainFallback: Lyrics? = null
 
         for (c in candidates) {
-            val hit = LrclibClient.fetch(c.artist, c.title, now.duration) ?: continue
+            for ((name, fetch) in sources) {
+                val hit = try {
+                    fetch(c.artist, c.title, now.duration)
+                } catch (e: Exception) {
+                    Log.d(TAG, "$name khong tra loi duoc", e)
+                    null
+                } ?: continue
 
-            // Ten tra ve phai du giong, khong thi bo. LRCLIB tra ve gan dung
-            // con hon khong tra gi, nhung "gan dung" o day nghia la bai khac.
-            val score = titleSimilarity(hit.matchedTitle, c.title)
-            if (score < MIN_SIMILARITY) {
-                Log.d(TAG, "Bo qua '${hit.matchedTitle}' - chi giong ${(score * 100).toInt()}%")
-                continue
+                // Ten tra ve phai du giong, khong thi bo. Cac nguon deu tra ve
+                // "gan dung" con hon khong tra gi - ma "gan dung" o day nghia
+                // la bai khac han.
+                val score = titleSimilarity(hit.matchedTitle, c.title)
+                if (score < MIN_SIMILARITY) {
+                    Log.d(TAG, "Bo qua '${hit.matchedTitle}' - chi giong ${(score * 100).toInt()}%")
+                    continue
+                }
+
+                // Ban co moc thoi gian thi dung ngay; ban chu tron giu lai lam
+                // duong lui, biet dau nguon sau co ban day du hon
+                if (hit.synced) return hit
+                if (plainFallback == null) plainFallback = hit
             }
-
-            if (hit.synced) return hit
-            if (plainFallback == null) plainFallback = hit
         }
 
         return plainFallback
