@@ -45,12 +45,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.media.NowPlaying
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 /**
  * Man hinh chinh.
@@ -80,7 +84,9 @@ fun HomeScreen(
     onOpenOverlaySettings: () -> Unit,
     onToggleOverlay: () -> Unit,
     onSyncToLine: (Int) -> Unit,
-    onClearOffset: () -> Unit
+    onClearOffset: () -> Unit,
+    look: OverlayLook,
+    onLookChange: (OverlayLook) -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -141,8 +147,10 @@ fun HomeScreen(
                         canDrawOverlay = canDrawOverlay,
                         overlayOn = overlayOn,
                         accent = accent,
+                        look = look,
                         onOpenOverlaySettings = onOpenOverlaySettings,
-                        onToggleOverlay = onToggleOverlay
+                        onToggleOverlay = onToggleOverlay,
+                        onLookChange = onLookChange
                     )
                 }
             }
@@ -435,16 +443,19 @@ private fun TunePane(
     canDrawOverlay: Boolean,
     overlayOn: Boolean,
     accent: Color,
+    look: OverlayLook,
     onOpenOverlaySettings: () -> Unit,
-    onToggleOverlay: () -> Unit
+    onToggleOverlay: () -> Unit,
+    onLookChange: (OverlayLook) -> Unit
 ) {
     Column(
         Modifier
             .fillMaxSize()
-            .padding(horizontal = 26.dp),
-        verticalArrangement = Arrangement.Center
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 26.dp, vertical = 30.dp)
     ) {
         if (!canDrawOverlay) {
+            Spacer(Modifier.height(120.dp))
             Ask(
                 title = "Cần quyền vẽ đè lên app khác",
                 body = "Không có quyền này thì lời không hiện được khi bạn đang ở trong " +
@@ -470,12 +481,141 @@ private fun TunePane(
             fontSize = 14.sp
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
         Big(
             label = if (overlayOn) "Tắt lời nổi" else "Bật lời nổi",
             accent = accent,
             filled = !overlayOn,
             onClick = onToggleOverlay
+        )
+
+        Spacer(Modifier.height(30.dp))
+        Text(
+            "Hình thức khung nổi",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(4.dp))
+
+        // Chinh cai gi cung thay ngay tren khung dang noi - khong co nut "Luu",
+        // vi ban chi biet co vua mat khong bang cach nhin no
+        Slider(
+            label = "Cỡ chữ",
+            value = look.fontSizeSp,
+            range = 14f..48f,
+            display = look.fontSizeSp.toInt().toString(),
+            accent = accent,
+            onChange = { onLookChange(look.copy(fontSizeSp = it)) }
+        )
+        Slider(
+            label = "Nền mờ",
+            value = look.backgroundOpacity,
+            range = 0f..1f,
+            display = "${(look.backgroundOpacity * 100).toInt()}%",
+            accent = accent,
+            onChange = { onLookChange(look.copy(backgroundOpacity = it)) }
+        )
+        Slider(
+            label = "Viền chữ",
+            value = look.strokeWidthDp,
+            range = 0f..5f,
+            display = if (look.strokeWidthDp < 0.2f) "không" else
+                String.format("%.1f", look.strokeWidthDp).replace('.', ','),
+            accent = accent,
+            onChange = { onLookChange(look.copy(strokeWidthDp = it)) }
+        )
+        Slider(
+            label = "Số dòng phụ",
+            value = look.contextLines.toFloat(),
+            range = 0f..3f,
+            steps = 2,
+            display = if (look.contextLines == 0) "chỉ dòng đang hát"
+                else "${look.contextLines} dòng mỗi bên",
+            accent = accent,
+            onChange = { onLookChange(look.copy(contextLines = it.roundToInt())) }
+        )
+
+        Spacer(Modifier.height(6.dp))
+        Toggle(
+            label = "Chạm xuyên qua khung",
+            hint = "Ngón tay đi thẳng xuống app bên dưới — khung chỉ còn để nhìn, " +
+                "không kéo được nữa",
+            checked = look.clickThrough,
+            accent = accent,
+            onChange = { onLookChange(look.copy(clickThrough = it)) }
+        )
+
+        Spacer(Modifier.height(26.dp))
+        Text(
+            "Mẹo: kéo ô \"Lời nổi\" vào bảng Cài đặt nhanh (vuốt thanh thông báo " +
+                "xuống, sửa các ô) để bật tắt ngay khi đang nghe nhạc.",
+            color = Color.White.copy(alpha = 0.45f),
+            fontSize = 12.5.sp,
+            lineHeight = 18.sp
+        )
+        Spacer(Modifier.height(20.dp))
+    }
+}
+
+/** Thanh truot mot dong: ten ben trai, gia tri ben phai, thanh ben duoi. */
+@Composable
+private fun Slider(
+    label: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    display: String,
+    accent: Color,
+    onChange: (Float) -> Unit,
+    steps: Int = 0
+) {
+    Column(Modifier.padding(vertical = 10.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, color = Color.White, fontSize = 14.sp)
+            Text(display, color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+        }
+        androidx.compose.material3.Slider(
+            value = value,
+            onValueChange = onChange,
+            valueRange = range,
+            steps = steps,
+            colors = androidx.compose.material3.SliderDefaults.colors(
+                thumbColor = accent,
+                activeTrackColor = accent,
+                inactiveTrackColor = Color.White.copy(alpha = 0.15f)
+            )
+        )
+    }
+}
+
+/** Cong tac mot dong, kem mot cau giai thich khi can. */
+@Composable
+private fun Toggle(
+    label: String,
+    hint: String,
+    checked: Boolean,
+    accent: Color,
+    onChange: (Boolean) -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { onChange(!checked) }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Column(Modifier.weight(1f).padding(end = 14.dp)) {
+            Text(label, color = Color.White, fontSize = 14.sp)
+            Spacer(Modifier.height(3.dp))
+            Text(hint, color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp, lineHeight = 17.sp)
+        }
+        androidx.compose.material3.Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = androidx.compose.material3.SwitchDefaults.colors(
+                checkedTrackColor = accent,
+                checkedThumbColor = Color.White
+            )
         )
     }
 }

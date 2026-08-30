@@ -6,6 +6,8 @@ import android.graphics.PixelFormat
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import com.mittohoa.lyra.data.OverlayLook
+import com.mittohoa.lyra.data.OverlayPrefs
 import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
@@ -36,16 +38,23 @@ class OverlayHost {
             applyFlags()
         }
 
-    fun show(context: Context, x: Int = 0, y: Int = 0) {
+    /** Noi luu hinh thuc; gan khi mo, de con ghi lai vi tri sau moi lan keo. */
+    private var prefs: OverlayPrefs? = null
+
+    fun show(context: Context) {
         if (view != null) return
         if (!Settings.canDrawOverlays(context)) {
             Log.i(TAG, "Chua co quyen ve de len app khac")
             return
         }
 
+        val store = prefs ?: OverlayPrefs(context.applicationContext).also { prefs = it }
+        val look = store.read()
+
         val wm = context.getSystemService(WindowManager::class.java) ?: return
-        val overlay = OverlayView(context)
-        val lp = buildParams(x, y)
+        val overlay = OverlayView(context).apply { applyLook(look) }
+        clickThrough = look.clickThrough
+        val lp = buildParams(look.x, look.y)
 
         try {
             wm.addView(overlay, lp)
@@ -76,6 +85,24 @@ class OverlayHost {
     fun update(block: OverlayView.() -> Unit) {
         handler.post { view?.apply(block) }
     }
+
+    /** Ap hinh thuc moi ngay lap tuc, va ghi lai de lan sau mo van vay. */
+    fun applyLook(context: Context, look: OverlayLook) {
+        val store = prefs ?: OverlayPrefs(context.applicationContext).also { prefs = it }
+        // Giu nguyen vi tri dang co - no thuoc ve lan keo tha, khong thuoc bang chinh
+        val current = store.read()
+        store.write(look.copy(x = current.x, y = current.y))
+
+        clickThrough = look.clickThrough
+        handler.post {
+            view?.applyLook(look)
+            view?.requestLayout()
+        }
+    }
+
+    /** Doc hinh thuc dang luu, de giao dien hien dung gia tri. */
+    fun currentLook(context: Context): OverlayLook =
+        (prefs ?: OverlayPrefs(context.applicationContext).also { prefs = it }).read()
 
     private fun buildParams(x: Int, y: Int) = WindowManager.LayoutParams(
         WindowManager.LayoutParams.MATCH_PARENT,
@@ -144,6 +171,13 @@ class OverlayHost {
                     lp.y = startY + (event.rawY - touchY).roundToInt()
                     runCatching { windowManager?.updateViewLayout(target, lp) }
                     true
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    // Nho cho vua keo toi. Ghi luc THA TAY chu khong phai moi
+                    // lan di chuyen: keo mot doan la hang tram lan ghi dia.
+                    prefs?.writePosition(lp.x, lp.y)
+                    false
                 }
 
                 else -> false

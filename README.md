@@ -20,7 +20,7 @@ dò lời, rồi vẽ lên một khung nổi đè trên app bạn đang dùng.
 | 3 | Dò lời từ LRCLIB | ✅ xong |
 | 4 | Thêm nguồn Zing MP3 và NhacCuaTui | ✅ xong |
 | 5 | Giao diện riêng, logo động, tối ưu tốc độ | ✅ xong |
-| 5b | Bảng tinh chỉnh + ô Quick Settings | chưa |
+| 5b | Bảng tinh chỉnh + ô Quick Settings | ✅ xong |
 | 6 | Căn lệch bằng một cú chạm, nhớ theo bài | ✅ xong |
 | 7 | Dịch lời | chưa |
 
@@ -137,6 +137,7 @@ chờ người dùng bật. Màn hình chính có nút dẫn tới từng trang.
 
 ```
 service/   LyraNotificationListener  neo giữ app sống
+           LyraTileService           ô Quick Settings bật/tắt lời nổi
            Lyra                      trạng thái dùng chung, nối các mảnh
 media/     MediaSessionWatcher       bám các phiên media đang chạy
            NowPlaying                kiểu dữ liệu + bù vị trí phát
@@ -149,6 +150,8 @@ sources/   LrclibClient
            Crypto                    sha256 / hmac512 / rc4
 overlay/   OverlayView               View thuần, tự vẽ, có viền chữ
            OverlayHost               dựng cửa sổ, kéo thả, chạm xuyên qua
+data/      OverlayPrefs              hình thức khung nổi + vị trí đã kéo
+           OffsetStore               độ lệch đã căn, theo từng bài
 ui/        MainActivity              Compose, đồng hồ vị trí theo nhịp vẽ
            HomeScreen                ba trang + viên thuốc nổi
            LyraMark                  logo, cử động khi đang tìm

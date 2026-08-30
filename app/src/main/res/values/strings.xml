@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Lyra</string>
+    <string name="tile_label">Lời nổi</string>
+    <string name="tile_on">Đang hiện</string>
+    <string name="tile_off">Đang tắt</string>
 </resources>

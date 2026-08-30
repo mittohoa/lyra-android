@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
             val loading by Lyra.loading.collectAsStateWithLifecycle()
 
             var overlayOn by remember { mutableStateOf(Lyra.overlay.isShowing) }
+            var look by remember { mutableStateOf(Lyra.overlay.currentLook(this)) }
             val position = rememberPlaybackPosition()
 
             HomeScreen(
@@ -77,7 +78,14 @@ class MainActivity : ComponentActivity() {
                 },
                 onToggleOverlay = { overlayOn = Lyra.toggleOverlay(this) },
                 onSyncToLine = { Lyra.syncToLine(it) },
-                onClearOffset = { Lyra.clearOffset() }
+                onClearOffset = { Lyra.clearOffset() },
+                look = look,
+                onLookChange = {
+                    // Ve lai khung dang noi NGAY, roi moi ghi xuong. Cho ghi
+                    // xong moi ve thi keo thanh truot bi giat tung nac.
+                    look = it
+                    Lyra.overlay.applyLook(this, it)
+                }
             )
         }
     }

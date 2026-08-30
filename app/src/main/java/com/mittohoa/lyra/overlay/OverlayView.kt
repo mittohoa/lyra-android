@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.TypedValue
 import android.view.View
+import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.lyrics.LyricLine
 import com.mittohoa.lyra.lyrics.activeLineIndex
 
@@ -39,6 +40,18 @@ class OverlayView(context: Context) : View(context) {
     }
     private val backdrop = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
+
+    /** Ap ca bo hinh thuc mot lan, roi ve lai. */
+    fun applyLook(look: OverlayLook) {
+        fontSizeSp = look.fontSizeSp
+        textColor = look.textColor
+        strokeColor = look.strokeColor
+        strokeWidthDp = look.strokeWidthDp
+        backgroundOpacity = look.backgroundOpacity
+        contextLines = look.contextLines
+        drawnIndex = Int.MIN_VALUE
+        invalidate()
+    }
 
     fun setLyrics(lines: List<LyricLine>, offset: Long) {
         this.lines = lines
