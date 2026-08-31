@@ -23,7 +23,7 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.mittohoa.lyra"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         // Cung mot id voi ban Windows. Khac `namespace` o tren - `namespace`
@@ -33,7 +33,9 @@ android {
         // 26 la moc toi thieu that su: TYPE_APPLICATION_OVERLAY chi co tu day.
         // Cac kieu cua so overlay cu hon deu da bi Android chan.
         minSdk = 26
-        targetSdk = 34
+        // Google Play đòi targetSdk không được cũ hơn một năm so với bản Android
+        // mới nhất. 36 là Android 16.
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
 
@@ -99,18 +101,25 @@ android {
     }
 
     /**
-     * Moi kien truc CPU mot goi rieng.
+     * Moi kien truc CPU mot goi rieng - CHI cho ban cai tay.
      *
-     * Play tu chon dung goi cho may nguoi dung, nen ho tai ve mot phan tu cua
-     * ban gop. Khong tach thi may nao cung phai tai ca bon bo may dich - ba
-     * phan tu trong do khong bao gio chay duoc tren may ho.
+     * Bo may dich cua ML Kit nang 15,6 MB cho moi kien truc, nen mot goi gom du
+     * bon kien truc bat nguoi dung tai ba phan tu khong bao gio chay duoc tren
+     * may ho.
+     *
+     * Ban gop (.aab) cho Play thi TU lam viec tach nay, va Play giao dung goi
+     * may nguoi dung can. Lam ca hai la mau thuan - tu AGP 8.13 no bao loi thang
+     * "Please disable building multiple APKs when building an Android app
+     * bundle". Nen tat tach goi khi lenh dang chay la dung ban gop.
      *
      * `isUniversalApk` de mo cho ban tai thang tu ngoai Play: van can mot goi
      * chay duoc o moi may, chi la no nang.
      */
+    val dungBanGop = gradle.startParameter.taskNames.any { it.contains("undle") }
+
     splits {
         abi {
-            isEnable = true
+            isEnable = !dungBanGop
             reset()
             include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = true

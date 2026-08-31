@@ -138,10 +138,16 @@ fun PlayerPane(
         contentPadding = PaddingValues(start = 26.dp, end = 26.dp, top = 8.dp, bottom = 120.dp)
     ) {
         item {
+            // Bài Lyra tự phát thì bìa do Lyra tải về (`artwork`); bài ở app khác
+            // thì bìa đi kèm bản tin media (`now.artwork`). Chỉ dùng cái đầu là
+            // bỏ trống ô ảnh với mọi bài phát ở app khác — đúng cảnh hay gặp
+            // nhất, vì đó là vai chính của app.
+            val bia = artwork ?: now.artwork
+
             Stage(accent = accent, kind = MediaKind.AUDIO) {
-                if (artwork != null) {
+                if (bia != null) {
                     Image(
-                        bitmap = artwork.asImageBitmap(),
+                        bitmap = bia.asImageBitmap(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
