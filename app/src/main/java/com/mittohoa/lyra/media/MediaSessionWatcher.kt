@@ -39,6 +39,19 @@ class MediaSessionWatcher {
     private var manager: MediaSessionManager? = null
     private var component: ComponentName? = null
 
+    /**
+     * Goi cua chinh Lyra, de con bo qua phien cua minh.
+     *
+     * Bat buoc phai bo, va day la mot vong lap that chu khong phai de phong xa:
+     * Lyra ghi CAU DANG HAT vao phan mo ta phien cua no de hien tren the man
+     * hinh khoa. Doc lai chinh phien do thi cau hat tro thanh "ten bai moi", va
+     * app di tra loi cho mot cau hat - roi ket qua lai ghi de len, vong tiep.
+     *
+     * Bai Lyra tu phat khong can doc qua day: `Lyra` biet chinh xac ten bai,
+     * nghe si va vi tri tu bo may phat cua no.
+     */
+    private var ownPackage: String = ""
+
     /** Callback dang gan, theo tung controller - de con go ra cho dung. */
     private val attached = mutableMapOf<MediaController, MediaController.Callback>()
 
@@ -57,6 +70,7 @@ class MediaSessionWatcher {
         val comp = ComponentName(context, listener)
         manager = msm
         component = comp
+        ownPackage = context.packageName
 
         try {
             msm.addOnActiveSessionsChangedListener(onSessionsChanged, comp, handler)
@@ -80,7 +94,7 @@ class MediaSessionWatcher {
 
     /** Gan callback cho cac phien moi, go khoi cac phien da bien mat. */
     private fun rebind(controllers: List<MediaController>) {
-        val current = controllers.toSet()
+        val current = controllers.filterNot { it.packageName == ownPackage }.toSet()
 
         attached.keys.filterNot { it in current }.forEach { gone ->
             attached.remove(gone)?.let { gone.unregisterCallback(it) }

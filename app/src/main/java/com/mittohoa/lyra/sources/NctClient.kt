@@ -21,7 +21,8 @@ import kotlin.math.abs
  * Diem rieng cua NCT: ban loi CO MOC THOI GIAN nam trong mot file .lrc **ma hoa
  * RC4**, va khoa giai ma di kem ngay trong chinh ban tin loi (`keyDecryptLyric`).
  *
- * Chuyen tu `src/main/sources/nct.ts`, chi giu duong LOI.
+ * Chuyen tu `src/main/sources/nct.ts`: duong LOI, va tu khi Lyra tu phat nhac
+ * thi ca duong TIM BAI va LAY LINK PHAT.
  */
 object NctClient {
 
@@ -50,7 +51,17 @@ object NctClient {
         val key: String = "",
         val name: String = "",
         val artistName: String = "",
-        val duration: Int = 0
+        val duration: Int = 0,
+        val image: String = "",
+        val streamURL: List<Stream> = emptyList()
+    )
+
+    @Serializable
+    private data class Stream(
+        val stream: String = "",
+        val onlyVIP: Boolean = false,
+        val status: Int = 0,
+        val key: String = ""
     )
 
     @Serializable
@@ -75,6 +86,50 @@ object NctClient {
             null
         }
     }
+
+    /**
+     * Tim bai theo tu khoa nguoi dung go.
+     *
+     * NCT tra ve LUON duong phat ngay trong ket qua tim, nen mot lan goi la du
+     * ca tim lan phat - khong phai hoi them nhu Zing.
+     */
+    suspend fun search(query: String, limit: Int): List<Track> =
+        withContext(Dispatchers.IO) {
+            val encoded = URLEncoder.encode(query, "UTF-8")
+            call<SearchData>(
+                "/api/v1/search/song?keyword=$encoded&pageindex=1&pagesize=$limit&correct=false",
+                post = true
+            )?.songs.orEmpty().map { song ->
+                Track(
+                    id = song.key,
+                    source = MusicSource.NCT,
+                    title = song.name,
+                    artist = song.artistName,
+                    artworkUrl = song.image.ifBlank { null },
+                    durationMs = song.duration * 1000L,
+                    streamUrl = pickStream(song)
+                )
+            }
+        }
+
+    /** Duong phat cho mot bai, hoi lai tu dau bang chinh ma bai. */
+    suspend fun streamUrl(key: String): String? = withContext(Dispatchers.IO) {
+        val encoded = URLEncoder.encode(key, "UTF-8")
+        call<SearchData>(
+            "/api/v1/search/song?keyword=$encoded&pageindex=1&pagesize=5&correct=false",
+            post = true
+        )?.songs.orEmpty().firstOrNull { it.key == key }?.let(::pickStream)
+    }
+
+    /**
+     * Ban chat luong dung duoc cao nhat.
+     *
+     * `onlyVIP` va `status = 0` deu nghia la khong phat duoc bang tai khoan
+     * thuong. Danh sach xep tu thap len cao nen lay ban CUOI trong so dung duoc.
+     */
+    private fun pickStream(song: Song): String? = song.streamURL
+        .lastOrNull { it.stream.startsWith("http") && !it.onlyVIP && it.status != 0 }
+        ?.stream
 
     suspend fun fetch(artist: String, title: String, durationMs: Long): Lyrics? =
         withContext(Dispatchers.IO) {

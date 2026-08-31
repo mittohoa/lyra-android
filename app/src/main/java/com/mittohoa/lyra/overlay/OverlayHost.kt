@@ -10,8 +10,11 @@ import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.data.OverlayPrefs
 import android.util.Log
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.view.WindowManager
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -40,6 +43,18 @@ class OverlayHost {
 
     /** Noi luu hinh thuc; gan khi mo, de con ghi lai vi tri sau moi lan keo. */
     private var prefs: OverlayPrefs? = null
+
+    /** Cham vao mot cau tren khung: dung de can lai loi theo cau dang nghe. */
+    var onLineTap: ((Int) -> Unit)? = null
+
+    /**
+     * Giu tay tren khung: tat khung noi.
+     *
+     * Day la duong tat NGAN NHAT co the - ngon tay dang o ngay tren cai can
+     * tat. Cac duong khac deu bat nguoi dung roi cho: mo Lyra ra bam nut, hoac
+     * vuot thanh thong bao xuong tim o Quick Settings.
+     */
+    var onDismiss: (() -> Unit)? = null
 
     fun show(context: Context) {
         if (view != null) return
@@ -100,6 +115,10 @@ class OverlayHost {
         }
     }
 
+    /** Co chu hop voi man hinh may nay - de giao dien moi nguoi dung quay ve. */
+    fun suggestedFontSize(context: Context): Float =
+        (prefs ?: OverlayPrefs(context.applicationContext).also { prefs = it }).suggestedFontSizeSp
+
     /** Doc hinh thuc dang luu, de giao dien hien dung gia tri. */
     fun currentLook(context: Context): OverlayLook =
         (prefs ?: OverlayPrefs(context.applicationContext).also { prefs = it }).read()
@@ -154,6 +173,24 @@ class OverlayHost {
         var startY = 0
         var touchX = 0f
         var touchY = 0f
+        var downAt = 0L
+        var moved = false
+
+        // Giu tay = tat khung. Hen gio o `ACTION_DOWN` roi huy o `MOVE`/`UP`,
+        // chu khong doi toi luc tha tay moi xet: nguoi dung phai biet minh da giu
+        // DU LAU ngay trong luc con dang giu, bang cu rung bao - khong thi ho chi
+        // biet minh giu hut sau khi da nhac tay.
+        val dismissAfterHold = Runnable {
+            if (moved) return@Runnable
+            target.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            onDismiss?.invoke()
+        }
+        val holdMs = ViewConfiguration.getLongPressTimeout().toLong() + HOLD_EXTRA_MS
+
+        // Nguong "coi la da keo", tinh theo mat do man hinh chu khong phai
+        // pixel: cung mot ngon tay run tren may 1080p va may 1440p sinh ra so
+        // pixel khac han nhau
+        val slop = ViewConfiguration.get(target.context).scaledTouchSlop
 
         target.setOnTouchListener { _, event ->
             val lp = params ?: return@setOnTouchListener false
@@ -163,20 +200,47 @@ class OverlayHost {
                     startY = lp.y
                     touchX = event.rawX
                     touchY = event.rawY
+                    downAt = System.currentTimeMillis()
+                    moved = false
+                    handler.postDelayed(dismissAfterHold, holdMs)
                     true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    lp.x = startX + (event.rawX - touchX).roundToInt()
-                    lp.y = startY + (event.rawY - touchY).roundToInt()
-                    runCatching { windowManager?.updateViewLayout(target, lp) }
+                    val dx = event.rawX - touchX
+                    val dy = event.rawY - touchY
+                    if (!moved && abs(dx) + abs(dy) > slop) {
+                        moved = true
+                        // Da xe dich thi day la keo, khong phai giu
+                        handler.removeCallbacks(dismissAfterHold)
+                    }
+                    if (moved) {
+                        lp.x = startX + dx.roundToInt()
+                        lp.y = startY + dy.roundToInt()
+                        runCatching { windowManager?.updateViewLayout(target, lp) }
+                    }
                     true
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    // Nho cho vua keo toi. Ghi luc THA TAY chu khong phai moi
-                    // lan di chuyen: keo mot doan la hang tram lan ghi dia.
-                    prefs?.writePosition(lp.x, lp.y)
+                    handler.removeCallbacks(dismissAfterHold)
+                    if (moved) {
+                        // Nho cho vua keo toi. Ghi luc THA TAY chu khong phai
+                        // moi lan di chuyen: keo mot doan la hang tram lan ghi dia.
+                        prefs?.writePosition(lp.x, lp.y)
+                    } else if (
+                        event.action == MotionEvent.ACTION_UP &&
+                        System.currentTimeMillis() - downAt < TAP_MS
+                    ) {
+                        // Khong xe dich va nhac tay nhanh = mot cu cham
+                        val index = target.lineIndexAt(event.y)
+                        if (index >= 0) {
+                            // Rung nhe de bao da nhan: nguoi dung dang nhin app
+                            // khac, khong the trong cho phan hoi bang mat
+                            target.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                            onLineTap?.invoke(index)
+                        }
+                    }
                     false
                 }
 
@@ -189,6 +253,17 @@ class OverlayHost {
     fun currentPosition(): Pair<Int, Int>? = params?.let { it.x to it.y }
 
     private companion object {
+        /**
+         * Giu them ngan nay nua moi coi la muon tat.
+         *
+         * Dai hon nguong giu thong thuong cua he thong mot chut: tat nham khung
+         * loi giua bai la kho chiu hon han la phai giu them mot phan tu giay.
+         */
+        const val HOLD_EXTRA_MS = 250L
+
         const val TAG = "LyraOverlay"
+
+        /** Nhac tay trong khoang nay va khong xe dich thi coi la mot cu cham. */
+        const val TAP_MS = 400L
     }
 }

@@ -85,6 +85,7 @@ class LyricsRepository(
 
         _lyrics.value = Lyrics.NONE
         _loading.value = true
+        Log.i(TAG, "Tim loi: '${now.artist}' - '${now.title}' (${now.duration}ms, ${now.packageName})")
         job = scope.launch {
             val found = resolve(now)
             _lyrics.value = found?.let { dress(it, now) } ?: Lyrics.NONE
@@ -110,14 +111,33 @@ class LyricsRepository(
      * phuong an dau (thu app tu khai bao) dung hon han, nen dang no mot ket qua
      * tot con hon mot ket qua tot cua phuong an doan mo.
      */
-    private suspend fun resolve(now: NowPlaying): Lyrics? {
+    /**
+     * Tra loi cho mot bai bat ky, KHONG dong toi bai dang phat.
+     *
+     * Dung khi tai mot bai ve may: bai duoc tai thuong khong phai bai dang
+     * nghe, va mot lan tra o day khong duoc phep lam doi loi tren man hinh.
+     */
+    suspend fun lookup(artist: String, title: String, durationMs: Long): Lyrics? =
+        resolve(artist, title, durationMs)
+
+    private suspend fun resolve(now: NowPlaying): Lyrics? =
+        resolve(now.artist, now.title, now.duration, now.album)
+
+    private suspend fun resolve(
+        artist: String,
+        title: String,
+        durationMs: Long,
+        album: String = ""
+    ): Lyrics? {
         val candidates = candidatesFrom(
             RawNowPlaying(
-                title = now.title,
-                artist = now.artist.ifBlank { null },
-                album = now.album.ifBlank { null }
+                title = title,
+                artist = artist.ifBlank { null },
+                album = album.ifBlank { null }
             )
         ).take(MAX_CANDIDATES)
+
+        Log.d(TAG, "${candidates.size} phuong an: ${candidates.joinToString { "'${it.artist}'/'${it.title}'" }}")
 
         var plainFallback: Lyrics? = null
 
@@ -126,7 +146,7 @@ class LyricsRepository(
                 SOURCES.map { (name, fetch) ->
                     async {
                         try {
-                            fetch(c.artist, c.title, now.duration)
+                            fetch(c.artist, c.title, durationMs)
                         } catch (e: CancellationException) {
                             // Doi bai giua chung thi lan tra cu bi huy - phai NEM
                             // TIEP, khong duoc nuot. Nuot ngoai le huy la pha vo

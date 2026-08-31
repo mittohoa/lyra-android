@@ -23,6 +23,11 @@ class LyraNotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
         Log.i(TAG, "He thong da noi vao - bat dau doc phien media")
         Lyra.watcher.start(this, LyraNotificationListener::class.java)
+
+        // He thong vua giet roi dung lai ta. Neu truoc do nguoi dung dang bat
+        // khung noi thi phai tu dung lai - ho dang o trong app nhac, khong co
+        // ly do gi de phai quay ve Lyra bat lai bang tay.
+        Lyra.restoreOverlay(this)
     }
 
     override fun onListenerDisconnected() {

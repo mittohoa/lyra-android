@@ -7,6 +7,30 @@
     -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!--
+      Phat nhac khi man hinh tat. `mediaPlayback` la kieu bat buoc khai bao tu
+      Android 14 - thieu no thi he thong nem SecurityException ngay khi service
+      chuyen sang chay nen.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!--
+      Thong bao dieu khien nhac. Tu Android 13 nguoi dung phai dong y - khong
+      dong y thi nhac van phat, chi la khong co the dieu khien.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      Doc nhac co san trong may. Tu Android 13 tach rieng theo loai: xin dung
+      quyen NHAC chu khong phai quyen doc ca bo nho - Lyra khong co viec gi voi
+      anh, video hay tai lieu cua nguoi dung.
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
     <!-- Goi LRCLIB / Zing / NCT de tra loi bai hat -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -41,6 +65,23 @@
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!--
+          Bo may phat cua chinh Lyra.
+
+          `exported=true` la BAT BUOC voi MediaSessionService: he thong, Android
+          Auto va cac o dieu khien ngoai deu noi vao tu tien trinh khac. Doi lai
+          phai loc quyen o phia trong session neu ve sau co lenh nhay cam.
+        -->
+        <service
+            android:name=".player.LyraPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
 

@@ -24,6 +24,30 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    /**
+     * Hai ban phan phoi, cung mot ma nguon.
+     *
+     * `sideload` - ban day du, cai bang tay. Co tai nhac.
+     * `play`     - ban len Google Play. KHONG mang ma tai nao ca.
+     *
+     * Tach bang bo ma nguon (`src/sideload/`, `src/play/`) chu khong bang mot
+     * co bat/tat luc chay. Mot cai co van de lai toan bo ma trong file cai dat,
+     * va nguoi duyet Play mo file ra xem thi thay - khac biet giua "khong dung"
+     * va "khong co" la khac biet that.
+     *
+     * Cung `applicationId`: day la MOT app, hai duong phat hanh. Nguoi dung
+     * khong cai duoc ca hai mot luc, va dung ra la vay.
+     */
+    flavorDimensions += "phanphoi"
+    productFlavors {
+        create("sideload") {
+            dimension = "phanphoi"
+        }
+        create("play") {
+            dimension = "phanphoi"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -35,6 +59,32 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
+            // Bo dong khong dung khi chay thu. Bo may dich cua ML Kit nang
+            // 15,6 MB CHO MOI KIEN TRUC CPU, nen mot ban go loi gom du bon
+            // kien truc len toi 76 MB - moi lan cai lai la mot phut ngoi doi.
+            // Ban phat hanh khong bi anh huong: xem `splits` ben duoi.
+            ndk {
+                abiFilters += listOf("arm64-v8a", "x86_64")
+            }
+        }
+    }
+
+    /**
+     * Moi kien truc CPU mot goi rieng.
+     *
+     * Play tu chon dung goi cho may nguoi dung, nen ho tai ve mot phan tu cua
+     * ban gop. Khong tach thi may nao cung phai tai ca bon bo may dich - ba
+     * phan tu trong do khong bao gio chay duoc tren may ho.
+     *
+     * `isUniversalApk` de mo cho ban tai thang tu ngoai Play: van can mot goi
+     * chay duoc o moi may, chi la no nang.
+     */
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
         }
     }
 
@@ -74,6 +124,13 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
+
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
+
+    implementation(libs.mlkit.translate)
+    implementation(libs.mlkit.language.id)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

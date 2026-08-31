@@ -48,9 +48,14 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.mittohoa.lyra.data.OverlayLook
+import com.mittohoa.lyra.data.TranslateSettings
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.media.NowPlaying
+import com.mittohoa.lyra.sources.Track
+import com.mittohoa.lyra.translate.READING_LANGUAGES
+import com.mittohoa.lyra.translate.TranslationState
+import com.mittohoa.lyra.translate.languageName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -69,7 +74,13 @@ import kotlin.math.roundToInt
  * hinh, con dieu khien thi noi len tren no.
  */
 
-private val PANES = listOf("Đang phát", "Lời", "Chỉnh")
+/**
+ * Bon trang, xep theo dung thu tu nguoi dung di qua chung: tim bai, nghe, doc
+ * loi, chinh. Trang mo dau la "Dang phat" chu khong phai "Tim" - phan lon lan
+ * mo app la de xem dang phat gi, khong phai de tim bai moi.
+ */
+private val PANES = listOf("Tìm", "Đang phát", "Lời", "Chỉnh")
+private const val START_PANE = 1
 
 @Composable
 fun HomeScreen(
@@ -86,8 +97,49 @@ fun HomeScreen(
     onSyncToLine: (Int) -> Unit,
     onClearOffset: () -> Unit,
     look: OverlayLook,
+    suggestedFontSize: Float,
     onLookChange: (OverlayLook) -> Unit,
-    onEditLyrics: () -> Unit
+    onEditLyrics: () -> Unit,
+    translation: TranslationState,
+    translateSettings: TranslateSettings,
+    onDownloadModel: () -> Unit,
+    onTranslateChange: (TranslateSettings) -> Unit,
+    canAddTile: Boolean,
+    onAddTile: () -> Unit,
+    searchQuery: String,
+    results: List<Track>,
+    searching: Boolean,
+    queue: List<Track>,
+    queueIndex: Int,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchSubmit: () -> Unit,
+    onPlayResult: (Int) -> Unit,
+    onEnqueue: (Track) -> Unit,
+    onSkipInQueue: (Int) -> Unit,
+    onRemoveFromQueue: (Int) -> Unit,
+    onPrevious: () -> Unit,
+    onPlayPause: () -> Unit,
+    onNext: () -> Unit,
+    artwork: android.graphics.Bitmap?,
+    shuffle: Boolean,
+    repeat: Int,
+    onSeek: (Long) -> Unit,
+    onToggleShuffle: () -> Unit,
+    onCycleRepeat: () -> Unit,
+    library: List<Track>,
+    canReadLibrary: Boolean,
+    onAskLibrary: () -> Unit,
+    onPlayFromLibrary: (Int) -> Unit,
+    playlists: List<com.mittohoa.lyra.data.Playlist>,
+    openedPlaylist: com.mittohoa.lyra.data.Playlist?,
+    onOpenPlaylist: (String?) -> Unit,
+    onPlayPlaylistAt: (Int) -> Unit,
+    onRemoveFromPlaylist: (Int) -> Unit,
+    onRenamePlaylist: (String) -> Unit,
+    onDeletePlaylist: () -> Unit,
+    onSaveQueue: (String) -> Unit,
+    downloads: Map<String, com.mittohoa.lyra.service.Lyra.Downloading>,
+    onDownload: (Track) -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -95,13 +147,16 @@ fun HomeScreen(
     // Tinh tren LUONG NEN. Doc diem anh la viec cua CPU, lam trong than
     // composable nghia la lam tren luong chinh giua luc dang dung giao dien -
     // dung mot nhip ngay khi doi bai, va do la luc nguoi dung dang nhin nhat.
-    val target by produceState(FALLBACK, now?.key) {
-        val art = now?.artwork
+    val target by produceState(FALLBACK, now?.key, artwork) {
+        // `artwork` la anh Lyra tu tai ve cho bai chinh no phat; `now.artwork` la
+        // anh app khac gui kem ban tin media. Uu tien cai dau vi no ro net hon -
+        // ban tin media thuong chi kem mot anh nho.
+        val art = artwork ?: now?.artwork
         value = withContext(Dispatchers.Default) { dominantColor(art) } ?: FALLBACK
     }
     val accent by animateColorAsState(target, tween(900), label = "accent")
 
-    val pager = rememberPagerState(pageCount = { PANES.size })
+    val pager = rememberPagerState(initialPage = START_PANE, pageCount = { PANES.size })
     val scope = rememberCoroutineScope()
 
     Box(
@@ -140,19 +195,68 @@ fun HomeScreen(
                 pageSpacing = 0.dp
             ) { page ->
                 when (page) {
-                    0 -> NowPlayingPane(now, accent, hasNotificationAccess, onOpenNotificationSettings)
-                    1 -> LyricsPane(
-                        lyrics, loading, position, accent,
-                        onSyncToLine, onClearOffset, onEditLyrics
+                    0 -> SearchPane(
+                        accent = accent,
+                        query = searchQuery,
+                        results = results,
+                        searching = searching,
+                        playingUri = queue.getOrNull(queueIndex)?.playbackUri,
+                        onQueryChange = onSearchQueryChange,
+                        onSubmit = onSearchSubmit,
+                        onPlay = onPlayResult,
+                        onEnqueue = onEnqueue,
+                        library = library,
+                        canReadLibrary = canReadLibrary,
+                        onAskLibrary = onAskLibrary,
+                        onPlayFromLibrary = onPlayFromLibrary,
+                        playlists = playlists,
+                        openedPlaylist = openedPlaylist,
+                        onOpenPlaylist = onOpenPlaylist,
+                        onPlayPlaylistAt = onPlayPlaylistAt,
+                        onRemoveFromPlaylist = onRemoveFromPlaylist,
+                        onRenamePlaylist = onRenamePlaylist,
+                        onDeletePlaylist = onDeletePlaylist,
+                        downloads = downloads,
+                        onDownload = onDownload
+                    )
+                    1 -> PlayerPane(
+                        now = now,
+                        accent = accent,
+                        artwork = artwork,
+                        position = position,
+                        queue = queue,
+                        queueIndex = queueIndex,
+                        shuffle = shuffle,
+                        repeat = repeat,
+                        hasNotificationAccess = hasNotificationAccess,
+                        onOpenNotificationSettings = onOpenNotificationSettings,
+                        onSeek = onSeek,
+                        onPrevious = onPrevious,
+                        onPlayPause = onPlayPause,
+                        onNext = onNext,
+                        onToggleShuffle = onToggleShuffle,
+                        onCycleRepeat = onCycleRepeat,
+                        onSkipInQueue = onSkipInQueue,
+                        onRemoveFromQueue = onRemoveFromQueue,
+                        onSaveQueue = onSaveQueue
+                    )
+                    2 -> LyricsPane(
+                        lyrics, loading, position, accent, translation,
+                        onSyncToLine, onClearOffset, onEditLyrics, onDownloadModel
                     )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
                         overlayOn = overlayOn,
                         accent = accent,
                         look = look,
+                        suggestedFontSize = suggestedFontSize,
                         onOpenOverlaySettings = onOpenOverlaySettings,
                         onToggleOverlay = onToggleOverlay,
-                        onLookChange = onLookChange
+                        onLookChange = onLookChange,
+                        translateSettings = translateSettings,
+                        onTranslateChange = onTranslateChange,
+                        canAddTile = canAddTile,
+                        onAddTile = onAddTile
                     )
                 }
             }
@@ -234,78 +338,6 @@ private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
         }
     }
 }
-
-@Composable
-private fun NowPlayingPane(
-    now: NowPlaying?,
-    accent: Color,
-    hasNotificationAccess: Boolean,
-    onOpenNotificationSettings: () -> Unit
-) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 26.dp),
-        verticalArrangement = Arrangement.Center
-    ) {
-        if (!hasNotificationAccess) {
-            Ask(
-                title = "Cần quyền đọc thông báo",
-                body = "Android chỉ cho đọc thông tin bài đang phát ở app khác khi bạn đã bật " +
-                    "quyền này. Lyra không đọc nội dung thông báo — chỉ đọc tên bài và vị trí phát.",
-                action = "Mở Cài đặt để bật",
-                accent = accent,
-                onAction = onOpenNotificationSettings
-            )
-            return@Column
-        }
-
-        if (now == null) {
-            Text(
-                "Chưa thấy app nào đang phát",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Mở Spotify, YouTube Music, Zing hay NhacCuaTui rồi phát một bài.",
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 14.sp
-            )
-            return@Column
-        }
-
-        Text(
-            now.title,
-            color = Color.White,
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = 36.sp
-        )
-        if (now.artist.isNotEmpty()) {
-            Spacer(Modifier.height(6.dp))
-            Text(now.artist, color = Color.White.copy(alpha = 0.72f), fontSize = 17.sp)
-        }
-
-        Spacer(Modifier.height(22.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(7.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(if (now.isPlaying) accent else Color.White.copy(alpha = 0.3f))
-            )
-            Spacer(Modifier.width(9.dp))
-            Text(
-                "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
-                color = Color.White.copy(alpha = 0.5f),
-                fontSize = 13.sp
-            )
-        }
-    }
-}
-
 /**
  * Trang loi.
  *
@@ -319,9 +351,11 @@ private fun LyricsPane(
     loading: Boolean,
     position: State<Long>,
     accent: Color,
+    translation: TranslationState,
     onSyncToLine: (Int) -> Unit,
     onClearOffset: () -> Unit,
-    onEditLyrics: () -> Unit
+    onEditLyrics: () -> Unit,
+    onDownloadModel: () -> Unit
 ) {
     // `derivedStateOf`: vi tri phat doi 5 lan moi giay, nhung dong dang hat
     // thi vai giay moi doi mot lan. Khong boc thi ca danh sach bi dung lai
@@ -335,6 +369,11 @@ private fun LyricsPane(
     // hien bi lua. Cham mot cai la khop lai, va tu do tro di chay binh thuong.
     val trustTiming = lyrics.synced && !lyrics.timingSuspect
     val listState = rememberLazyListState()
+
+    // Boc mot lan o day thay vi hoi trang thai trong tung dong: danh sach co
+    // the vai tram dong, va moi dong tu doc trang thai la moi dong tu dang ky
+    // theo doi no.
+    val translated = (translation as? TranslationState.Done)?.lines ?: emptyList()
 
     // Keo dong dang hat ve giua man hinh
     LaunchedEffect(active, trustTiming) {
@@ -394,6 +433,25 @@ private fun LyricsPane(
             onAction = onEditLyrics
         )
 
+        // Dai bao rieng cho phan dich, va chi hien khi co chuyen de noi. Dich
+        // xong thi khong bao gi ca - ban dich da nam duoi tung dong, tu no da
+        // la loi thong bao ro nhat.
+        when (translation) {
+            is TranslationState.NeedsModel -> Notice(
+                accent = accent,
+                text = "Lời đang là tiếng " + languageName(translation.language) +
+                    ". Tải gói ngôn ngữ về máy để dịch, một lần dùng mãi.",
+                action = "Tải gói",
+                onAction = onDownloadModel
+            )
+            is TranslationState.Failed -> Notice(
+                accent = accent,
+                text = translation.why + "."
+            )
+            TranslationState.Working -> Notice(accent = accent, text = "Đang dịch lời…")
+            else -> Unit
+        }
+
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -413,13 +471,8 @@ private fun LyricsPane(
                     label = "a$i"
                 )
 
-                Text(
-                    text = line.text.ifEmpty { "♪" },
-                    color = Color.White,
-                    fontSize = if (isActive) 23.sp else 20.sp,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                    lineHeight = 30.sp,
-                    modifier = Modifier
+                Column(
+                    Modifier
                         // Cham vao cau dang hat de can lai ca bai - mot cu cham
                         // thay cho hang chuc lan bam +/- nua giay
                         .clickable { onSyncToLine(i) }
@@ -432,7 +485,28 @@ private fun LyricsPane(
                             transformOrigin =
                                 androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
                         }
-                )
+                ) {
+                    Text(
+                        text = line.text.ifEmpty { "♪" },
+                        color = Color.White,
+                        fontSize = if (isActive) 23.sp else 20.sp,
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                        lineHeight = 30.sp
+                    )
+                    // O trang Loi thi hien ban dich cho MOI dong, khac han khung
+                    // noi chi hien cho dong dang hat: o day nguoi dung dang doc
+                    // ca bai chu khong phai liec mat.
+                    val meaning = translated.getOrNull(i)?.trim().orEmpty()
+                    if (meaning.isNotEmpty() && meaning != line.text.trim()) {
+                        Text(
+                            text = meaning,
+                            color = accent,
+                            fontSize = if (isActive) 16.sp else 14.sp,
+                            lineHeight = 22.sp,
+                            modifier = Modifier.padding(top = 3.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -492,9 +566,14 @@ private fun TunePane(
     overlayOn: Boolean,
     accent: Color,
     look: OverlayLook,
+    suggestedFontSize: Float,
     onOpenOverlaySettings: () -> Unit,
     onToggleOverlay: () -> Unit,
-    onLookChange: (OverlayLook) -> Unit
+    onLookChange: (OverlayLook) -> Unit,
+    translateSettings: TranslateSettings,
+    onTranslateChange: (TranslateSettings) -> Unit,
+    canAddTile: Boolean,
+    onAddTile: () -> Unit
 ) {
     Column(
         Modifier
@@ -554,7 +633,12 @@ private fun TunePane(
             range = 14f..48f,
             display = look.fontSizeSp.toInt().toString(),
             accent = accent,
-            onChange = { onLookChange(look.copy(fontSizeSp = it)) }
+            onChange = { onLookChange(look.copy(fontSizeSp = it)) },
+            // Chi moi khi dang khac co do man hinh nay. Bay ra dung cho con so
+            // vua dung, nen no doc nhu chinh con so ay moc them duong quay ve -
+            // khong phai mot nut nua chen vao hang.
+            suggestion = suggestedFontSize.takeIf { it.toInt() != look.fontSizeSp.toInt() },
+            onSuggestion = { onLookChange(look.copy(fontSizeSp = suggestedFontSize)) }
         )
         Slider(
             label = "Nền mờ",
@@ -594,10 +678,105 @@ private fun TunePane(
             onChange = { onLookChange(look.copy(clickThrough = it)) }
         )
 
-        Spacer(Modifier.height(26.dp))
+        Spacer(Modifier.height(30.dp))
         Text(
-            "Mẹo: kéo ô \"Lời nổi\" vào bảng Cài đặt nhanh (vuốt thanh thông báo " +
-                "xuống, sửa các ô) để bật tắt ngay khi đang nghe nhạc.",
+            "Dịch lời",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(4.dp))
+
+        Toggle(
+            label = "Dịch lời tiếng nước ngoài",
+            hint = "Dịch ngay trên máy, không gửi lời đi đâu và không tốn tiền. " +
+                "Lời đã đúng thứ tiếng bạn đọc thì app không đụng tới.",
+            checked = translateSettings.enabled,
+            accent = accent,
+            onChange = { onTranslateChange(translateSettings.copy(enabled = it)) }
+        )
+
+        if (translateSettings.enabled) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Bạn đọc được tiếng",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 13.sp
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for ((code, label) in READING_LANGUAGES) {
+                    val chosen = code == translateSettings.readingLanguage
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                if (chosen) accent else Color.White.copy(alpha = 0.10f)
+                            )
+                            .clickable {
+                                onTranslateChange(
+                                    translateSettings.copy(readingLanguage = code)
+                                )
+                            }
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            label,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Toggle(
+                label = "Chỉ tải gói ngôn ngữ qua Wi-Fi",
+                hint = "Mỗi thứ tiếng là một gói vài chục MB, tải một lần rồi " +
+                    "dùng mãi kể cả khi mất mạng",
+                checked = translateSettings.wifiOnly,
+                accent = accent,
+                onChange = { onTranslateChange(translateSettings.copy(wifiOnly = it)) }
+            )
+        }
+
+        Spacer(Modifier.height(30.dp))
+        Text(
+            "Tắt nhanh",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Giữ tay vài giây ngay trên khung lời là tắt — máy rung một cái báo " +
+                "đã nhận. Đây là đường ngắn nhất: ngón tay đang ở sẵn trên thứ " +
+                "cần tắt, không phải rời app nhạc.",
+            color = Color.White.copy(alpha = 0.6f),
+            fontSize = 13.sp,
+            lineHeight = 20.sp
+        )
+
+        Spacer(Modifier.height(14.dp))
+        if (canAddTile) {
+            // Android 13 tro len cho app tu xin them o - nguoi dung chi phai
+            // dong y mot cai. Ban cu hon khong co duong nao ngoai viec chi cho
+            // ho tu keo, nen cau huong dan van con o duoi.
+            Big(
+                label = "Thêm ô Lời nổi vào Cài đặt nhanh",
+                accent = accent,
+                filled = false,
+                onClick = onAddTile
+            )
+            Spacer(Modifier.height(12.dp))
+        }
+        Text(
+            if (canAddTile)
+                "Ô đó bật tắt được ngay trong lúc đang nghe nhạc, không cần mở Lyra."
+            else
+                "Hoặc kéo ô Lời nổi vào bảng Cài đặt nhanh (vuốt thanh thông báo " +
+                    "xuống, sửa các ô) để bật tắt ngay khi đang nghe nhạc.",
             color = Color.White.copy(alpha = 0.45f),
             fontSize = 12.5.sp,
             lineHeight = 18.sp
@@ -615,12 +794,28 @@ private fun Slider(
     display: String,
     accent: Color,
     onChange: (Float) -> Unit,
-    steps: Int = 0
+    steps: Int = 0,
+    /** Gia tri hop voi may nay, neu no dang khac gia tri hien tai. */
+    suggestion: Float? = null,
+    onSuggestion: () -> Unit = {}
 ) {
     Column(Modifier.padding(vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, color = Color.White, fontSize = 14.sp)
-            Text(display, color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+            if (suggestion == null) {
+                Text(display, color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+            } else {
+                Text(
+                    "$display → ${suggestion.toInt()}",
+                    color = accent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .clickable(onClick = onSuggestion)
+                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                )
+            }
         }
         androidx.compose.material3.Slider(
             value = value,
@@ -669,7 +864,7 @@ private fun Toggle(
 }
 
 @Composable
-private fun Ask(
+internal fun Ask(
     title: String,
     body: String,
     action: String,
@@ -706,7 +901,9 @@ private fun Big(label: String, accent: Color, filled: Boolean, onClick: () -> Un
 }
 
 /** Ten goi -> ten app doc duoc. Khong biet thi tra ve chinh ten goi. */
-private fun appLabel(packageName: String): String = when {
+internal fun appLabel(packageName: String): String = when {
+    // Bai do chinh Lyra phat mang mot ten goi gia, xem `Lyra.OWN`
+    packageName == "lyra" -> "Lyra"
     packageName.contains("spotify") -> "Spotify"
     packageName.contains("youtube.music") -> "YouTube Music"
     packageName.contains("youtube") -> "YouTube"

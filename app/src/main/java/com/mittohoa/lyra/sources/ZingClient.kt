@@ -18,8 +18,8 @@ import kotlin.math.abs
  * Nghia la no CO THE HONG bat cu luc nao khi ho doi phia may chu - moi that bai
  * deu thanh "khong tim thay loi", khong bao gio lam sap app.
  *
- * Chuyen tu `src/main/sources/zing.ts` cua ban Windows, chi giu duong LOI -
- * ban Android khong tu phat nhac nen khong can phan stream.
+ * Chuyen tu `src/main/sources/zing.ts` cua ban Windows: duong LOI, va tu khi
+ * Lyra tu phat nhac thi ca duong TIM BAI va LAY LINK PHAT.
  */
 object ZingClient {
 
@@ -66,7 +66,9 @@ object ZingClient {
         val encodeId: String = "",
         val title: String = "",
         @SerialName("artistsNames") val artistsNames: String = "",
-        val duration: Int = 0
+        val duration: Int = 0,
+        val thumbnailM: String = "",
+        val thumbnail: String = ""
     )
 
     @Serializable
@@ -104,6 +106,49 @@ object ZingClient {
         } catch (e: Exception) {
             // Ho doi dinh dang tra ve - coi nhu khong co loi, khong lam sap gi
             null
+        }
+    }
+
+    /**
+     * Tim bai theo tu khoa nguoi dung go.
+     *
+     * Khac han `fetch`: o do ta DA biet ten bai va chi di doi chieu, con o day
+     * nguoi dung go gi thi tim nay - khong cham diem, khong loc. Zing xep hang
+     * ket qua theo do lien quan cua ho, va ho lam viec do tot hon ta.
+     */
+    suspend fun search(query: String, limit: Int): List<Track> =
+        withContext(Dispatchers.IO) {
+            call<SearchData>("/api/v2/search/multi", mapOf("q" to query))
+                ?.songs.orEmpty()
+                .take(limit)
+                .map { song ->
+                    Track(
+                        id = song.encodeId,
+                        source = MusicSource.ZING,
+                        title = song.title,
+                        artist = song.artistsNames,
+                        artworkUrl = song.thumbnailM.ifBlank { song.thumbnail }.ifBlank { null },
+                        durationMs = song.duration * 1000L
+                    )
+                }
+        }
+
+    /**
+     * Duong phat cho mot bai.
+     *
+     * Zing tra ve mot bang chat luong; ban 320 thuong la chuoi "VIP" thay vi
+     * dia chi, nen phai kiem tra la http chu khong chi kiem tra khac rong. Bai
+     * chi danh cho tai khoan tra phi thi tra null - va do la dung, ta khong tim
+     * cach lach.
+     */
+    suspend fun streamUrl(id: String): String? = withContext(Dispatchers.IO) {
+        val data = call<Map<String, String>>(
+            "/api/v2/song/get/streaming",
+            mapOf("id" to id),
+            listOf("id")
+        ) ?: return@withContext null
+        listOf("320", "128").firstNotNullOfOrNull { key ->
+            data[key]?.takeIf { it.startsWith("http") }
         }
     }
 

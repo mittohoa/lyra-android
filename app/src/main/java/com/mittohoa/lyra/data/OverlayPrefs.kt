@@ -15,6 +15,10 @@ import android.graphics.Color
  *   - Khung co che mat thu dang xem khong?
  */
 data class OverlayLook(
+    /**
+     * Chi la con so cuoi cung khi khong biet gi ve may. Duong di binh thuong
+     * la `OverlayPrefs.read()`, va no do man hinh that - xem `suggestFontSizeSp`.
+     */
     val fontSizeSp: Float = 26f,
     val textColor: Int = Color.WHITE,
     val strokeColor: Int = Color.BLACK,
@@ -41,8 +45,14 @@ class OverlayPrefs(context: Context) {
 
     private val prefs = context.getSharedPreferences("overlay", Context.MODE_PRIVATE)
 
+    /**
+     * Co chu hop voi may nay. Do mot lan luc dung `OverlayPrefs`: be ngang nho
+     * nhat cua man hinh khong doi trong doi mot tien trinh.
+     */
+    val suggestedFontSizeSp: Float = suggestFontSizeSp(context)
+
     fun read(): OverlayLook = OverlayLook(
-        fontSizeSp = prefs.getFloat("fontSize", 26f),
+        fontSizeSp = prefs.getFloat("fontSize", suggestedFontSizeSp),
         textColor = prefs.getInt("textColor", Color.WHITE),
         strokeColor = prefs.getInt("strokeColor", Color.BLACK),
         strokeWidthDp = prefs.getFloat("strokeWidth", 2f),
@@ -65,6 +75,21 @@ class OverlayPrefs(context: Context) {
             .putInt("x", look.x)
             .putInt("y", look.y)
             .apply()
+    }
+
+    /**
+     * Nguoi dung co dang bat khung noi khong.
+     *
+     * Phai luu, khong duoc de trong bo nho: tien trinh cua app chi duoc neo boi
+     * `NotificationListenerService`, va Android giet no bat cu luc nao khi may
+     * thieu bo nho - dung luc nguoi dung dang nghe nhac o app khac, tuc dung luc
+     * khung noi can co mat nhat. Giet xong he thong noi lai service, va chi co
+     * cai co nay moi biet co phai dung lai khung hay khong.
+     */
+    fun isEnabled(): Boolean = prefs.getBoolean("enabled", false)
+
+    fun setEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("enabled", enabled).apply()
     }
 
     /** Chi ghi vi tri - goi sau moi lan keo tha, khong dung cham cac muc khac. */

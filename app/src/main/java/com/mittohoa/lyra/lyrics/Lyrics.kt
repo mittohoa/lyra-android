@@ -32,6 +32,9 @@ data class Lyrics(
 ) {
     val isEmpty: Boolean get() = lines.isEmpty()
 
+    /** Toan bo loi dang chu tron, dung khi khong co moc thoi gian. */
+    fun plainText(): String = lines.joinToString(System.lineSeparator()) { it.text }
+
     companion object {
         val NONE = Lyrics()
     }

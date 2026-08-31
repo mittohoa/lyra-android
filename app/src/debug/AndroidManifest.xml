@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Chi gop vao ban go loi. Ban phat hanh khong co gi trong so nay.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+          `exported=true` de goi duoc tu `adb shell am broadcast`: lenh do chay
+          duoi tai khoan shell, tuc mot ung dung khac. Chap nhan duoc vi ca lop
+          nay chi ton tai trong ban go loi.
+        -->
+        <receiver
+            android:name=".player.DebugPlayReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.mittohoa.lyra.DEBUG_PLAY" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

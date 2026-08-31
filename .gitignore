@@ -4,3 +4,8 @@ local.properties
 *.iml
 .idea/
 .DS_Store
+
+# Khoa ky va cau hinh ky - KHONG BAO GIO dua len kho ma nguon
+*.jks
+*.keystore
+keystore.properties
