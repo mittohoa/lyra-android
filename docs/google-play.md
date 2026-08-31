@@ -116,6 +116,134 @@ Lyra không lưu trữ và không phân phối nhạc. Lời bài hát thuộc v
 vị nắm bản quyền.
 ```
 
+### Ghi chú phát hành — tiếng Việt (tối đa 500 ký tự)
+
+Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử nghiệm nội bộ. Bỏ trống
+được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
+
+```
+Bản thử nghiệm đầu tiên của Lyra trên Play.
+
+• Lời bài hát nổi trên màn hình cho nhạc phát ở Spotify, YouTube Music, hay bất kỳ app nào
+• Lời khớp từng dòng, lệch thì chạm vào câu đang hát là tự căn lại
+• Dịch lời sang tiếng Việt ngay trên máy, không cần mạng
+• Trình phát nhạc trong máy, có hàng đợi và danh sách phát
+• Câu đang hát hiện trên thẻ điều khiển ở màn hình khoá
+
+Phần lời cho app khác cần quyền đọc thông báo. Không bật vẫn dùng được như một trình phát nhạc đầy đủ.
+```
+
+### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
+
+```
+First test build of Lyra on Play.
+
+• Floating lyrics over music playing in Spotify, YouTube Music, or any other app
+• Line-by-line sync; tap the line you hear to realign the whole song
+• On-device translation to Vietnamese, works offline
+• Built-in player for music on your phone, with queue and playlists
+• Current line shows on the lock-screen media card
+
+Notification access is required for lyrics over other apps. Without it, Lyra still works as a full music player.
+```
+
+### Bản tiếng Anh của thông tin cửa hàng
+
+Play lấy **một ngôn ngữ mặc định**. Nếu chọn tiếng Việt làm mặc định thì phần
+này là ngôn ngữ thêm; nếu chọn tiếng Anh thì ngược lại. Có cả hai thì app hiện
+đúng tiếng ở mọi thị trường.
+
+Tên app (≤30):
+
+```
+Lyra — Floating Lyrics
+```
+
+Mô tả ngắn (≤80):
+
+```
+Floating lyrics for music in any app. Plus a full music player.
+```
+
+Mô tả đầy đủ (≤4000):
+
+```
+Lyra shows song lyrics floating on your screen, in time with whatever is playing —
+Spotify, YouTube Music, or any other music app. And when you want it to, Lyra is a
+full music player itself.
+
+TWO ROLES, ONE APP
+
+Companion — Music plays in another app; Lyra reads what is playing, finds the
+lyrics, and draws them over your screen. Read along while you scroll.
+
+Player — Lyra plays the music on your phone, with a queue, shuffle, repeat and
+playlists. Here the timing is exact, because Lyra owns the playback clock.
+
+LINE-BY-LINE SYNC
+
+Lyrics come from LRCLIB, an open and free lyrics library. If the timing drifts,
+tap the line you actually hear and Lyra realigns the whole song — no dragging a
+slider around.
+
+ON-DEVICE TRANSLATION
+
+English, Japanese, Korean and Chinese lyrics translate to Vietnamese entirely on
+your phone. No network needed after the first model download, and the text never
+leaves your device.
+
+LYRICS ON THE LOCK SCREEN
+
+The current line appears on the media control card, so you can read without
+opening the app.
+
+QUICK SETTINGS TILE
+
+Add a Lyra tile to Quick Settings to toggle the floating lyrics with one tap.
+
+FREE, NO ACCOUNT, NO ADS
+
+No sign-up, no login, no ads, no behavioural tracking. Open source at
+github.com/mittohoa/lyra-android.
+
+ABOUT NOTIFICATION ACCESS
+
+Android exposes what is playing in other apps through exactly one door:
+notification access. Lyra reads only the song title, artist and playback position,
+and discards everything else — it does not read message contents and sends nothing
+anywhere. You can decline: Lyra still plays your own music and shows lyrics for it,
+you only lose lyrics for other apps.
+
+Lyra does not host or distribute music. Lyrics belong to their authors and rights
+holders.
+```
+
+### Hướng dẫn cho người thử nghiệm nội bộ
+
+Console cho dán một đoạn hướng dẫn kèm lời mời. Người test cài qua Play nên
+không vướng Play Protect, nhưng vẫn cần biết phải bật quyền gì.
+
+```
+Cảm ơn bạn thử Lyra.
+
+Cài xong, mở app rồi làm hai bước:
+
+1. Bật quyền đọc thông báo khi app hỏi — không có nó thì Lyra không biết app khác
+   đang phát bài gì. Lyra chỉ đọc tên bài và vị trí phát, không đọc nội dung
+   thông báo nào.
+2. Bật "hiển thị trên ứng dụng khác" để dựng khung lời nổi.
+
+Rồi mở Spotify hay YouTube Music, phát một bài, và xem lời có hiện lên không.
+
+Đáng thử nhất:
+• Lời lệch nhịp thì chạm vào đúng câu đang nghe — cả bài phải căn lại theo
+• Kéo khung lời nổi sang chỗ khác trên màn hình
+• Bật dịch trong trang Chỉnh với một bài tiếng Anh
+• Khoá máy và xem câu đang hát trên thẻ điều khiển
+
+Báo lỗi hoặc góp ý: mittohoa@gmail.com
+```
+
 ### Phân loại và liên hệ
 
 - Danh mục ứng dụng: **Âm nhạc và âm thanh**
@@ -231,26 +359,59 @@ Kết quả dự kiến: **Mọi lứa tuổi**.
 | `QUERY_ALL_PACKAGES` | Không dùng |
 | `REQUEST_INSTALL_PACKAGES` | **Không có trong bản Play** — chỉ ở bản tải thẳng |
 
+### Quyền truy cập ứng dụng (App access)
+
+Console hỏi có phần nào của app cần đăng nhập mới xem được không.
+
+> **Toàn bộ chức năng đều dùng được mà không cần thông tin đăng nhập đặc biệt.**
+
+Đúng: Lyra không có tài khoản, không có màn hình đăng nhập, không khoá tính năng
+nào sau đăng ký. Người duyệt mở app là dùng được ngay.
+
+### Đối tượng mục tiêu và nội dung
+
+| Câu hỏi | Trả lời |
+|---|---|
+| Nhóm tuổi nhắm tới | **13–15, 16–17, 18 tuổi trở lên**. Không chọn nhóm dưới 13 |
+| App có thu hút trẻ em không | Không |
+| Có quảng cáo hiển thị cho trẻ em không | Không có quảng cáo |
+
+Không chọn nhóm dưới 13 là có chủ đích: chọn vào là app rơi vào chương trình
+*Designed for Families*, kéo theo một bộ yêu cầu riêng nặng hơn hẳn, mà Lyra
+không nhắm tới trẻ em.
+
+### Ngôn ngữ mặc định
+
+Chọn **tiếng Việt** làm ngôn ngữ mặc định rồi thêm tiếng Anh, chứ không ngược
+lại: người dùng đang nhắm tới là người Việt, và mô tả tiếng Việt là bản viết
+kỹ hơn. Bản tiếng Anh ở mục 1 dùng cho phần ngôn ngữ thêm.
+
 ---
 
-## 6. Ảnh chụp màn hình
+## 6. Đồ hoạ — đã dựng xong
 
-Tối thiểu **2 ảnh điện thoại**, nên có 4–8. Cỡ 1080×2340 chụp từ máy thật là đạt.
+Nằm ở thư mục hồ sơ (`scratchpad/play/`), không nằm trong kho mã.
 
-Bộ nên chụp, xếp theo thứ tự kể một câu chuyện:
+| File | Cỡ | Dùng cho |
+|---|---|---|
+| `bieu-tuong-512.png` | 512×512 | Biểu tượng app |
+| `anh-noi-bat-1024x500.png` | 1024×500 | Ảnh nổi bật |
+| `anh-chup/1-khung-loi-noi.png` | 1080×2340 | Khung lời nổi đè lên YouTube Music |
+| `anh-chup/2-trang-loi.png` | 1080×2340 | Trang Lời, dòng đang hát được làm nổi |
+| `anh-chup/3-dang-phat.png` | 1080×2340 | Trang Đang phát, bìa album |
+| `anh-chup/5-chinh.png` | 1080×2340 | Trang Chỉnh |
 
-1. Khung lời nổi đang đè lên một app nhạc khác — ảnh quan trọng nhất, nó nói
-   ngay app này làm gì
-2. Trang Lời, đang chạy khớp nhịp
-3. Trang Đang phát với bìa album và nút điều khiển
-4. Lời kèm bản dịch tiếng Việt bên dưới
-5. Thẻ điều khiển ở màn hình khoá có câu đang hát
-6. Trang Tìm với kết quả nhạc trong máy
+Play cần tối thiểu 2 ảnh điện thoại. Xếp theo thứ tự trên — ảnh khung lời nổi
+đứng đầu vì nó nói ngay app làm gì, và đó là thứ duy nhất phân biệt Lyra với
+một trình phát nhạc thường.
 
-Chụp bằng `adb exec-out screencap -p > ten.png`.
+Biểu tượng cố ý **vuông đầy khung**, không bo góc sẵn: Play tự bo góc và đổ
+bóng, nộp ảnh đã bo thì bốn góc trong suốt hiện ra thành viền răng cưa. Bốn góc
+lấp bằng chuyển sắc lấy từ chính hai đầu đường chéo của biểu tượng, nên không
+thấy đường nối.
 
-Cần thêm: **biểu tượng 512×512** (PNG, không viền bo) và **ảnh nổi bật
-1024×500**.
+**Chưa có:** ảnh thẻ điều khiển ở màn hình khoá có câu đang hát. Nó cần Lyra tự
+phát nhạc, mà máy thử không có bài nhạc thật nào trong thư viện.
 
 ---
 
@@ -262,8 +423,10 @@ Cần thêm: **biểu tượng 512×512** (PNG, không viền bo) và **ảnh n�
 4. Bảng xếp hạng nội dung (mục 4)
 5. Các khai báo khác (mục 5)
 6. Ảnh chụp màn hình, biểu tượng, ảnh nổi bật (mục 6)
-7. Tạo bản phát hành trên kênh **Thử nghiệm nội bộ**, tải `app-play-release.aab`
-8. Thêm email người test, lấy link mời
+7. Tạo bản phát hành trên kênh **Thử nghiệm nội bộ**, tải `app-play-release.aab`,
+   dán **ghi chú phát hành** (mục 1)
+8. Thêm email người test, dán **hướng dẫn cho người thử nghiệm** (mục 1), lấy
+   link mời
 9. Chờ vài giờ, tự cài thử qua link đó trước khi mời người khác
 
 ## 8. Cái đã biết chắc và cái chưa
