@@ -5,6 +5,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.text.TextPaint
+import android.text.TextUtils
 import android.util.TypedValue
 import android.view.View
 import com.mittohoa.lyra.data.OverlayLook
@@ -262,20 +264,20 @@ class OverlayView(context: Context) : View(context) {
     private fun drawRow(canvas: Canvas, text: String, y: Float, bold: Boolean, alpha: Int) {
         paint.isFakeBoldText = bold
         val x = width / 2f
-        fitToWidth(text)
+        val ve = fitToWidth(text)
 
         if (strokeWidthDp > 0f) {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = dp(strokeWidthDp) * 2f
             paint.color = strokeColor
             paint.alpha = if (alpha > 200) 255 else 140
-            canvas.drawText(text, x, y, paint)
+            canvas.drawText(ve, x, y, paint)
         }
 
         paint.style = Paint.Style.FILL
         paint.color = textColor
         paint.alpha = alpha
-        canvas.drawText(text, x, y, paint)
+        canvas.drawText(ve, x, y, paint)
     }
 
     /**
@@ -291,21 +293,36 @@ class OverlayView(context: Context) : View(context) {
      * thu toi mot muc - duoi nua thi doc khong noi, va luc ay thu chu tiep chi
      * la mot cach khac de mat cau do.
      */
-    private fun fitToWidth(text: String) {
+    private fun fitToWidth(text: String): String {
         val available = width - dp(24f)
-        if (available <= 0f) return
+        if (available <= 0f) return text
         val measured = paint.measureText(text)
-        if (measured <= available) return
+        if (measured <= available) return text
 
         val ratio = (available / measured).coerceAtLeast(MIN_SHRINK)
         paint.textSize = paint.textSize * ratio
+
+        // Thu toi day roi van khong vua - lyric tieng Viet dai gap luon. Ve
+        // nguyen van thi hong: `drawText` can giua nen cau bi cat CA HAI DAU,
+        // mat luon chu dau cau, ma dau cau moi la cho de bat nhip. Cat bot duoi
+        // va dat dau ba cham thi giu duoc dau cau va noi ro la con nua.
+        if (paint.measureText(text) <= available) return text
+        return TextUtils
+            .ellipsize(text, TextPaint(paint), available, TextUtils.TruncateAt.END)
+            .toString()
     }
 
     private companion object {
         /** Chu cua hang dich, tinh theo co chu loi. */
         const val TRANSLATION_SCALE = 0.66f
 
-        /** Cau dai may cung khong thu chu nho hon ngan nay lan co da dat. */
-        const val MIN_SHRINK = 0.55f
+        /**
+         * Cau dai may cung khong thu chu nho hon ngan nay lan co da dat.
+         *
+         * Ha tu 0,55 xuong 0,45 sau khi do tren may that: lyric tieng Viet dai
+         * hon lyric tieng Anh dang ke, va o 0,55 thi nhung cau nhu "Cam on nha
+         * vi da luon la noi de khoi hanh nhung chuyen di" van tran ra ngoai.
+         */
+        const val MIN_SHRINK = 0.45f
     }
 }
