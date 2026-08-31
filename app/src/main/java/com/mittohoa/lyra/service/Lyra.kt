@@ -590,7 +590,6 @@ object Lyra {
         if (line == null || line == cardLine) return
 
         cardLine = line
-        cardLine = line
         Playback.showLyricLine(line)
     }
 
@@ -617,15 +616,7 @@ object Lyra {
         scope.launch {
             _now.collect { now ->
                 lyricsRepo.onNowPlaying(now)
-                overlay.update {
-                    setIdleText(
-                        when {
-                            now == null -> "Chưa phát bài nào"
-                            now.artist.isNotEmpty() -> "${now.artist} — ${now.title}"
-                            else -> now.title
-                        }
-                    )
-                }
+                overlay.update { setIdleText(idleText()) }
             }
         }
 
@@ -670,6 +661,27 @@ object Lyra {
         loadLibrary(context)
     }
 
+    /**
+     * Khung noi dang hien hay khong.
+     *
+     * Phai la mot dong chay chu khong phai mot lan doc `overlay.isShowing`:
+     * khung tu tat duoc - giu tay len no la tat - va luc do khong ai goi
+     * `toggleOverlay` ca. Man hinh Chinh doc mot lan roi nho mai thi nut van
+     * ghi "Tat loi noi" trong khi khung da bien mat.
+     */
+    private val _overlayOn = MutableStateFlow(false)
+    val overlayOn: StateFlow<Boolean> = _overlayOn.asStateFlow()
+
+    /** Chu hien tren khung khi chua co loi. */
+    private fun idleText(): String {
+        val n = _now.value
+        return when {
+            n == null -> "Chưa phát bài nào"
+            n.artist.isNotEmpty() -> "${n.artist} — ${n.title}"
+            else -> n.title
+        }
+    }
+
     fun showOverlay(context: Context) {
         wire()
         // Cham vao mot cau tren khung noi = can lai loi theo cau dang nghe.
@@ -680,18 +692,37 @@ object Lyra {
         // cung mot ly do: khung co the bi dung roi dung lai nhieu lan.
         overlay.onDismiss = { hideOverlay() }
         overlay.show(context.applicationContext)
+
+        // Do trang thai hien tai vao khung VUA DUNG XONG.
+        //
+        // Khung moi la mot `OverlayView` moi tinh, khong biet gi. Loi chi toi
+        // duoc no qua cac luong gan trong `wire()`, ma nhung luong ay da phat
+        // gia tri hien tai tu truoc - se khong phat lai chi vi vua co mot khung
+        // moi sinh ra. Thieu doan nay thi bat khung giua bai se thay mot khung
+        // trong ron cho toi khi doi bai, du trang Loi trong app van chay binh
+        // thuong. Da gap that.
+        val loi = lyricsRepo.lyrics.value
+        overlay.update {
+            setIdleText(idleText())
+            setLyrics(loi.lines, loi.offset)
+            setTranslations((translationRepo.state.value as? TranslationState.Done)?.lines.orEmpty())
+            setPosition(livePosition())
+        }
+
         startTick()
 
         // Chi ghi la "dang bat" khi dung duoc that. Thieu quyen ve de len app
         // khac thi `show` lang le khong lam gi, va ghi bua se thanh mot lan thu
         // dung khung vo ich moi lan he thong noi lai service.
         if (overlay.isShowing) prefs(context).setEnabled(true)
+        _overlayOn.value = overlay.isShowing
     }
 
     fun hideOverlay() {
         handler.removeCallbacks(tick)
         overlay.hide()
         overlayPrefs?.setEnabled(false)
+        _overlayOn.value = false
     }
 
     /** Nguoi dung cham vao dong dang hat de can lai ca bai. */

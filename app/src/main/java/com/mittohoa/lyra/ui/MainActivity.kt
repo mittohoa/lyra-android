@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
             val openedPlaylist = playlists.firstOrNull { it.id == openedPlaylistId }
             var searchQuery by remember { mutableStateOf("") }
 
-            var overlayOn by remember { mutableStateOf(Lyra.overlay.isShowing) }
+            val overlayOn by Lyra.overlayOn.collectAsStateWithLifecycle()
             var look by remember { mutableStateOf(Lyra.overlay.currentLook(this)) }
             // Chuoi dang soan; null nghia la khong mo man hinh soan
             var draft by remember { mutableStateOf<String?>(null) }
@@ -134,7 +134,7 @@ class MainActivity : ComponentActivity() {
                         )
                     )
                 },
-                onToggleOverlay = { overlayOn = Lyra.toggleOverlay(this) },
+                onToggleOverlay = { Lyra.toggleOverlay(this) },
                 onSyncToLine = { Lyra.syncToLine(it) },
                 onClearOffset = { Lyra.clearOffset() },
                 onEditLyrics = { draft = Lyra.manualDraft() },
