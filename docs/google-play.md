@@ -397,9 +397,11 @@ Nằm ở thư mục hồ sơ (`scratchpad/play/`), không nằm trong kho mã.
 | `bieu-tuong-512.png` | 512×512 | Biểu tượng app |
 | `anh-noi-bat-1024x500.png` | 1024×500 | Ảnh nổi bật |
 | `anh-chup/1-khung-loi-noi.png` | 1080×2340 | Khung lời nổi đè lên YouTube Music |
-| `anh-chup/2-trang-loi.png` | 1080×2340 | Trang Lời, dòng đang hát được làm nổi |
-| `anh-chup/3-dang-phat.png` | 1080×2340 | Trang Đang phát, bìa album |
+| `anh-chup/7-lyra-tu-phat.png` | 1080×2340 | Lyra tự phát: đủ nút bấm, hàng đợi, màu lấy từ bìa |
+| `anh-chup/2-trang-loi.png` | 1080×2340 | Trang Lời cho nhạc ở app khác |
+| `anh-chup/8-loi-lyra-phat.png` | 1080×2340 | Trang Lời khi Lyra tự phát |
 | `anh-chup/5-chinh.png` | 1080×2340 | Trang Chỉnh |
+| `anh-chup/4-tim-bai.png` | 1080×2340 | Trang Tìm — **nên bỏ**, thư viện quá nghèo |
 
 Play cần tối thiểu 2 ảnh điện thoại. Xếp theo thứ tự trên — ảnh khung lời nổi
 đứng đầu vì nó nói ngay app làm gì, và đó là thứ duy nhất phân biệt Lyra với
@@ -410,8 +412,10 @@ bóng, nộp ảnh đã bo thì bốn góc trong suốt hiện ra thành viền 
 lấp bằng chuyển sắc lấy từ chính hai đầu đường chéo của biểu tượng, nên không
 thấy đường nối.
 
-**Chưa có:** ảnh thẻ điều khiển ở màn hình khoá có câu đang hát. Nó cần Lyra tự
-phát nhạc, mà máy thử không có bài nhạc thật nào trong thư viện.
+**Đã bỏ:** ảnh thẻ điều khiển ở màn hình khoá. Chụp ra thì dính ảnh nền cá nhân
+của chủ máy. Tính năng vẫn chạy — `dumpsys media_session` cho thấy Lyra đẩy đúng
+câu đang hát lên thẻ (`description=Rền vang non sông sáng ngời`) — chỉ là không
+chụp được một ảnh dùng cho cửa hàng. Muốn có thì phải đổi hình nền máy trước.
 
 ---
 
