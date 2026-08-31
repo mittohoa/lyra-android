@@ -120,8 +120,9 @@ vị nắm bản quyền.
 
 - Danh mục ứng dụng: **Âm nhạc và âm thanh**
 - Thẻ: lời bài hát, trình phát nhạc, khung nổi
-- Email liên hệ **[quyết định]** — Play hiển thị công khai địa chỉ này, nên lập
-  một hộp thư riêng cho app chứ đừng dùng hộp thư cá nhân hay của trường
+- Email liên hệ: `mittohoa@gmail.com` — Play hiển thị công khai địa chỉ này.
+  Nó trùng tên với tài khoản GitHub đang phát hành nên nhất quán; đổi lại là
+  hộp thư này sẽ nhận thư từ người lạ và không tách được khỏi thư cá nhân
 - Chính sách quyền riêng tư:
   `https://mittohoa.github.io/lyra-player/quyen-rieng-tu.html`
 - Trang web: `https://mittohoa.github.io/lyra-player/`
