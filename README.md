@@ -119,8 +119,11 @@ Ba chỗ dễ sai, đều đã tránh:
 
 Auto Blocker chặn **mọi** đường cài không đi qua Galaxy Store hay Play Store, kể
 cả `PackageInstaller` do chính app gọi, nên trên máy bật nó thì cơ chế trên
-không chạy. Không lách được từ phía mã nguồn. Người dùng tắt Auto Blocker thì
-cài được; cách dứt điểm là phát hành qua Play.
+không chạy — người dùng phải tắt nó, hoặc cài bằng `adb install`.
+
+Đó là một trong **hai** lớp chặn, và lớp còn lại mới là lớp hay bị nhầm là lỗi
+app. Xem [Vì sao máy cảnh báo "truy cập dữ liệu nhạy
+cảm"](#vì-sao-máy-cảnh-báo-truy-cập-dữ-liệu-nhạy-cảm).
 
 ---
 
@@ -191,6 +194,40 @@ Hai quyền đầu và quyền cài đặt không xin được bằng hộp tho�
 mở đúng trang cài đặt rồi chờ người dùng tự bật. Từ Android 8, quyền cài đặt
 được cấp **theo từng app** chứ không còn là một công tắc chung của máy, nên Lyra
 đưa thẳng người dùng tới trang của riêng nó.
+
+Đó là toàn bộ danh sách. Đối chiếu được bằng
+`aapt2 dump permissions <file.apk>`. Không có `QUERY_ALL_PACKAGES`, không danh
+bạ, tin nhắn, vị trí, camera, micro, và không có dịch vụ trợ năng —
+`READ_EXTERNAL_STORAGE` có mặt nhưng chặn ở `maxSdkVersion=32`, tức chết hẳn từ
+Android 13 trở lên; nó chỉ để đọc nhạc trên máy đời cũ.
+
+### Vì sao máy cảnh báo "truy cập dữ liệu nhạy cảm"
+
+Thứ kích hoạt cảnh báo **không nằm trong danh sách quyền**. Nó là một khai báo
+dịch vụ:
+
+```xml
+<service android:name="…LyraNotificationListener"
+         android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+    <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+```
+
+Android 13+ và các lớp bảo vệ của hãng soi đúng dòng này. **Và chúng nói đúng.**
+`NotificationListenerService` không đọc riêng thông báo nhạc — nó mở ra *mọi*
+thông báo trên máy, kể cả tin nhắn ngân hàng và mã OTP. Hệ thống không có cách
+nào biết app định làm gì với nó, nên cảnh báo cho tất cả.
+
+Lyra chỉ lấy tên bài, tên ca sĩ và vị trí phát rồi bỏ hết phần còn lại; không có
+nội dung thông báo nào rời khỏi máy. Nhưng đó là lời của người viết app — thứ
+kiểm chứng được là mã nguồn này và danh sách quyền ở trên.
+
+Không có gì để cắt cho nhẹ đi. Bỏ `REQUEST_INSTALL_PACKAGES` cũng không hết cảnh
+báo vì sai thủ phạm; bỏ dịch vụ đọc thông báo thì app không còn lý do tồn tại.
+Nên cách duy nhất là đổi **kênh cài**, không phải đổi mã: `adb install` (đi qua
+cơ chế cài theo phiên nên né được lớp *restricted settings* của Android 13+),
+hoặc tắt Auto Blocker rồi dùng *Cho phép cài đặt bị hạn chế*, hoặc phát hành qua
+Play.
 
 ---
 
