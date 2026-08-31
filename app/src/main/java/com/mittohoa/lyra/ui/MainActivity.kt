@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
             val playlists by Lyra.playlists.collectAsStateWithLifecycle()
             val downloads by Lyra.downloads.collectAsStateWithLifecycle()
             val banMoi by Lyra.banMoi.collectAsStateWithLifecycle()
-            val tienDoCapNhat by Lyra.tienDoCapNhat.collectAsStateWithLifecycle()
+            val capNhat by Lyra.capNhat.collectAsStateWithLifecycle()
 
             // Hoi mot lan moi lan mo app; `Lyra` tu chan cac lan goi thua
             LaunchedEffect(Unit) { Lyra.kiemBanMoi(BuildConfig.VERSION_NAME) }
@@ -187,10 +187,17 @@ class MainActivity : ComponentActivity() {
                 downloads = downloads,
                 onDownload = { Lyra.downloadTrack(this, it) },
                 banMoi = banMoi?.phienBan,
-                tienDoCapNhat = tienDoCapNhat,
+                capNhat = capNhat,
                 tuCaiDuoc = Lyra.tuCaiDuoc,
                 onCapNhat = {
-                    if (Lyra.tuCaiDuoc) {
+                    // Bao hong roi thi nut doi nghia: mo trang phat hanh de nguoi
+                    // dung cai tay, vi thu tu dong vua that bai.
+                    if (capNhat is Lyra.TrangThaiCapNhat.Hong) {
+                        Lyra.quenLoiCapNhat()
+                        banMoi?.let {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.trang)))
+                        }
+                    } else if (Lyra.tuCaiDuoc) {
                         Lyra.taiVaCaiBanMoi(this)
                     } else {
                         banMoi?.let {

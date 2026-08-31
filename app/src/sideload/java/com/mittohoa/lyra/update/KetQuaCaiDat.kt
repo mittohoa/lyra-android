@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.util.Log
+import com.mittohoa.lyra.service.Lyra
 
 /**
  * Nhan ket qua tu phien cai dat.
@@ -25,14 +26,44 @@ class KetQuaCaiDat : BroadcastReceiver() {
                 runCatching { context.startActivity(hopThoai) }
             }
 
-            PackageInstaller.STATUS_SUCCESS ->
+            PackageInstaller.STATUS_SUCCESS -> {
                 Log.i(TAG, "Da cai xong ban moi")
+                Lyra.ketQuaCaiDat(thanhCong = true, vi = null)
+            }
 
             else -> {
                 val vi = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
                 Log.w(TAG, "Cai khong xong: $vi")
+                // Phai noi ra man hinh, khong chi ghi nhat ky. Nguoi dung vua bam
+                // mot nut va cho hang chuc giay; im lang o day la cach chac chan
+                // nhat de ho tuong app hong.
+                Lyra.ketQuaCaiDat(thanhCong = false, vi = viTiengViet(vi))
             }
         }
+    }
+
+    /**
+     * Doi loi cua he thong sang cau nguoi dung lam duoc gi do voi no.
+     *
+     * "INSTALL_FAILED_ABORTED: Self update is blocked by unknown source package"
+     * la that - da gap tren may that - nhung noi nguyen van thi khong ai biet
+     * phai lam gi tiep. Khong nhan ra thi giu nguyen chu goc con hon bia mot cau
+     * chung chung: it ra nguoi dung con tra cuu duoc.
+     */
+    private fun viTiengViet(goc: String?): String = when {
+        goc == null -> "Hệ thống từ chối cài bản mới"
+        goc.contains("Self update is blocked") ->
+            "Android không cho Lyra tự cài đè bản này. Tải APK trên trang phát " +
+                "hành rồi cài tay một lần là xong."
+        goc.contains("INSTALL_FAILED_VERSION_DOWNGRADE") ->
+            "Bản trên máy đã mới hơn bản vừa tải"
+        goc.contains("INSTALL_FAILED_INSUFFICIENT_STORAGE") ->
+            "Máy hết dung lượng"
+        goc.contains("INSTALL_FAILED_UPDATE_INCOMPATIBLE") ||
+            goc.contains("signatures do not match") ->
+            "Bản mới ký bằng khoá khác. Gỡ bản cũ rồi cài lại."
+        goc.contains("ABORTED") -> "Bạn hoặc hệ thống đã huỷ việc cài"
+        else -> goc
     }
 
     private companion object {

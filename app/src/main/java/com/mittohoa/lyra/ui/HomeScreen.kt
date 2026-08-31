@@ -52,6 +52,7 @@ import com.mittohoa.lyra.data.TranslateSettings
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.media.NowPlaying
+import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.sources.Track
 import com.mittohoa.lyra.translate.READING_LANGUAGES
 import com.mittohoa.lyra.translate.TranslationState
@@ -141,7 +142,7 @@ fun HomeScreen(
     downloads: Map<String, com.mittohoa.lyra.service.Lyra.Downloading>,
     onDownload: (Track) -> Unit,
     banMoi: String?,
-    tienDoCapNhat: Int?,
+    capNhat: Lyra.TrangThaiCapNhat?,
     tuCaiDuoc: Boolean,
     onCapNhat: () -> Unit
 ) {
@@ -201,13 +202,23 @@ fun HomeScreen(
                 Box(Modifier.padding(start = 22.dp, end = 22.dp, top = 12.dp)) {
                     Notice(
                         accent = accent,
-                        text = when {
-                            tienDoCapNhat == null -> "Có bản $banMoi"
-                            tienDoCapNhat < 0 -> "Đang tải bản mới…"
-                            else -> "Đang tải bản mới… $tienDoCapNhat%"
+                        text = when (capNhat) {
+                            null -> "Có bản $banMoi"
+                            is Lyra.TrangThaiCapNhat.DangTai ->
+                                if (capNhat.phanTram < 0) "Đang tải bản mới…"
+                                else "Đang tải bản mới… ${capNhat.phanTram}%"
+                            // Đoạn này lâu hàng chục giây vì Play Protect gửi cả
+                            // file lên Google quét. Không nói ra thì người dùng
+                            // nhìn thanh 100% đứng im và kết luận là treo.
+                            Lyra.TrangThaiCapNhat.ChoHeThong ->
+                                "Đang chờ hệ thống kiểm tra và cài…"
+                            is Lyra.TrangThaiCapNhat.Hong -> capNhat.vi
                         },
-                        action = if (tienDoCapNhat != null) null
-                            else if (tuCaiDuoc) "Cập nhật" else "Xem",
+                        action = when (capNhat) {
+                            null -> if (tuCaiDuoc) "Cập nhật" else "Xem"
+                            is Lyra.TrangThaiCapNhat.Hong -> "Mở trang tải"
+                            else -> null
+                        },
                         onAction = onCapNhat
                     )
                 }

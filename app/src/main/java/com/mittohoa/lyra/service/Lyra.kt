@@ -234,9 +234,24 @@ object Lyra {
         scope.launch { _banMoi.value = UpdateChecker.kiem(phienBanDangChay) }
     }
 
-    /** Tien trinh tai ban moi: 0..100, -1 khi khong biet do dai, null khi khong tai. */
-    private val _tienDoCapNhat = MutableStateFlow<Int?>(null)
-    val tienDoCapNhat: StateFlow<Int?> = _tienDoCapNhat.asStateFlow()
+    /**
+     * Cai dang xay ra voi viec cap nhat.
+     *
+     * Phai co mot pha CHO_HE_THONG rieng. Tai xong byte moi la het viec cua
+     * Lyra, chua het viec cua may: he thong con chuan bi, va Play Protect con
+     * chan lai de GUI CA FILE 20 MB LEN GOOGLE QUET - doan lau nhat trong ca
+     * chuoi. Van hien "dang tai 100%" suot doan do thi nguoi dung nhin mot thanh
+     * day dung im hang chuc giay, roi ket luan dung theo nhung gi ho thay: treo.
+     */
+    sealed interface TrangThaiCapNhat {
+        /** `phanTram` la -1 khi may chu khong noi truoc do dai. */
+        data class DangTai(val phanTram: Int) : TrangThaiCapNhat
+        data object ChoHeThong : TrangThaiCapNhat
+        data class Hong(val vi: String) : TrangThaiCapNhat
+    }
+
+    private val _capNhat = MutableStateFlow<TrangThaiCapNhat?>(null)
+    val capNhat: StateFlow<TrangThaiCapNhat?> = _capNhat.asStateFlow()
 
     /** Ban dung nay tu tai va cai ban moi duoc khong. */
     val tuCaiDuoc: Boolean get() = ApkInstaller.SUPPORTED
@@ -246,6 +261,26 @@ object Lyra {
     fun moTrangCapQuyenCai(context: Context) = ApkInstaller.moTrangCapQuyen(context)
 
     /**
+     * He thong bao ket qua ve day, qua `KetQuaCaiDat`.
+     *
+     * `session.commit` tra ve ngay, con ket qua that toi sau vai chuc giay bang
+     * mot ban tin rieng. Truoc day ket qua do chi di vao nhat ky - nen khi
+     * Android tu choi (da gap that: "Self update is blocked by unknown source
+     * package") thi nguoi dung bam nut xong ngoi nhin mot man hinh khong doi gi,
+     * va khong co cach nao biet chuyen gi da xay ra.
+     */
+    fun ketQuaCaiDat(thanhCong: Boolean, vi: String?) {
+        _capNhat.value =
+            if (thanhCong) null
+            else TrangThaiCapNhat.Hong(vi ?: "Hệ thống từ chối cài bản mới")
+    }
+
+    /** Nguoi dung da doc bao loi. */
+    fun quenLoiCapNhat() {
+        if (_capNhat.value is TrangThaiCapNhat.Hong) _capNhat.value = null
+    }
+
+    /**
      * Tai ban moi ve roi giao cho he thong cai.
      *
      * Chua duoc cap quyen cai dat thi mo thang trang cai dat de nguoi dung bat -
@@ -253,7 +288,8 @@ object Lyra {
      */
     fun taiVaCaiBanMoi(context: Context) {
         val ban = _banMoi.value ?: return
-        if (_tienDoCapNhat.value != null) return
+        val dang = _capNhat.value
+        if (dang is TrangThaiCapNhat.DangTai || dang is TrangThaiCapNhat.ChoHeThong) return
 
         if (!ApkInstaller.duocPhepCai(context)) {
             ApkInstaller.moTrangCapQuyen(context)
@@ -261,12 +297,16 @@ object Lyra {
         }
 
         val app = context.applicationContext
-        _tienDoCapNhat.value = 0
+        _capNhat.value = TrangThaiCapNhat.DangTai(0)
         scope.launch {
             val loi = ApkInstaller.taiVaCai(app, ban.duongTai) { phanTram ->
-                _tienDoCapNhat.value = phanTram
+                _capNhat.value = TrangThaiCapNhat.DangTai(phanTram)
             }
-            _tienDoCapNhat.value = null
+            // Giao xong cho he thong thi CHUA xong: hop thoai xac nhan con chua
+            // hien. Giu pha cho cho toi khi `ketQuaCaiDat` bao ve.
+            _capNhat.value =
+                if (loi == null) TrangThaiCapNhat.ChoHeThong
+                else TrangThaiCapNhat.Hong(loi)
             if (loi != null) Log.w(TAG, "Cap nhat that bai: $loi")
         }
     }
