@@ -1,8 +1,24 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
+}
+
+/**
+ * Cau hinh ky, doc tu mot file NGOAI kho ma nguon.
+ *
+ * Khong co file thi ban phat hanh van dung duoc, chi la khong duoc ky - dung
+ * de nguoi khac clone ve van build duoc. Doi lai ho phai tu tao khoa cua minh,
+ * va do la dung: khoa ky la danh tinh cua nguoi phat hanh, khong phai cua ma
+ * nguon.
+ */
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) FileInputStream(file).use { load(it) }
 }
 
 android {
@@ -48,8 +64,21 @@ android {
         }
     }
 
+    signingConfigs {
+        create("phathanh") {
+            val path = keystoreProperties.getProperty("storeFile")
+            if (path != null && file(path).exists()) {
+                storeFile = file(path)
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("phathanh")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
