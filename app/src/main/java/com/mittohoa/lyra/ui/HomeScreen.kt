@@ -35,6 +35,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -60,6 +61,7 @@ import com.mittohoa.lyra.translate.languageName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 /**
@@ -495,15 +497,42 @@ private fun LyricsPane(
         ) {
             itemsIndexed(lyrics.lines, key = { i, _ -> i }) { i, line ->
                 val isActive = trustTiming && i == active
+
+                // Xa dong dang hat bao nhieu dong. Dung de do MOT CAI DOC thay
+                // vi mot cong tac bat/tat: dong ke ben con doc duoc, dong xa
+                // hon lui dan ve nen. Mat nguoi bam duoc cho dang hat ma khong
+                // phai doc chu, va van thay truoc cau sap toi.
+                //
+                // Cat o 4: xa hon nua thi mat da khong phan biet duoc nua, ma
+                // moi bac them la mot lop ve nua phai tinh.
+                val xa = if (trustTiming && active >= 0) (i - active).absoluteValue.coerceAtMost(4) else 0
+
                 val scale by animateFloatAsState(
-                    if (isActive) 1f else 0.92f, tween(280), label = "s$i"
+                    if (!trustTiming) 1f else 1f - 0.045f * xa,
+                    tween(280), label = "s$i"
                 )
                 // Moc dang ngo thi moi dong deu ro nhu nhau - khong co dong nao
                 // duoc quyen sang hon, vi ta khong biet dong nao dung
                 val alpha by animateFloatAsState(
-                    if (isActive) 1f else if (trustTiming) 0.34f else 0.72f,
-                    tween(280),
-                    label = "a$i"
+                    if (!trustTiming) 0.72f else when (xa) {
+                        0 -> 1f
+                        1 -> 0.52f
+                        2 -> 0.34f
+                        3 -> 0.24f
+                        else -> 0.18f
+                    },
+                    tween(280), label = "a$i"
+                )
+                // Nhoe chi cho nhung dong DA MO SAN - no lam sau them mot lop
+                // da co, khong tu minh giau chu nao. Bat dau tu bac 2 de dong
+                // ke ben van doc duoc ro.
+                //
+                // `Modifier.blur` can Android 12; may cu hon thi no lang le
+                // khong lam gi, va bo cuc van dung y het. Do la kieu xuong cap
+                // dung: mat mot lop trang tri, khong mat mot chuc nang nao.
+                val nhoe by animateFloatAsState(
+                    if (!trustTiming || xa < 2) 0f else 0.7f * (xa - 1),
+                    tween(280), label = "b$i"
                 )
 
                 Column(
@@ -511,6 +540,7 @@ private fun LyricsPane(
                         // Cham vao cau dang hat de can lai ca bai - mot cu cham
                         // thay cho hang chuc lan bam +/- nua giay
                         .clickable { onSyncToLine(i) }
+                        .then(if (nhoe > 0.05f) Modifier.blur(nhoe.dp) else Modifier)
                         .graphicsLayer {
                             // Doi trong `graphicsLayer` bang lambda: chi cap nhat
                             // mot lop ve, khong dung lai cay giao dien
