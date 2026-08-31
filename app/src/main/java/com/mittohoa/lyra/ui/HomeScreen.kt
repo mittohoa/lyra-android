@@ -745,19 +745,24 @@ private fun TunePane(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 26.dp, vertical = 30.dp)
     ) {
+        // Thieu quyen ve de thi CHI phan khung noi mat, khong phai ca trang.
+        //
+        // Truoc day cho nay `return@Column` - va keo theo ca phan dich lan phan
+        // hieu ung chu xuong ho, du hai thu do khong lien quan gi toi viec ve
+        // de len app khac. Nguoi tu choi mot quyen thi mat dung thu gan voi
+        // quyen do, khong mat nhung thu khac.
         if (!canDrawOverlay) {
-            Spacer(Modifier.height(120.dp))
             Ask(
                 title = "Cần quyền vẽ đè lên app khác",
                 body = "Không có quyền này thì lời không hiện được khi bạn đang ở trong " +
-                    "Spotify hay YouTube.",
+                    "Spotify hay YouTube. Các phần khác bên dưới vẫn dùng được.",
                 action = "Mở Cài đặt để bật",
                 accent = accent,
                 onAction = onOpenOverlaySettings
             )
-            return@Column
         }
 
+        if (canDrawOverlay) {
         Text(
             if (overlayOn) "Lời đang nổi trên màn hình" else "Lời nổi đang tắt",
             color = Color.White,
@@ -841,6 +846,8 @@ private fun TunePane(
             accent = accent,
             onChange = { onLookChange(look.copy(clickThrough = it)) }
         )
+
+        } // het phan chi lien quan toi khung noi
 
         Spacer(Modifier.height(30.dp))
         Text(
@@ -955,6 +962,9 @@ private fun TunePane(
             lineHeight = 19.sp
         )
 
+        // Tat nhanh va o Cai dat nhanh deu la cach bat/tat KHUNG NOI,
+        // nen chung di theo quyen ve de.
+        if (canDrawOverlay) {
         Spacer(Modifier.height(30.dp))
         Text(
             "Tắt nhanh",
@@ -996,6 +1006,7 @@ private fun TunePane(
             lineHeight = 18.sp
         )
         Spacer(Modifier.height(20.dp))
+        }
     }
 }
 
