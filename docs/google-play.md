@@ -419,6 +419,38 @@ chụp được một ảnh dùng cho cửa hàng. Muốn có thì phải đổi
 
 ---
 
+## 6b. Cảnh báo "chưa tải biểu tượng gỡ lỗi" — không gỡ được
+
+Sau khi tải bản gộp lên, Play sẽ nhắc:
+
+> App Bundle này chứa mã gốc và bạn chưa tải biểu tượng gỡ lỗi lên.
+
+Đây là **cảnh báo, không phải lỗi** — nộp và phát hành bình thường. Nhưng nó
+không im được, và đây là lý do:
+
+Lyra không viết dòng mã máy nào. Bốn thư viện `.so` trong bản nộp đều là nhị
+phân dựng sẵn của ML Kit và AndroidX:
+
+```
+libtranslate_jni.so              liblanguage_id_l2c_jni.so
+libdatastore_shared_counter.so   libandroidx.graphics.path.so
+```
+
+Đã đọc bảng section của ELF trong cả bốn: **không file nào còn `.symtab` hay
+`.debug_*`** — chúng đã lột sạch. Không có ký hiệu thì không có gì để đóng gói,
+và Google không phát hành ký hiệu gỡ lỗi cho những thư viện này.
+
+`build.gradle.kts` vẫn đặt `debugSymbolLevel = "SYMBOL_TABLE"`. Hôm nay dòng đó
+không sinh ra gì — kiểm được bằng cách mở bản gộp, trong `BUNDLE-METADATA/`
+không có mục `nativesymbols`. Giữ lại để ngày nào Lyra tự viết mã máy thì ký
+hiệu tự được gói mà không ai phải nhớ ra.
+
+**Hệ quả thật:** app sập bên trong mã của ML Kit thì báo cáo sự cố chỉ có địa
+chỉ số, không đọc ra tên hàm. Sập trong mã Kotlin của Lyra thì vẫn đọc được
+bình thường, nhờ `proguard.map` mà Play tự nhận từ bản gộp.
+
+---
+
 ## 7. Thứ tự làm
 
 1. Tạo app trong Console — **nhớ chọn tải khoá của mình lên** ở bước ký

@@ -87,6 +87,24 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            // Play canh bao "ban gop chua ma goc va ban chua tai bieu tuong go
+            // loi len". Dong nay la cau tra loi dung cho canh bao do - nhung
+            // HOM NAY NO KHONG SINH RA GI, va da do de biet chac.
+            //
+            // Lyra khong viet dong ma mach may nao. Bon thu vien .so trong ban
+            // nop deu la nhi phan dung san cua ML Kit va AndroidX, va ca bon
+            // deu da lot sach: doc bang section cua ELF khong thay .symtab,
+            // khong thay .debug_*. Khong co ky hieu thi khong co gi de dong
+            // goi, va Google khong phat hanh ky hieu go loi cho cac thu vien
+            // do. Canh bao cua Play vi vay khong go duoc tu phia minh.
+            //
+            // Van giu dong nay: ngay nao Lyra tu viet ma mach may, hoac mot
+            // thu vien nao do ship ban chua lot, ky hieu se duoc dong goi ma
+            // khong ai phai nho ra viec nay nua.
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
         }
         debug {
             applicationIdSuffix = ".debug"
