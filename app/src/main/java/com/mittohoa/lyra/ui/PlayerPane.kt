@@ -92,12 +92,18 @@ fun PlayerPane(
     onSaveQueue: (String) -> Unit
 ) {
     var naming by remember { mutableStateOf(false) }
-    if (!hasNotificationAccess) {
+    // Hỏi quyền khi VÀ CHỈ KHI màn hình này thật sự trống. Lyra không cần quyền
+    // nào để biết bài của chính nó đang phát, nên chặn cả trang khi thiếu quyền
+    // là tự cắt mất bộ phát, phần tìm bài và phần lời của chính mình — đúng thứ
+    // vẫn chạy được. Người từ chối quyền vẫn còn nguyên một app dùng được.
+    if (!hasNotificationAccess && now == null) {
         Box(Modifier.fillMaxSize().padding(horizontal = 26.dp), Alignment.Center) {
             Ask(
-                title = "Cần quyền đọc thông báo",
-                body = "Android chỉ cho đọc thông tin bài đang phát ở app khác khi bạn đã bật " +
-                    "quyền này. Lyra không đọc nội dung thông báo — chỉ đọc tên bài và vị trí phát.",
+                title = "Cho Lyra đọc lời cho app nhạc khác",
+                body = "Bật quyền đọc thông báo thì Lyra hiện lời cho nhạc phát ở Spotify, " +
+                    "Zing, YouTube Music… Lyra không đọc nội dung thông báo — chỉ đọc tên bài " +
+                    "và vị trí phát.\n\nKhông bật cũng được: vuốt sang trái để tìm bài " +
+                    "và phát ngay trong Lyra.",
                 action = "Mở Cài đặt để bật",
                 accent = accent,
                 onAction = onOpenNotificationSettings

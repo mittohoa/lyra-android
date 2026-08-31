@@ -24,6 +24,13 @@ màn hình khoá.
 Hai vai gặp nhau ở đúng một chỗ trong mã. Mọi thứ phía sau — tìm lời, dịch,
 khung nổi — không biết nhạc đang đến từ đâu.
 
+**Chỉ vai đầu cần quyền đọc thông báo.** Vai thứ hai chạy trọn vẹn mà không cần
+quyền nào đáng kể: tìm bài, phát, hàng đợi, lời khớp giờ, dịch tại chỗ. Đó không
+phải chuyện nhỏ — nó có nghĩa là người từ chối quyền, hay cửa hàng nào từ chối
+quyền, vẫn còn nguyên một app dùng được thay vì một màn hình xin quyền. Đã đo
+trên máy thật: gói thử không nằm trong `enabled_notification_listeners` vẫn tìm
+được bài trên Zing, phát, và kéo lời khớp giờ từ LRCLIB.
+
 ---
 
 ## Đang có gì
@@ -184,7 +191,7 @@ cả bài, không phải rời app nhạc.
 
 | Quyền | Để làm gì | Bỏ qua được? |
 |---|---|---|
-| Đọc thông báo | Điều kiện của Android để biết app nào đang phát bài gì. Lyra **không** đọc nội dung thông báo | Không — thiếu là mất tính năng chính |
+| Đọc thông báo | Điều kiện của Android để biết app nào đang phát bài gì. Lyra **không** đọc nội dung thông báo | Được — thiếu thì mất vai thứ nhất, vai thứ hai còn nguyên |
 | Vẽ đè lên app khác | Dựng khung lời nổi | Được |
 | Đọc nhạc trong máy | Thư viện nhạc. Xin đúng quyền **nhạc**, không đụng ảnh/video/tài liệu | Được |
 | Thông báo | Thẻ điều khiển nhạc | Được |
