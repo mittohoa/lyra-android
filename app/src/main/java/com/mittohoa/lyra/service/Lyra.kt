@@ -229,6 +229,11 @@ object Lyra {
      * hinh chinh la mot lan goi mang khong ai yeu cau.
      */
     fun kiemBanMoi(phienBanDangChay: String) {
+        // Ban Play khong hoi gi ca. Play tu lo viec cap nhat, va mot app tren
+        // Play ma tu di hoi noi khac roi moi nguoi dung sang do tai la dung vao
+        // chinh sach ve phat hanh ngoai cua hang. Chan o day thi R8 cung thay
+        // `UpdateChecker` khong ai goi va bo han no khoi ban dung.
+        if (!ApkInstaller.SUPPORTED) return
         if (daKiemBanMoi) return
         daKiemBanMoi = true
         scope.launch { _banMoi.value = UpdateChecker.kiem(phienBanDangChay) }
