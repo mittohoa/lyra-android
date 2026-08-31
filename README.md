@@ -55,14 +55,32 @@ trên máy thật: gói thử không nằm trong `enabled_notification_listeners
 
 | | `sideload` | `play` |
 |---|---|---|
-| Tải nhạc | có | **không có** |
+| Tìm và phát nhạc Zing MP3 / NhacCuaTui | có | **không có** |
+| Tải nhạc về máy | có | **không có** |
+| Tra lời ở Zing / NhacCuaTui | có | **không có** |
 | Tự tải và cài bản mới | có | không (Play tự lo) |
-| Mọi thứ khác | đầy đủ | đầy đủ |
+| Nhạc trong máy, lời LRCLIB, dịch, khung lời nổi, thẻ màn hình khoá | đầy đủ | đầy đủ |
 
-Chính sách Google Play cấm app cho tải nội dung từ dịch vụ phát trực tuyến, nên
-bản lên Play không mang phần đó. Tách bằng **bộ mã nguồn** (`src/sideload/`,
-`src/play/`) chứ không bằng một cờ bật/tắt lúc chạy: một cái cờ vẫn để lại toàn
-bộ mã trong file cài đặt, và người duyệt Play mở file ra xem thì thấy.
+Hai API của Zing và NhacCuaTui là API nội bộ, không ai cấp phép cho Lyra dùng,
+và thứ chúng trả về là cả một kho nhạc thương mại. Phát kho đó qua một app trên
+Play là chuyện bị gỡ — gỡ kèm cả tài khoản nhà phát triển, chứ không chỉ rớt một
+lần nộp. Nên bản Play không mang chúng, kể cả phần tra lời vốn rủi ro thấp hơn
+hẳn: một bản dựng *không mang dòng nào* là điều nói được bằng một câu kiểm chứng
+được, khác hẳn "có mang nhưng không gọi tới". Giá phải trả là độ phủ lời bài Việt
+giảm, vì LRCLIB yếu hơn Zing ở mảng đó.
+
+Tách bằng **bộ mã nguồn** (`src/sideload/`, `src/play/`) chứ không bằng một cờ
+bật/tắt lúc chạy: một cái cờ vẫn để lại toàn bộ mã trong file cài đặt, và người
+duyệt Play mở file ra xem thì thấy. Đường ranh nằm ở `sources/NguonNgoai.kt` —
+mỗi biến thể một bản.
+
+Kiểm chứng được, và đã kiểm trên bản **gỡ lỗi** để R8 không phải là lời giải
+thích cho việc thiếu mã:
+
+```
+$ unzip -p app-play-arm64-v8a-debug.apk classes*.dex | grep -c zingmp3.vn
+0
+```
 
 ```bash
 ./gradlew assembleSideloadDebug     # cài tay, có tải nhạc

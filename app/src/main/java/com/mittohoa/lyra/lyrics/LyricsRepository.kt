@@ -6,8 +6,7 @@ import com.mittohoa.lyra.data.ManualLyricStore
 import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.media.NowPlaying
 import com.mittohoa.lyra.sources.LrclibClient
-import com.mittohoa.lyra.sources.NctClient
-import com.mittohoa.lyra.sources.ZingClient
+import com.mittohoa.lyra.sources.NguonNgoai
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -286,11 +285,10 @@ class LyricsRepository(
          * Thu tu chi con y nghia khi nhieu nguon cung tra ve ban co moc: luc do
          * ban dau danh sach thang. LRCLIB dat truoc vi no co ca nhac quoc te.
          */
-        val SOURCES: List<Pair<String, suspend (String, String, Long) -> Lyrics?>> = listOf(
-            "lrclib" to LrclibClient::fetch,
-            "zing" to ZingClient::fetch,
-            "nct" to NctClient::fetch
-        )
+        val SOURCES: List<Pair<String, suspend (String, String, Long) -> Lyrics?>> =
+            listOf<Pair<String, suspend (String, String, Long) -> Lyrics?>>(
+                "lrclib" to LrclibClient::fetch
+            ) + NguonNgoai.NGUON_LOI
 
         /** Duoi nguong nay coi nhu tra nham bai. */
         const val MIN_SIMILARITY = 0.6

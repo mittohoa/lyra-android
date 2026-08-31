@@ -3,11 +3,6 @@ package com.mittohoa.lyra.sources
 import android.net.Uri
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-import android.util.Log
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 
 /** Nguon nhac Lyra tim va phat duoc. */
 @Serializable
@@ -73,16 +68,6 @@ data class Track(
 object Catalog {
 
     /**
-     * Tim o CA HAI nguon cung luc roi tron ket qua.
-     *
-     * Hoi lan luot thi thoi gian cho la tong cua hai lan goi. Hoi song song thi
-     * bang lan cham hon - va voi mot o tim kiem thi moi phan tram giay deu thay
-     * duoc.
-     *
-     * Tron kieu cai rang lua chu khong noi duoi: mot nguon tra ve nhieu ket qua
-     * rac ma xep truoc thi day het ket qua tot cua nguon kia xuong duoi man hinh.
-     */
-    /**
      * Nhac trong may, doc mot lan roi giu lai.
      *
      * Gan tu ben ngoai (`Lyra`) chu khong tu doc: lop nay khong giu `Context`,
@@ -91,6 +76,12 @@ object Catalog {
     @Volatile
     var library: List<Track> = emptyList()
 
+    /**
+     * Tim o may VA o moi nguon online cung luc, roi tron ket qua.
+     *
+     * Tron kieu cai rang lua chu khong noi duoi: mot nguon tra ve nhieu ket qua
+     * rac ma xep truoc thi day het ket qua tot cua nguon kia xuong duoi man hinh.
+     */
     suspend fun search(query: String, limit: Int = 20): List<Track> {
         if (query.isBlank()) return emptyList()
 
@@ -99,21 +90,21 @@ object Catalog {
         // no roi - khong co ly do gi bat ho cuon qua ket qua online de tim.
         val mine = LocalLibrary.filter(library, query, MAX_LOCAL)
 
-        val (zing, nct) = coroutineScope {
-            listOf(
-                async { attempt("zing") { ZingClient.search(query, limit) } },
-                async { attempt("nct") { NctClient.search(query, limit) } }
-            ).awaitAll()
-        }
+        // Bao nhieu nguon online la chuyen cua bien the dung: ban tai thang co
+        // hai, ban Play khong co cai nao. Tron kieu N nguon chu khong viet cung
+        // hai, de cho nay khong phai sua lai khi so nguon doi.
+        val online = NguonNgoai.tim(query, limit)
 
-        val out = ArrayList<Track>(mine.size + zing.size + nct.size)
+        val out = ArrayList<Track>(mine.size + online.sumOf { it.size })
         val seen = HashSet<String>()
         for (track in mine) {
             seen.add("${track.artist.lowercase()}|${track.title.lowercase()}")
             out.add(track)
         }
-        for (i in 0 until maxOf(zing.size, nct.size)) {
-            for (track in listOfNotNull(zing.getOrNull(i), nct.getOrNull(i))) {
+        val sauNhat = online.maxOfOrNull { it.size } ?: 0
+        for (i in 0 until sauNhat) {
+            for (nguon in online) {
+                val track = nguon.getOrNull(i) ?: continue
                 // Cung mot bai o hai nguon thi chi giu ban gap truoc
                 val key = "${track.artist.lowercase()}|${track.title.lowercase()}"
                 if (seen.add(key)) out.add(track)
@@ -127,8 +118,10 @@ object Catalog {
         // File trong may: dia chi `content://` dung duoc ngay, khong hoi ai ca
         MusicSource.LOCAL ->
             track.streamUrl ?: track.id.toLongOrNull()?.let(LocalLibrary::trackUri)
-        MusicSource.NCT -> track.streamUrl ?: attemptOrNull("nct") { NctClient.streamUrl(track.id) }
-        MusicSource.ZING -> attemptOrNull("zing") { ZingClient.streamUrl(track.id) }
+        // Ban Play tra null o day. Danh sach phat cu mang theo bai Zing/NCT thi
+        // bai do bao loi phat - dung han, va tot hon la giu mot nut bam khong
+        // bao gio an gi.
+        else -> NguonNgoai.duongPhat(track)
     }
 
     /**
@@ -143,26 +136,6 @@ object Catalog {
         return streamUrl(Track(id = id, source = source, title = "", artist = ""))
     }
 
-    private inline fun attempt(name: String, block: () -> List<Track>): List<Track> = try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Log.d(TAG, "$name khong tim duoc", e)
-        emptyList()
-    }
-
-    private inline fun <T> attemptOrNull(name: String, block: () -> T?): T? = try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Log.i(TAG, "$name khong tra duong phat", e)
-        null
-    }
-
     /** Toi da bao nhieu bai trong may cho mot lan tim. */
     private const val MAX_LOCAL = 8
-
-    private const val TAG = "LyraNguon"
 }
