@@ -139,7 +139,11 @@ fun HomeScreen(
     onDeletePlaylist: () -> Unit,
     onSaveQueue: (String) -> Unit,
     downloads: Map<String, com.mittohoa.lyra.service.Lyra.Downloading>,
-    onDownload: (Track) -> Unit
+    onDownload: (Track) -> Unit,
+    banMoi: String?,
+    tienDoCapNhat: Int?,
+    tuCaiDuoc: Boolean,
+    onCapNhat: () -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -187,6 +191,26 @@ fun HomeScreen(
                     color = Color.White.copy(alpha = 0.62f),
                     fontSize = 13.sp
                 )
+            }
+
+            // Có bản mới thì báo ở TẦNG APP, không phải bên trong một trang.
+            // Trang phát thoát sớm khi chưa có quyền đọc thông báo hoặc chưa có
+            // gì đang phát — mà đó đúng là trạng thái của một máy vừa cài xong,
+            // tức là người cần biết tin này nhất lại là người không thấy nó.
+            if (banMoi != null) {
+                Box(Modifier.padding(start = 22.dp, end = 22.dp, top = 12.dp)) {
+                    Notice(
+                        accent = accent,
+                        text = when {
+                            tienDoCapNhat == null -> "Có bản $banMoi"
+                            tienDoCapNhat < 0 -> "Đang tải bản mới…"
+                            else -> "Đang tải bản mới… $tienDoCapNhat%"
+                        },
+                        action = if (tienDoCapNhat != null) null
+                            else if (tuCaiDuoc) "Cập nhật" else "Xem",
+                        onAction = onCapNhat
+                    )
+                }
             }
 
             HorizontalPager(
@@ -238,7 +262,7 @@ fun HomeScreen(
                         onCycleRepeat = onCycleRepeat,
                         onSkipInQueue = onSkipInQueue,
                         onRemoveFromQueue = onRemoveFromQueue,
-                        onSaveQueue = onSaveQueue
+                        onSaveQueue = onSaveQueue,
                     )
                     2 -> LyricsPane(
                         lyrics, loading, position, accent, translation,
@@ -514,7 +538,7 @@ private fun LyricsPane(
 
 /** Dai bao nho tren dau trang loi, kem mot nut o ben phai. */
 @Composable
-private fun Notice(
+fun Notice(
     accent: Color,
     text: String,
     onClick: (() -> Unit)? = null,

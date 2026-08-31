@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Chi gop vao ban cai tay. Ban len Play khong co gi trong so nay.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Tu tai ban moi ve roi mo phien cai dat. Nguoi dung van phai bam xac nhan
+      o hop thoai cua he thong - Android khong cho app thuong cai de chinh no
+      hoan toan im lang, va cung khong nen cho.
+
+      Chi khai o ban cai tay: Google Play soi quyen nay rat ky va chi cho vai
+      loai app dung, ma ban tren Play thi khong can - Play tu lo cap nhat.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application>
+        <receiver
+            android:name=".update.KetQuaCaiDat"
+            android:exported="false" />
+    </application>
+</manifest>

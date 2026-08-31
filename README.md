@@ -49,6 +49,7 @@ khung nổi — không biết nhạc đang đến từ đâu.
 | | `sideload` | `play` |
 |---|---|---|
 | Tải nhạc | có | **không có** |
+| Tự tải và cài bản mới | có | không (Play tự lo) |
 | Mọi thứ khác | đầy đủ | đầy đủ |
 
 Chính sách Google Play cấm app cho tải nội dung từ dịch vụ phát trực tuyến, nên
@@ -84,6 +85,42 @@ keyPassword=…
 Không có file đó thì bản phát hành vẫn dựng được, chỉ là không được ký — để ai
 clone về cũng build được, và họ tự tạo khoá của mình. Khoá ký là danh tính của
 người phát hành, không phải của mã nguồn.
+
+---
+
+## Cập nhật
+
+App không nằm trong cửa hàng nào thì phải tự lo việc báo có bản mới. Không lo
+thì một người cài tay bản 0.1.0 dùng nó mãi mãi, kể cả sau khi lỗi họ gặp đã
+được sửa — và họ không có cách nào biết.
+
+Mỗi lần mở app, Lyra hỏi trang phát hành một lần rồi hiện một dải báo ở đầu màn
+hình. Bản `sideload` tải APK **thẳng vào một phiên `PackageInstaller`** rồi để
+hệ thống mở hộp xác nhận — không rẽ qua file trong thư mục Tải về, không cần
+`FileProvider`, và không để lại một file APK nằm chờ trong máy. Android vẫn bắt
+người dùng bấm xác nhận một lần; không có cách nào bỏ qua bước đó với một app
+thường, và cũng không nên có.
+
+Quyền `REQUEST_INSTALL_PACKAGES` chỉ khai ở `src/sideload/AndroidManifest.xml`.
+Bản `play` mang một `ApkInstaller` rỗng với `SUPPORTED = false` và chỉ mở trang
+phát hành.
+
+Ba chỗ dễ sai, đều đã tránh:
+
+- **Đọc tên file APK, không đọc tên thẻ phát hành.** Một bản phát hành mang cả
+  file Windows lẫn Android, và hai phía không đổi số cùng lúc.
+- **So phiên bản theo từng số, không so chuỗi.** So chuỗi thì `0.1.10` đứng
+  trước `0.1.9`, và tới bản thứ mười app lặng lẽ ngừng báo.
+- **Dải báo nằm ở tầng app, không nằm trong trang phát.** Trang phát thoát sớm
+  khi chưa có quyền đọc thông báo hoặc chưa có gì đang phát — đúng trạng thái
+  của một máy vừa cài xong.
+
+### Máy Samsung
+
+Auto Blocker chặn **mọi** đường cài không đi qua Galaxy Store hay Play Store, kể
+cả `PackageInstaller` do chính app gọi, nên trên máy bật nó thì cơ chế trên
+không chạy. Không lách được từ phía mã nguồn. Người dùng tắt Auto Blocker thì
+cài được; cách dứt điểm là phát hành qua Play.
 
 ---
 
@@ -148,9 +185,12 @@ cả bài, không phải rời app nhạc.
 | Vẽ đè lên app khác | Dựng khung lời nổi | Được |
 | Đọc nhạc trong máy | Thư viện nhạc. Xin đúng quyền **nhạc**, không đụng ảnh/video/tài liệu | Được |
 | Thông báo | Thẻ điều khiển nhạc | Được |
+| Cài đặt ứng dụng | Tự cài bản mới. **Chỉ bản `sideload`** | Được — thiếu thì chỉ mở trang phát hành |
 
-Hai quyền đầu Android không cho xin bằng hộp thoại — chỉ mở được đúng trang cài
-đặt rồi chờ người dùng tự bật.
+Hai quyền đầu và quyền cài đặt không xin được bằng hộp thoại — Android chỉ cho
+mở đúng trang cài đặt rồi chờ người dùng tự bật. Từ Android 8, quyền cài đặt
+được cấp **theo từng app** chứ không còn là một công tắc chung của máy, nên Lyra
+đưa thẳng người dùng tới trang của riêng nó.
 
 ---
 

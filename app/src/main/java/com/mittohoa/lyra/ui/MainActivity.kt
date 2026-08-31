@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.annotation.RequiresApi
+import com.mittohoa.lyra.BuildConfig
 import com.mittohoa.lyra.R
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.service.LyraTileService
@@ -97,6 +98,11 @@ class MainActivity : ComponentActivity() {
             val library by Lyra.library.collectAsStateWithLifecycle()
             val playlists by Lyra.playlists.collectAsStateWithLifecycle()
             val downloads by Lyra.downloads.collectAsStateWithLifecycle()
+            val banMoi by Lyra.banMoi.collectAsStateWithLifecycle()
+            val tienDoCapNhat by Lyra.tienDoCapNhat.collectAsStateWithLifecycle()
+
+            // Hoi mot lan moi lan mo app; `Lyra` tu chan cac lan goi thua
+            LaunchedEffect(Unit) { Lyra.kiemBanMoi(BuildConfig.VERSION_NAME) }
             var openedPlaylistId by remember { mutableStateOf<String?>(null) }
             // Doc lai tu danh sach that moi lan no doi: doi ten hay xoa mot bai
             // phai thay ngay tren man hinh dang mo, khong phai dong ra mo lai
@@ -179,7 +185,19 @@ class MainActivity : ComponentActivity() {
                 onDeletePlaylist = { openedPlaylistId?.let { Lyra.deletePlaylist(it) } },
                 onSaveQueue = { Lyra.saveQueueAsPlaylist(it) },
                 downloads = downloads,
-                onDownload = { Lyra.downloadTrack(this, it) }
+                onDownload = { Lyra.downloadTrack(this, it) },
+                banMoi = banMoi?.phienBan,
+                tienDoCapNhat = tienDoCapNhat,
+                tuCaiDuoc = Lyra.tuCaiDuoc,
+                onCapNhat = {
+                    if (Lyra.tuCaiDuoc) {
+                        Lyra.taiVaCaiBanMoi(this)
+                    } else {
+                        banMoi?.let {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.trang)))
+                        }
+                    }
+                }
             )
 
             // Go xong ngung mot chut la tu tim, khoi phai bam phim tim

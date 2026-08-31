@@ -137,6 +137,8 @@ android {
 
     buildFeatures {
         compose = true
+        // De doc duoc so phien ban luc chay, phuc vu kiem ban moi
+        buildConfig = true
     }
 
     packaging {

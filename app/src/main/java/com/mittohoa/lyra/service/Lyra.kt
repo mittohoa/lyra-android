@@ -13,6 +13,8 @@ import com.mittohoa.lyra.data.OverlayPrefs
 import com.mittohoa.lyra.data.TranslatePrefs
 import com.mittohoa.lyra.data.TranslateSettings
 import com.mittohoa.lyra.data.TranslationCache
+import com.mittohoa.lyra.data.UpdateChecker
+import com.mittohoa.lyra.update.ApkInstaller
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.lyrics.LyricsRepository
@@ -213,6 +215,62 @@ object Lyra {
      * Huy lan tim truoc: nguoi dung go them chu la cau hoi da khac, va ket qua
      * cua cau hoi cu ve sau lai de len cau moi thi danh sach nhay lung tung.
      */
+    // ---- Ban moi ----
+
+    private val _banMoi = MutableStateFlow<UpdateChecker.BanMoi?>(null)
+    val banMoi: StateFlow<UpdateChecker.BanMoi?> = _banMoi.asStateFlow()
+
+    private var daKiemBanMoi = false
+
+    /**
+     * Hoi xem co ban moi khong. Chi hoi MOT lan moi lan mo app.
+     *
+     * Ban moi ra vai tuan mot lan, nen hoi lai moi lan nguoi dung quay ve man
+     * hinh chinh la mot lan goi mang khong ai yeu cau.
+     */
+    fun kiemBanMoi(phienBanDangChay: String) {
+        if (daKiemBanMoi) return
+        daKiemBanMoi = true
+        scope.launch { _banMoi.value = UpdateChecker.kiem(phienBanDangChay) }
+    }
+
+    /** Tien trinh tai ban moi: 0..100, -1 khi khong biet do dai, null khi khong tai. */
+    private val _tienDoCapNhat = MutableStateFlow<Int?>(null)
+    val tienDoCapNhat: StateFlow<Int?> = _tienDoCapNhat.asStateFlow()
+
+    /** Ban dung nay tu tai va cai ban moi duoc khong. */
+    val tuCaiDuoc: Boolean get() = ApkInstaller.SUPPORTED
+
+    fun duocPhepCai(context: Context): Boolean = ApkInstaller.duocPhepCai(context)
+
+    fun moTrangCapQuyenCai(context: Context) = ApkInstaller.moTrangCapQuyen(context)
+
+    /**
+     * Tai ban moi ve roi giao cho he thong cai.
+     *
+     * Chua duoc cap quyen cai dat thi mo thang trang cai dat de nguoi dung bat -
+     * hon la bao mot loi ma ho khong biet phai lam gi.
+     */
+    fun taiVaCaiBanMoi(context: Context) {
+        val ban = _banMoi.value ?: return
+        if (_tienDoCapNhat.value != null) return
+
+        if (!ApkInstaller.duocPhepCai(context)) {
+            ApkInstaller.moTrangCapQuyen(context)
+            return
+        }
+
+        val app = context.applicationContext
+        _tienDoCapNhat.value = 0
+        scope.launch {
+            val loi = ApkInstaller.taiVaCai(app, ban.duongTai) { phanTram ->
+                _tienDoCapNhat.value = phanTram
+            }
+            _tienDoCapNhat.value = null
+            if (loi != null) Log.w(TAG, "Cap nhat that bai: $loi")
+        }
+    }
+
     // ---- Tai xuong ----
 
     /** Trang thai tai cua tung bai, khoa theo `Track.playbackUri`. */
