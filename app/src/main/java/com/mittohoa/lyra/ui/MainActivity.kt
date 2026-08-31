@@ -31,6 +31,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.annotation.RequiresApi
 import com.mittohoa.lyra.BuildConfig
 import com.mittohoa.lyra.R
+import com.mittohoa.lyra.data.LyricEffectPrefs
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.service.LyraTileService
 import kotlinx.coroutines.delay
@@ -100,6 +101,11 @@ class MainActivity : ComponentActivity() {
             val downloads by Lyra.downloads.collectAsStateWithLifecycle()
             val banMoi by Lyra.banMoi.collectAsStateWithLifecycle()
             val capNhat by Lyra.capNhat.collectAsStateWithLifecycle()
+
+            // Cai dat nho, chi mot man hinh dung - giu ngay tai day thay vi
+            // day them mot dong chay qua `Lyra`.
+            val hieuUngPrefs = remember { LyricEffectPrefs(applicationContext) }
+            var lyricEffect by remember { mutableStateOf(hieuUngPrefs.read()) }
 
             // Hoi mot lan moi lan mo app; `Lyra` tu chan cac lan goi thua
             LaunchedEffect(Unit) { Lyra.kiemBanMoi(BuildConfig.VERSION_NAME) }
@@ -189,6 +195,8 @@ class MainActivity : ComponentActivity() {
                 banMoi = banMoi?.phienBan,
                 capNhat = capNhat,
                 tuCaiDuoc = Lyra.tuCaiDuoc,
+                lyricEffect = lyricEffect,
+                onLyricEffectChange = { lyricEffect = it; hieuUngPrefs.write(it) },
                 onCapNhat = {
                     // Bao hong roi thi nut doi nghia: mo trang phat hanh de nguoi
                     // dung cai tay, vi thu tu dong vua that bai.

@@ -1,7 +1,10 @@
 package com.mittohoa.lyra.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,17 +40,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.data.TranslateSettings
 import com.mittohoa.lyra.lyrics.Lyrics
@@ -146,7 +153,9 @@ fun HomeScreen(
     banMoi: String?,
     capNhat: Lyra.TrangThaiCapNhat?,
     tuCaiDuoc: Boolean,
-    onCapNhat: () -> Unit
+    onCapNhat: () -> Unit,
+    lyricEffect: LyricEffect,
+    onLyricEffectChange: (LyricEffect) -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -279,7 +288,8 @@ fun HomeScreen(
                     )
                     2 -> LyricsPane(
                         lyrics, loading, position, accent, translation,
-                        onSyncToLine, onClearOffset, onEditLyrics, onDownloadModel
+                        onSyncToLine, onClearOffset, onEditLyrics, onDownloadModel,
+                        lyricEffect
                     )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
@@ -293,7 +303,9 @@ fun HomeScreen(
                         translateSettings = translateSettings,
                         onTranslateChange = onTranslateChange,
                         canAddTile = canAddTile,
-                        onAddTile = onAddTile
+                        onAddTile = onAddTile,
+                        lyricEffect = lyricEffect,
+                        onLyricEffectChange = onLyricEffectChange
                     )
                 }
             }
@@ -392,7 +404,8 @@ private fun LyricsPane(
     onSyncToLine: (Int) -> Unit,
     onClearOffset: () -> Unit,
     onEditLyrics: () -> Unit,
-    onDownloadModel: () -> Unit
+    onDownloadModel: () -> Unit,
+    effect: LyricEffect
 ) {
     // `derivedStateOf`: vi tri phat doi 5 lan moi giay, nhung dong dang hat
     // thi vai giay moi doi mot lan. Khong boc thi ca danh sach bi dung lai
@@ -416,6 +429,38 @@ private fun LyricsPane(
     LaunchedEffect(active, trustTiming) {
         if (trustTiming && active >= 0 && lyrics.lines.isNotEmpty()) {
             listState.animateScrollToItem(active.coerceAtLeast(0), scrollOffset = -260)
+        }
+    }
+
+    /**
+     * Cau dang hat sang dan tu trai sang phai theo tien do trong cau.
+     *
+     * KHONG phai karaoke tung chu. LRCLIB chi cho moc theo DONG, khong co moc
+     * theo tu - da kiem: loi tra ve chi co `[00:24.62]` dau dong, khong co
+     * `<00:24.62>` chen giua cac tu. Nen day khong gia vo biet dang hat toi chu
+     * nao; no cho biet cau da chay duoc bao nhieu, va do la thu biet chac: dong
+     * nay bat dau luc nao, dong sau bat dau luc nao.
+     *
+     * Chay bang mot hoat anh tuyen tinh dat mot lan moi khi doi dong, chu khong
+     * bam theo `position`. Vi tri phat chi cap nhat vai lan moi giay, va quet
+     * sang theo no thi thanh sang giat tung nac.
+     */
+    val quet = remember { Animatable(0f) }
+    LaunchedEffect(active, trustTiming, lyrics) {
+        if (!trustTiming || active < 0) {
+            quet.snapTo(0f)
+            return@LaunchedEffect
+        }
+        val batDau = lyrics.lines[active].time + lyrics.offset
+        val ketThuc = lyrics.lines.getOrNull(active + 1)?.let { it.time + lyrics.offset }
+            ?: (batDau + 4_000L)
+        val dai = (ketThuc - batDau).coerceAtLeast(1L)
+        val daQua = (position.value - batDau).coerceAtLeast(0L)
+
+        quet.snapTo((daQua.toFloat() / dai).coerceIn(0f, 1f))
+        val conLai = (dai - daQua).coerceAtLeast(0L)
+        if (conLai > 0) {
+            quet.animateTo(1f, tween(conLai.toInt(), easing = LinearEasing))
         }
     }
 
@@ -535,6 +580,25 @@ private fun LyricsPane(
                     tween(280), label = "b$i"
                 )
 
+                // Hai hieu ung "doi dong thi lam gi do" chay bang mot hoat anh
+                // dat lai moi lan dong nay TRO THANH dong dang hat. Cac dong
+                // khac khong dung toi, nen khong ton gi.
+                val vao = remember(i) { Animatable(1f) }
+                LaunchedEffect(isActive, effect) {
+                    if (!isActive) { vao.snapTo(1f); return@LaunchedEffect }
+                    when (effect) {
+                        LyricEffect.NAY -> {
+                            vao.snapTo(0.86f)
+                            vao.animateTo(1f, spring(dampingRatio = 0.34f, stiffness = 620f))
+                        }
+                        LyricEffect.TROI_LEN -> {
+                            vao.snapTo(0f)
+                            vao.animateTo(1f, tween(340))
+                        }
+                        else -> vao.snapTo(1f)
+                    }
+                }
+
                 Column(
                     Modifier
                         // Cham vao cau dang hat de can lai ca bai - mot cu cham
@@ -544,19 +608,52 @@ private fun LyricsPane(
                         .graphicsLayer {
                             // Doi trong `graphicsLayer` bang lambda: chi cap nhat
                             // mot lop ve, khong dung lai cay giao dien
-                            scaleX = scale
-                            scaleY = scale
-                            this.alpha = alpha
+                            val nay = if (isActive && effect == LyricEffect.NAY) vao.value else 1f
+                            scaleX = scale * nay
+                            scaleY = scale * nay
+                            this.alpha =
+                                if (isActive && effect == LyricEffect.TROI_LEN) alpha * vao.value
+                                else alpha
+                            if (isActive && effect == LyricEffect.TROI_LEN) {
+                                translationY = (1f - vao.value) * 34.dp.toPx()
+                            }
                             transformOrigin =
                                 androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
                         }
                 ) {
+                    val chu = line.text.ifEmpty { "♪" }
+                    val quetDuoc = isActive &&
+                        (effect == LyricEffect.SANG_DAN || effect == LyricEffect.HIEN_CHU)
+
                     Text(
-                        text = line.text.ifEmpty { "♪" },
+                        text = chu,
                         color = Color.White,
                         fontSize = if (isActive) 23.sp else 20.sp,
                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                        lineHeight = 30.sp
+                        lineHeight = 30.sp,
+                        style = when {
+                            // Quet sang / hien chu: dung mot dai mau co canh cung
+                            // ngay tai vi tri tien do. Khong phai karaoke tung
+                            // chu - xem chu thich o `LyricEffect`.
+                            quetDuoc -> {
+                                val f = quet.value.coerceIn(0f, 1f)
+                                val sau = if (effect == LyricEffect.HIEN_CHU)
+                                    Color.Transparent else Color.White.copy(alpha = 0.38f)
+                                LocalTextStyle.current.copy(
+                                    brush = Brush.horizontalGradient(
+                                        0f to Color.White,
+                                        f to Color.White,
+                                        (f + 0.012f).coerceAtMost(1f) to sau,
+                                        1f to sau
+                                    )
+                                )
+                            }
+                            isActive && effect == LyricEffect.TOA_SANG ->
+                                LocalTextStyle.current.copy(
+                                    shadow = Shadow(accent, Offset.Zero, 26f)
+                                )
+                            else -> LocalTextStyle.current
+                        }
                     )
                     // O trang Loi thi hien ban dich cho MOI dong, khac han khung
                     // noi chi hien cho dong dang hat: o day nguoi dung dang doc
@@ -638,7 +735,9 @@ private fun TunePane(
     translateSettings: TranslateSettings,
     onTranslateChange: (TranslateSettings) -> Unit,
     canAddTile: Boolean,
-    onAddTile: () -> Unit
+    onAddTile: () -> Unit,
+    lyricEffect: LyricEffect,
+    onLyricEffectChange: (LyricEffect) -> Unit
 ) {
     Column(
         Modifier
@@ -805,6 +904,56 @@ private fun TunePane(
                 onChange = { onTranslateChange(translateSettings.copy(wifiOnly = it)) }
             )
         }
+
+        Spacer(Modifier.height(30.dp))
+        Text(
+            "Hiệu ứng chữ ở trang Lời",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(10.dp))
+        // Chi doi cach TRINH BAY o trang Loi. Khung noi khong dung cai nay: no
+        // nam de len app khac va co y ve lai cang it cang tot.
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (e in LyricEffect.entries) {
+                val chon = e == lyricEffect
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (chon) accent.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.05f))
+                        .clickable { onLyricEffectChange(e) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            e.nhan,
+                            color = Color.White,
+                            fontSize = 14.5.sp,
+                            fontWeight = if (chon) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                        Text(
+                            e.moTa,
+                            color = Color.White.copy(alpha = 0.55f),
+                            fontSize = 12.5.sp
+                        )
+                    }
+                    if (chon) Text("●", color = accent, fontSize = 13.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Lời lấy từ LRCLIB chỉ có mốc theo từng dòng, không có mốc theo từng " +
+                "chữ — nên không hiệu ứng nào ở đây tô sáng theo tiếng hát tới " +
+                "đâu. “Sáng dần” và “Hiện chữ” chạy theo tiến độ trong câu, thứ " +
+                "biết chắc từ mốc dòng này tới dòng sau.",
+            color = Color.White.copy(alpha = 0.45f),
+            fontSize = 12.5.sp,
+            lineHeight = 19.sp
+        )
 
         Spacer(Modifier.height(30.dp))
         Text(
