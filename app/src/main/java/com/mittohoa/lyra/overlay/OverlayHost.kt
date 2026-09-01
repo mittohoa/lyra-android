@@ -147,6 +147,26 @@ class OverlayHost {
             PixelFormat.TRANSLUCENT
         )
         runCatching { wm.addView(v, lp) }.onSuccess { scrim = v }
+
+        // Lớp mờ vừa dựng nằm TRÊN khung lời, và như thế thì nó làm mờ luôn
+        // đúng cái nó phải làm nổi bật lên.
+        //
+        // Hai cửa sổ này cùng loại `TYPE_APPLICATION_OVERLAY`, mà cùng loại thì
+        // hệ thống xếp theo thứ tự dựng: dựng sau nằm trên. Lúc bật khung lần
+        // đầu thì `show()` dựng lớp mờ trước nên đúng thứ tự — nhưng khi người
+        // dùng kéo thanh "Nền mờ" trong lúc khung ĐANG hiện thì lớp mờ dựng
+        // sau, và nó phủ lên trên.
+        //
+        // Không có cách nào nâng một cửa sổ lên trên cùng loại, nên dựng lại
+        // khung lời: gỡ ra rồi gắn vào là nó thành cửa sổ mới nhất.
+        val khung = view
+        val thamSo = params
+        if (khung != null && thamSo != null) {
+            runCatching {
+                wm.removeViewImmediate(khung)
+                wm.addView(khung, thamSo)
+            }
+        }
     }
 
     fun hide() {

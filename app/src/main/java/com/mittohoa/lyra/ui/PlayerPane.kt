@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -120,14 +121,15 @@ fun PlayerPane(
                 Spacer(Modifier.height(18.dp))
                 Text(
                     "Chưa có gì đang phát",
-                    color = Color.White,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.SemiBold
+                    color = mau.chu,
+                    fontFamily = BoChu.Serif,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Medium
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "Vuốt sang trái để tìm bài, hoặc mở app nhạc khác — Lyra vẫn hiện lời.",
-                    color = Color.White.copy(alpha = 0.55f),
+                    color = mau.chuMo,
                     fontSize = 13.5.sp
                 )
             }
@@ -179,26 +181,34 @@ fun PlayerPane(
                 }
             }
 
-            Seek(
-                accent = accent,
-                position = position,
-                duration = now.duration,
-                enabled = tuaDuoc,
-                onSeek = onSeek
-            )
-
-            Spacer(Modifier.height(20.dp))
+            // Tên bài ĐỌC TRƯỚC thanh tua.
+            //
+            // Trang này đọc từ trên xuống như một trang sách: bản in, rồi tên,
+            // rồi ca sĩ, rồi mới tới mấy thứ điều khiển. Thanh tua nằm chen
+            // giữa bìa và tên là cắt ngang đúng chỗ mắt đang đọc.
+            Spacer(Modifier.height(22.dp))
             Text(
                 now.title,
-                color = Color.White,
-                fontSize = 25.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 31.sp,
-                maxLines = 2
+                color = mau.chu,
+                fontFamily = BoChu.Serif,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 36.sp,
+                maxLines = 3
             )
             if (now.artist.isNotEmpty()) {
-                Spacer(Modifier.height(5.dp))
-                Text(now.artist, color = Color.White.copy(alpha = 0.66f), fontSize = 15.sp, maxLines = 1)
+                Spacer(Modifier.height(7.dp))
+                // Chữ hoa nhỏ, giãn ra - kiểu ghi tên tác giả dưới đầu đề một
+                // bài trong sách. Khác hẳn cỡ chữ và dáng chữ của tên bài, nên
+                // mắt tách được hai thứ mà không cần một đường kẻ nào.
+                Text(
+                    now.artist.uppercase(),
+                    color = mau.chuMo,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.8.sp,
+                    maxLines = 1
+                )
             }
 
             Spacer(Modifier.height(10.dp))
@@ -207,18 +217,32 @@ fun PlayerPane(
                     Modifier
                         .size(6.dp)
                         .clip(RoundedCornerShape(50))
-                        .background(if (now.isPlaying) accent else Color.White.copy(alpha = 0.3f))
+                        .background(if (now.isPlaying) accent else mau.chuRatMo)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
-                    color = Color.White.copy(alpha = 0.45f),
+                    color = mau.chuRatMo,
                     fontSize = 12.5.sp
                 )
             }
 
+            // Thanh tua nằm SAU tên bài, không nằm giữa bìa và tên.
+            //
+            // Trang này đọc từ trên xuống như một trang sách: bản in, đầu đề,
+            // tên người hát, rồi mới tới mấy thứ điều khiển. Chen một thanh kéo
+            // vào giữa bìa và tên là cắt ngang đúng chỗ mắt đang đọc.
+            Spacer(Modifier.height(18.dp))
+            Seek(
+                accent = accent,
+                position = position,
+                duration = now.duration,
+                enabled = tuaDuoc,
+                onSeek = onSeek
+            )
+
             if (mine) {
-                Spacer(Modifier.height(22.dp))
+                Spacer(Modifier.height(16.dp))
                 Transport(
                     accent = accent,
                     playing = now.isPlaying,
@@ -244,7 +268,7 @@ fun PlayerPane(
                             "Tiếp theo · ${queue.size - queueIndex - 1} bài"
                         else
                             "Hết hàng đợi",
-                        color = Color.White.copy(alpha = 0.45f),
+                        color = mau.chuRatMo,
                         fontSize = 11.5.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -254,13 +278,13 @@ fun PlayerPane(
                     Box(
                         Modifier
                             .clip(RoundedCornerShape(50))
-                            .background(Color.White.copy(alpha = 0.10f))
+                            .background(mau.nenChim)
                             .clickable { naming = true }
                             .padding(horizontal = 14.dp, vertical = 7.dp)
                     ) {
                         Text(
                             "Lưu thành danh sách",
-                            color = Color.White.copy(alpha = 0.8f),
+                            color = mau.chu,
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -300,15 +324,18 @@ fun PlayerPane(
 }
 
 /**
- * San khau: cho de VE thu dang phat.
+ * Bản in: chỗ để VẼ thứ đang phát.
  *
- * Hom nay la anh bia vuong. Video chi can doi ti le sang 16:9 va truyen vao mot
- * be mat thay cho anh - phan quang sang phia sau, bo goc, va moi thu ben ngoai
- * deu khong doi.
+ * Hôm nay là ảnh bìa vuông. Video chỉ cần đổi tỉ lệ sang 16:9 và truyền vào một
+ * bề mặt thay cho ảnh — viền, đường kẻ và mọi thứ bên ngoài đều không đổi.
  *
- * Quang sang la anh chinh no bi lam mo va phong to nam phia sau. Do khong phai
- * trang tri: no keo mau cua bia tran ra ngoai khung, nen ca man hinh doi mau
- * theo bai dang nghe ma khong can them mot lop mau gia nao.
+ * Đặt như một bản in dán vào trang sách chứ không như một ô vuông bo tròn phát
+ * sáng: góc gần vuông, một nét viền mảnh, và một đường kẻ màu ngay dưới. Cái
+ * quầng sáng mờ phía sau đã bỏ — nó là chữ ký chung của mọi app nhạc hôm nay,
+ * và trên nền giấy thì nó là một vệt bẩn chứ không phải ánh sáng.
+ *
+ * Màu của bìa không mất đi: nó chạy ở lề mực bên trái suốt cả app, và ở đường
+ * kẻ dưới bản in này.
  */
 @Composable
 private fun Stage(
@@ -318,27 +345,24 @@ private fun Stage(
 ) {
     val ratio = if (kind == MediaKind.VIDEO) 16f / 9f else 1f
 
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .aspectRatio(ratio),
-        contentAlignment = Alignment.Center
-    ) {
+    Column(Modifier.fillMaxWidth()) {
         Box(
             Modifier
-                .fillMaxSize()
-                .scale(0.94f)
-                .blur(38.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(accent.copy(alpha = 0.55f))
-        )
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color.White.copy(alpha = 0.06f)),
+                .fillMaxWidth()
+                .aspectRatio(ratio)
+                .clip(RoundedCornerShape(3.dp))
+                .background(mau.nenChim)
+                .border(1.dp, mau.vien, RoundedCornerShape(3.dp)),
             contentAlignment = Alignment.Center,
             content = content
+        )
+        // Đường kẻ màu dưới bản in — chỗ duy nhất trên trang này màu của bìa
+        // được nói to. Mảnh thôi, vì cái phải to là tên bài ngay bên dưới.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(3.dp)
+                .background(accent)
         )
     }
 }
@@ -402,11 +426,14 @@ private fun Seek(
                     }
                 )
         ) {
+            // Doc bang mau o day chu khong trong than `Canvas`: than do khong
+            // phai @Composable nen khong voi toi `CompositionLocal` duoc.
+            val mauRanh = mau.vien
             Canvas(Modifier.fillMaxSize()) {
                 width = size.width
                 val y = size.height / 2f
                 drawLine(
-                    color = Color.White.copy(alpha = 0.14f),
+                    color = mauRanh,
                     start = Offset(0f, y),
                     end = Offset(size.width, y),
                     strokeWidth = 5f,
@@ -434,10 +461,10 @@ private fun Seek(
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(clockLabel(shown), color = Color.White.copy(alpha = 0.45f), fontSize = 11.5.sp)
+            Text(clockLabel(shown), color = mau.chuRatMo, fontSize = 11.5.sp)
             Text(
                 if (duration > 0) clockLabel(duration) else "--:--",
-                color = Color.White.copy(alpha = 0.45f),
+                color = mau.chuRatMo,
                 fontSize = 11.5.sp
             )
         }
@@ -511,7 +538,7 @@ private fun Ghost(label: String, active: Boolean, accent: Color, onClick: () -> 
     ) {
         Text(
             label,
-            color = if (active) accent else Color.White.copy(alpha = 0.55f),
+            color = if (active) accent else mau.chuMo,
             fontSize = 17.sp,
             fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
         )
@@ -528,11 +555,11 @@ private fun QueueRow(track: Track, onSkip: () -> Unit, onRemove: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(track.title, color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp, maxLines = 1)
+            Text(track.title, color = mau.chu, fontSize = 14.sp, maxLines = 1)
             Spacer(Modifier.height(2.dp))
             Text(
                 track.artist.ifBlank { track.source.label },
-                color = Color.White.copy(alpha = 0.42f),
+                color = mau.chuRatMo,
                 fontSize = 12.sp,
                 maxLines = 1
             )
@@ -544,7 +571,7 @@ private fun QueueRow(track: Track, onSkip: () -> Unit, onRemove: () -> Unit) {
                 .clickable(onClick = onRemove),
             contentAlignment = Alignment.Center
         ) {
-            Text("×", color = Color.White.copy(alpha = 0.45f), fontSize = 19.sp)
+            Text("×", color = mau.chuRatMo, fontSize = 19.sp)
         }
     }
 }

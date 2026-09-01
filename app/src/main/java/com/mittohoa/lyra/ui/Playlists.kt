@@ -53,7 +53,7 @@ fun PlaylistRow(
 
     Text(
         "Danh sách phát",
-        color = Color.White.copy(alpha = 0.45f),
+        color = mau.chuRatMo,
         fontSize = 11.5.sp,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp)
@@ -73,7 +73,7 @@ fun PlaylistRow(
             ) {
                 Text(
                     playlist.name,
-                    color = Color.White,
+                    color = mau.chu,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
@@ -82,7 +82,7 @@ fun PlaylistRow(
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "${playlist.tracks.size} bài",
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = mau.chuMo,
                     fontSize = 12.sp
                 )
             }
@@ -114,7 +114,7 @@ fun PlaylistScreen(
 
     Column(
         Modifier
-            .background(BACKDROP)
+            .background(mau.nen)
             .padding(horizontal = 24.dp)
     ) {
         Spacer(Modifier.height(14.dp))
@@ -126,20 +126,20 @@ fun PlaylistScreen(
                     .clickable(onClick = onClose),
                 contentAlignment = Alignment.Center
             ) {
-                Text("←", color = Color.White.copy(alpha = 0.7f), fontSize = 20.sp)
+                Text("←", color = mau.chuMo, fontSize = 20.sp)
             }
             Spacer(Modifier.width(6.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     playlist.name,
-                    color = Color.White,
+                    color = mau.chu,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2
                 )
                 Text(
                     "${playlist.tracks.size} bài",
-                    color = Color.White.copy(alpha = 0.45f),
+                    color = mau.chuRatMo,
                     fontSize = 12.5.sp
                 )
             }
@@ -148,10 +148,10 @@ fun PlaylistScreen(
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Pill("Phát tất cả", accent, Color.White, Modifier.weight(1.4f)) { onPlayAt(0) }
-            Pill("Đổi tên", Color.White.copy(alpha = 0.10f), Color.White, Modifier.weight(1f)) {
+            Pill("Đổi tên", mau.nenChim, mau.chu, Modifier.weight(1f)) {
                 renaming = true
             }
-            Pill("Xoá", Color.White.copy(alpha = 0.10f), Color.White, Modifier.weight(1f)) {
+            Pill("Xoá", mau.nenChim, mau.chu, Modifier.weight(1f)) {
                 confirmingDelete = true
             }
         }
@@ -233,13 +233,13 @@ fun NameDialog(
                 .padding(22.dp)
                 .imePadding()
         ) {
-            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = mau.chu, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(16.dp))
             Box(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
+                    .background(mau.nenChim)
                     .padding(horizontal = 14.dp, vertical = 13.dp)
             ) {
                 BasicTextField(
@@ -247,20 +247,20 @@ fun NameDialog(
                     onValueChange = { text = it },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                    textStyle = TextStyle(color = mau.chu, fontSize = 15.sp),
                     cursorBrush = SolidColor(accent)
                 )
                 if (text.isEmpty()) {
                     Text(
                         "Tên danh sách",
-                        color = Color.White.copy(alpha = 0.3f),
+                        color = mau.chuRatMo,
                         fontSize = 15.sp
                     )
                 }
             }
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Pill("Huỷ", Color.White.copy(alpha = 0.10f), Color.White, Modifier.weight(1f)) {
+                Pill("Huỷ", mau.nenChim, mau.chu, Modifier.weight(1f)) {
                     onCancel()
                 }
                 Pill("Lưu", accent, Color.White, Modifier.weight(1.3f)) { onConfirm(text) }
@@ -285,17 +285,17 @@ fun ConfirmDialog(
                 .background(Color(0xFF1A1622))
                 .padding(22.dp)
         ) {
-            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = mau.chu, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
             Text(
                 body,
-                color = Color.White.copy(alpha = 0.6f),
+                color = mau.chuMo,
                 fontSize = 13.5.sp,
                 lineHeight = 20.sp
             )
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Pill("Huỷ", Color.White.copy(alpha = 0.10f), Color.White, Modifier.weight(1.3f)) {
+                Pill("Huỷ", mau.nenChim, mau.chu, Modifier.weight(1.3f)) {
                     onCancel()
                 }
                 Pill(confirm, accent, Color.White, Modifier.weight(1f)) { onConfirm() }

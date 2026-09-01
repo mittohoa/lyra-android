@@ -40,6 +40,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import android.graphics.Bitmap
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -197,9 +199,25 @@ object Lyra {
     private val _repeat = MutableStateFlow(0)
     val repeat: StateFlow<Int> = _repeat.asStateFlow()
 
-    /** Anh bia cua bai dang phat; null khi chua tai xong hoac khong co. */
+    /** Ảnh bìa Lyra tự tải về cho bài CHÍNH NÓ phát. */
     private val _artwork = MutableStateFlow<Bitmap?>(null)
-    val artwork: StateFlow<Bitmap?> = _artwork.asStateFlow()
+
+    /**
+     * Ảnh bìa dùng được cho bài đang phát — null khi bài không phải của Lyra.
+     *
+     * `_artwork` chỉ được nạp lại khi bộ phát của Lyra đổi bài, nên nó SỐNG DAI
+     * hơn lượt phát của Lyra: nghe một bài trong Lyra rồi chuyển sang Zing thì
+     * ảnh cũ vẫn còn nguyên trong đó. Màn hình Đang phát ưu tiên ảnh này hơn
+     * ảnh kèm bản tin media, nên nó hiện bìa của bài TRƯỚC bên cạnh tên bài
+     * MỚI — và màu nền của cả app cũng lấy từ đúng cái bìa sai đó.
+     *
+     * Lọc ngay tại đây thay vì bắt từng màn hình tự nhớ kiểm tra: chỉ cần một
+     * chỗ quên là lỗi quay lại.
+     */
+    val artwork: StateFlow<Bitmap?> =
+        combine(_artwork, _now) { bia, dangPhat ->
+            if (dangPhat?.packageName == OWN) bia else null
+        }.stateIn(scope, SharingStarted.Eagerly, null)
 
     private var artworkJob: Job? = null
 

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Khop voi `BangMau.Muc.nen` trong `ui/Kieu.kt`. -->
+    <color name="nen_giay">#13110D</color>
+</resources>

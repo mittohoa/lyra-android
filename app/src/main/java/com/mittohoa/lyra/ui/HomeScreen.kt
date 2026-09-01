@@ -44,6 +44,8 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -58,6 +60,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.mittohoa.lyra.data.ChuDe
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.data.TranslateSettings
@@ -159,7 +162,9 @@ fun HomeScreen(
     tuCaiDuoc: Boolean,
     onCapNhat: () -> Unit,
     lyricEffect: LyricEffect,
-    onLyricEffectChange: (LyricEffect) -> Unit
+    onLyricEffectChange: (LyricEffect) -> Unit,
+    chuDe: ChuDe,
+    onChuDeChange: (ChuDe) -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -179,35 +184,76 @@ fun HomeScreen(
     val pager = rememberPagerState(initialPage = START_PANE, pageCount = { PANES.size })
     val scope = rememberCoroutineScope()
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        lerp(BACKDROP, accent, 0.30f),
-                        lerp(BACKDROP, accent, 0.10f),
-                        BACKDROP
+    // Mau lay tu anh bia, chinh MOT LAN o day roi truyen xuong duoi ten
+    // `accent`. Cac trang ben duoi khong phai biet hom nay dang la mat giay hay
+    // mat muc - chung chi nhan mot mau da dung san. Chinh o moi noi dung thi
+    // som muon co mot cho quen chinh, va cho do se chinh mot mau khong doc duoc
+    // tren nen giay.
+    val mucMau = mau.mucMau(accent)
+
+    Box(Modifier.fillMaxSize().background(mau.nen)) {
+
+        // LE MUC.
+        //
+        // Mot dai mau chay doc suot mep trai, co mat o CA BON trang. Day la dau
+        // hieu rieng cua Lyra, va no khong phai trang tri: mau lay tu anh bia
+        // bai dang phat, nen ca app doi mau theo bai - mot dau hieu ngoai le
+        // cua trang giay noi rang ben trong dang co nhac.
+        //
+        // Nhat dan xuong duoi nhu muc in tham vao giay, de no la mot canh giay
+        // chu khong phai mot thanh giao dien.
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .width(6.dp)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            mucMau.copy(alpha = 0.92f),
+                            mucMau.copy(alpha = 0.30f)
+                        )
                     )
                 )
-            )
-    ) {
-        Column(Modifier.fillMaxSize()) {
-            // Dau hieu Lyra thay cho thanh tieu de: no cu dong khi app dang tim
+        )
+
+        Column(Modifier.fillMaxSize().padding(start = 6.dp)) {
+            // DAU TRANG, doc nhu dau trang mot cuon sach: ten sach ben trai,
+            // ten chuong dang mo ben phai. Khong phai thanh tieu de - no khong
+            // co nut nao, khong chan gi, chi noi minh dang o dau.
             Row(
                 Modifier
                     .statusBarsPadding()
-                    .padding(start = 22.dp, top = 14.dp, end = 22.dp),
+                    .padding(start = 20.dp, top = 14.dp, end = 22.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                LyraMark(size = 30.dp, busy = loading)
-                Spacer(Modifier.width(11.dp))
+                LyraMark(size = 26.dp, busy = loading)
+                Spacer(Modifier.width(10.dp))
                 Text(
-                    if (loading) "đang tìm lời…" else PANES[pager.currentPage],
-                    color = Color.White.copy(alpha = 0.62f),
-                    fontSize = 13.sp
+                    "LYRA",
+                    color = mau.chuMo,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 2.6.sp
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    if (loading) "đang tìm lời…" else PANES[pager.currentPage].lowercase(),
+                    color = mau.chuRatMo,
+                    fontFamily = BoChu.Serif,
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 14.sp
                 )
             }
+
+            // Ke ngang duoi dau trang. Mot net mo nhat, dung de tach dau trang
+            // khoi than trang - dung nhu mot trang in.
+            Box(
+                Modifier
+                    .padding(start = 20.dp, end = 22.dp, top = 12.dp)
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(mau.vien)
+            )
 
             // Có bản mới thì báo ở TẦNG APP, không phải bên trong một trang.
             // Trang phát thoát sớm khi chưa có quyền đọc thông báo hoặc chưa có
@@ -216,7 +262,7 @@ fun HomeScreen(
             if (banMoi != null) {
                 Box(Modifier.padding(start = 22.dp, end = 22.dp, top = 12.dp)) {
                     Notice(
-                        accent = accent,
+                        accent = mucMau,
                         text = when (capNhat) {
                             null -> "Có bản $banMoi"
                             is Lyra.TrangThaiCapNhat.DangTai ->
@@ -246,7 +292,7 @@ fun HomeScreen(
             ) { page ->
                 when (page) {
                     0 -> SearchPane(
-                        accent = accent,
+                        accent = mucMau,
                         query = searchQuery,
                         results = results,
                         searching = searching,
@@ -271,7 +317,7 @@ fun HomeScreen(
                     )
                     1 -> PlayerPane(
                         now = now,
-                        accent = accent,
+                        accent = mucMau,
                         artwork = artwork,
                         position = position,
                         queue = queue,
@@ -298,7 +344,7 @@ fun HomeScreen(
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
                         overlayOn = overlayOn,
-                        accent = accent,
+                        accent = mucMau,
                         look = look,
                         suggestedFontSize = suggestedFontSize,
                         onOpenOverlaySettings = onOpenOverlaySettings,
@@ -309,14 +355,16 @@ fun HomeScreen(
                         canAddTile = canAddTile,
                         onAddTile = onAddTile,
                         lyricEffect = lyricEffect,
-                        onLyricEffectChange = onLyricEffectChange
+                        onLyricEffectChange = onLyricEffectChange,
+                        chuDe = chuDe,
+                        onChuDeChange = onChuDeChange
                     )
                 }
             }
 
             Pill(
                 current = pager.currentPage,
-                accent = accent,
+                accent = mucMau,
                 onPick = { scope.launch { pager.animateScrollToPage(it) } }
             )
         }
@@ -342,7 +390,7 @@ private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
         Row(
             Modifier
                 .clip(RoundedCornerShape(50))
-                .background(Color.White.copy(alpha = 0.10f))
+                .background(mau.nenChim)
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -362,7 +410,7 @@ private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
                         .clip(RoundedCornerShape(50))
                         .background(
                             if (selected) accent.copy(alpha = 0.85f)
-                            else Color.White.copy(alpha = 0.06f)
+                            else mau.nenChim
                         )
                         .clickable { onPick(i) }
                         .padding(
@@ -383,7 +431,7 @@ private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
                             Modifier
                                 .size(6.dp)
                                 .clip(RoundedCornerShape(50))
-                                .background(Color.White.copy(alpha = 0.55f))
+                                .background(mau.chuMo)
                         )
                     }
                 }
@@ -475,7 +523,7 @@ private fun LyricsPane(
                 Spacer(Modifier.height(16.dp))
                 Text(
                     if (loading) "Đang tìm lời…" else "Chưa tìm thấy lời cho bài này",
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = mau.chuMo,
                     fontSize = 14.sp
                 )
                 if (!loading) {
@@ -629,8 +677,18 @@ private fun LyricsPane(
                     val quetDuoc = isActive &&
                         (effect == LyricEffect.SANG_DAN || effect == LyricEffect.HIEN_CHU)
 
-                    val coChu = if (isActive) 23.sp else 20.sp
-                    val damNhat = if (isActive) FontWeight.Bold else FontWeight.Normal
+                    // Lời bài hát đặt bằng bộ chữ CÓ CHÂN, khác hẳn phần giao
+                    // diện. Đây là thứ duy nhất trên màn hình để ĐỌC chứ không
+                    // phải để bấm, và tách nó ra bằng dáng chữ nói điều đó rõ
+                    // hơn bất kỳ đường viền nào.
+                    //
+                    // Chữ có chân cần khoảng cách dòng rộng hơn chữ không chân
+                    // cùng cỡ, nên `lineHeight` nới ra theo.
+                    val coChu = if (isActive) 26.sp else 22.sp
+                    val damNhat = if (isActive) FontWeight.SemiBold else FontWeight.Normal
+                    val caoDong = if (isActive) 36.sp else 32.sp
+                    // `accent` tới đây đã chỉnh sẵn cho mặt giấy đang dùng.
+                    val mucMau = accent
 
                     if (quetDuoc) {
                         // Quet phai chay THEO TUNG DONG, khong theo be ngang cua
@@ -650,17 +708,17 @@ private fun LyricsPane(
                             mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null)
                         }
                         val mo = if (effect == LyricEffect.HIEN_CHU) Color.Transparent
-                        else Color.White.copy(alpha = 0.38f)
+                        else mau.chuRatMo
 
                         Box {
                             Text(
-                                text = chu, color = mo,
-                                fontSize = coChu, fontWeight = damNhat, lineHeight = 30.sp,
+                                text = chu, color = mo, fontFamily = BoChu.Serif,
+                                fontSize = coChu, fontWeight = damNhat, lineHeight = caoDong,
                                 onTextLayout = { bocCuc = it }
                             )
                             Text(
-                                text = chu, color = Color.White,
-                                fontSize = coChu, fontWeight = damNhat, lineHeight = 30.sp,
+                                text = chu, color = mau.chu, fontFamily = BoChu.Serif,
+                                fontSize = coChu, fontWeight = damNhat, lineHeight = caoDong,
                                 modifier = Modifier.drawWithContent {
                                     val bc = bocCuc
                                     if (bc == null) { drawContent(); return@drawWithContent }
@@ -694,14 +752,15 @@ private fun LyricsPane(
                         }
                     } else Text(
                         text = chu,
-                        color = Color.White,
+                        color = mau.chu,
+                        fontFamily = BoChu.Serif,
                         fontSize = coChu,
                         fontWeight = damNhat,
-                        lineHeight = 30.sp,
+                        lineHeight = caoDong,
                         style = when {
                             isActive && effect == LyricEffect.TOA_SANG ->
                                 LocalTextStyle.current.copy(
-                                    shadow = Shadow(accent, Offset.Zero, 26f)
+                                    shadow = Shadow(mucMau, Offset.Zero, 26f)
                                 )
                             else -> LocalTextStyle.current
                         }
@@ -711,12 +770,15 @@ private fun LyricsPane(
                     // ca bai chu khong phai liec mat.
                     val meaning = translated.getOrNull(i)?.trim().orEmpty()
                     if (meaning.isNotEmpty() && meaning != line.text.trim()) {
+                        // Bản dịch đặt bằng chữ KHÔNG chân, cỡ nhỏ hơn - nó là
+                        // chú thích cho câu ở trên chứ không phải lời bài hát,
+                        // và trên một trang in thì chú thích trông khác chính văn.
                         Text(
                             text = meaning,
-                            color = accent,
-                            fontSize = if (isActive) 16.sp else 14.sp,
-                            lineHeight = 22.sp,
-                            modifier = Modifier.padding(top = 3.dp)
+                            color = mucMau,
+                            fontSize = if (isActive) 15.sp else 13.5.sp,
+                            lineHeight = 21.sp,
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                 }
@@ -746,7 +808,7 @@ fun Notice(
     ) {
         Text(
             text,
-            color = Color.White.copy(alpha = 0.9f),
+            color = mau.chu,
             fontSize = 12.5.sp,
             lineHeight = 18.sp,
             modifier = Modifier.weight(1f)
@@ -756,11 +818,11 @@ fun Notice(
                 Modifier
                     .padding(start = 10.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.16f))
+                    .background(mau.vien)
                     .clickable(onClick = onAction)
                     .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
-                Text(action, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text(action, color = mau.chu, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -788,7 +850,9 @@ private fun TunePane(
     canAddTile: Boolean,
     onAddTile: () -> Unit,
     lyricEffect: LyricEffect,
-    onLyricEffectChange: (LyricEffect) -> Unit
+    onLyricEffectChange: (LyricEffect) -> Unit,
+    chuDe: ChuDe,
+    onChuDeChange: (ChuDe) -> Unit
 ) {
     Column(
         Modifier
@@ -820,17 +884,12 @@ private fun TunePane(
             tomTat = if (overlayOn) "Đang bật" else "Đang tắt"
         ) {
         if (canDrawOverlay) {
-        Text(
-            if (overlayOn) "Lời đang nổi trên màn hình" else "Lời nổi đang tắt",
-            color = Color.White,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Head(if (overlayOn) "Lời đang nổi trên màn hình" else "Lời nổi đang tắt")
         Spacer(Modifier.height(8.dp))
         Text(
             if (overlayOn) "Kéo khung để dời chỗ. Mở app nhạc rồi xem thử."
             else "Bật lên rồi mở app nhạc — lời sẽ nổi trên màn hình.",
-            color = Color.White.copy(alpha = 0.6f),
+            color = mau.chuMo,
             fontSize = 14.sp
         )
 
@@ -845,7 +904,7 @@ private fun TunePane(
         Spacer(Modifier.height(30.dp))
         Text(
             "Hình thức khung nổi",
-            color = Color.White.copy(alpha = 0.5f),
+            color = mau.chuMo,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -919,7 +978,7 @@ private fun TunePane(
                 "bình thường nên app bên dưới dùng được như thường.\n\n" +
                 "Vài app ngân hàng từ chối hoạt động khi có lớp phủ màn hình — đó là " +
                 "cách họ tự bảo vệ, không sửa được từ phía Lyra. Gặp thì kéo về Tắt.",
-            color = Color.White.copy(alpha = 0.45f),
+            color = mau.chuRatMo,
             fontSize = 12.5.sp,
             lineHeight = 19.sp
         )
@@ -946,7 +1005,7 @@ private fun TunePane(
         Spacer(Modifier.height(30.dp))
         Text(
             "Dịch lời",
-            color = Color.White.copy(alpha = 0.5f),
+            color = mau.chuMo,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -965,7 +1024,7 @@ private fun TunePane(
             Spacer(Modifier.height(10.dp))
             Text(
                 "Bạn đọc được tiếng",
-                color = Color.White.copy(alpha = 0.6f),
+                color = mau.chuMo,
                 fontSize = 13.sp
             )
             Spacer(Modifier.height(8.dp))
@@ -976,7 +1035,7 @@ private fun TunePane(
                         Modifier
                             .clip(RoundedCornerShape(50))
                             .background(
-                                if (chosen) accent else Color.White.copy(alpha = 0.10f)
+                                if (chosen) accent else mau.nenChim
                             )
                             .clickable {
                                 onTranslateChange(
@@ -987,7 +1046,7 @@ private fun TunePane(
                     ) {
                         Text(
                             label,
-                            color = Color.White,
+                            color = mau.chu,
                             fontSize = 13.sp,
                             fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Normal
                         )
@@ -1009,6 +1068,47 @@ private fun TunePane(
 
         }
         Muc(
+            tieuDe = "Mặt giấy",
+            accent = accent,
+            tomTat = chuDe.nhan
+        ) {
+            Spacer(Modifier.height(20.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (cd in ChuDe.entries) {
+                    val chon = cd == chuDe
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (chon) accent.copy(alpha = 0.22f) else mau.nenChim)
+                            .clickable { onChuDeChange(cd) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                cd.nhan,
+                                color = mau.chu,
+                                fontSize = 14.5.sp,
+                                fontWeight = if (chon) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                            Text(cd.moTa, color = mau.chuMo, fontSize = 12.5.sp)
+                        }
+                        if (chon) Text("●", color = accent, fontSize = 13.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Chỉ đổi màn hình trong app. Khung lời nổi có bộ màu riêng ở " +
+                    "mục trên, vì nó nằm đè lên app khác chứ không nằm trên giấy " +
+                    "của Lyra.",
+                color = mau.chuRatMo,
+                fontSize = 12.5.sp,
+                lineHeight = 19.sp
+            )
+        }
+        Muc(
             tieuDe = "Hiệu ứng chữ",
             accent = accent,
             tomTat = lyricEffect.nhan + " · cho cả trang Lời lẫn khung nổi"
@@ -1016,7 +1116,7 @@ private fun TunePane(
         Spacer(Modifier.height(30.dp))
         Text(
             "Hiệu ứng chữ ở trang Lời",
-            color = Color.White.copy(alpha = 0.5f),
+            color = mau.chuMo,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -1030,7 +1130,7 @@ private fun TunePane(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(if (chon) accent.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.05f))
+                        .background(if (chon) accent.copy(alpha = 0.22f) else mau.nenChim)
                         .clickable { onLyricEffectChange(e) }
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -1038,14 +1138,14 @@ private fun TunePane(
                     Column(Modifier.weight(1f)) {
                         Text(
                             e.nhan,
-                            color = Color.White,
+                            color = mau.chu,
                             fontSize = 14.5.sp,
                             fontWeight = if (chon) FontWeight.SemiBold else FontWeight.Normal
                         )
                         Text(
                             if (e.tonPin) e.moTa + " · tốn pin hơn" else e.moTa,
                             color = if (e.tonPin) Color(0xFFF0B24A).copy(alpha = 0.85f)
-                                    else Color.White.copy(alpha = 0.55f),
+                                    else mau.chuMo,
                             fontSize = 12.5.sp
                         )
                     }
@@ -1062,7 +1162,7 @@ private fun TunePane(
                 "từ mốc dòng này tới dòng sau.\n\n" +
                 "Hai hiệu ứng đó bắt khung nổi vẽ lại liên tục thay vì mỗi câu một " +
                 "lần, nên tốn pin hơn rõ. Bốn hiệu ứng còn lại không đổi gì về nhịp vẽ.",
-            color = Color.White.copy(alpha = 0.45f),
+            color = mau.chuRatMo,
             fontSize = 12.5.sp,
             lineHeight = 19.sp
         )
@@ -1079,7 +1179,7 @@ private fun TunePane(
         Spacer(Modifier.height(30.dp))
         Text(
             "Tắt nhanh",
-            color = Color.White.copy(alpha = 0.5f),
+            color = mau.chuMo,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -1088,7 +1188,7 @@ private fun TunePane(
             "Giữ tay vài giây ngay trên khung lời là tắt — máy rung một cái báo " +
                 "đã nhận. Đây là đường ngắn nhất: ngón tay đang ở sẵn trên thứ " +
                 "cần tắt, không phải rời app nhạc.",
-            color = Color.White.copy(alpha = 0.6f),
+            color = mau.chuMo,
             fontSize = 13.sp,
             lineHeight = 20.sp
         )
@@ -1112,7 +1212,7 @@ private fun TunePane(
             else
                 "Hoặc kéo ô Lời nổi vào bảng Cài đặt nhanh (vuốt thanh thông báo " +
                     "xuống, sửa các ô) để bật tắt ngay khi đang nghe nhạc.",
-            color = Color.White.copy(alpha = 0.45f),
+            color = mau.chuRatMo,
             fontSize = 12.5.sp,
             lineHeight = 18.sp
         )
@@ -1164,14 +1264,14 @@ private fun Muc(
             Column(Modifier.weight(1f)) {
                 Text(
                     tieuDe,
-                    color = Color.White,
+                    color = mau.chu,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 if (!mo && tomTat != null) {
                     Text(
                         tomTat,
-                        color = Color.White.copy(alpha = 0.45f),
+                        color = mau.chuRatMo,
                         fontSize = 12.5.sp
                     )
                 }
@@ -1198,9 +1298,9 @@ private fun Slider(
 ) {
     Column(Modifier.padding(vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(label, color = Color.White, fontSize = 14.sp)
+            Text(label, color = mau.chu, fontSize = 14.sp)
             if (suggestion == null) {
-                Text(display, color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+                Text(display, color = mau.chuMo, fontSize = 13.sp)
             } else {
                 Text(
                     "$display → ${suggestion.toInt()}",
@@ -1222,7 +1322,7 @@ private fun Slider(
             colors = androidx.compose.material3.SliderDefaults.colors(
                 thumbColor = accent,
                 activeTrackColor = accent,
-                inactiveTrackColor = Color.White.copy(alpha = 0.15f)
+                inactiveTrackColor = mau.vien
             )
         )
     }
@@ -1245,9 +1345,9 @@ private fun Toggle(
         verticalAlignment = Alignment.Top
     ) {
         Column(Modifier.weight(1f).padding(end = 14.dp)) {
-            Text(label, color = Color.White, fontSize = 14.sp)
+            Text(label, color = mau.chu, fontSize = 14.sp)
             Spacer(Modifier.height(3.dp))
-            Text(hint, color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp, lineHeight = 17.sp)
+            Text(hint, color = mau.chuRatMo, fontSize = 12.sp, lineHeight = 17.sp)
         }
         androidx.compose.material3.Switch(
             checked = checked,
@@ -1260,6 +1360,35 @@ private fun Toggle(
     }
 }
 
+/**
+ * Lời xin quyền. Ba chỗ trong app đều dùng đúng cái này.
+ *
+ * Tự gói mình trong `Column`, không phát năm phần tử rời ra ngoài.
+ *
+ * Bản trước phát rời, và ở trang Đang phát nó được đặt trong một `Box` — mà
+ * trong `Box` thì mọi con đều xếp CHỒNG lên nhau, nên tiêu đề, đoạn mô tả và
+ * cái nút cùng đè lên một chỗ. Chỗ đặt thì trông vô hại, và cái sai lại nằm ở
+ * đây; gói sẵn thì đặt vào đâu cũng đúng.
+ */
+/**
+ * Đầu đề một màn hình.
+ *
+ * Có một chỗ duy nhất định nghĩa nó vì trước đây mỗi màn hình tự đặt lấy: chỗ
+ * thì 24sp đậm, chỗ thì 27sp vừa, chỗ chữ có chân chỗ không — và người dùng
+ * thấy ngay rằng mấy màn hình này không phải một app.
+ */
+@Composable
+internal fun Head(text: String) {
+    Text(
+        text,
+        color = mau.chu,
+        fontFamily = BoChu.Serif,
+        fontSize = 27.sp,
+        fontWeight = FontWeight.Medium,
+        lineHeight = 33.sp
+    )
+}
+
 @Composable
 internal fun Ask(
     title: String,
@@ -1268,11 +1397,13 @@ internal fun Ask(
     accent: Color,
     onAction: () -> Unit
 ) {
-    Text(title, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-    Spacer(Modifier.height(10.dp))
-    Text(body, color = Color.White.copy(alpha = 0.62f), fontSize = 14.sp, lineHeight = 21.sp)
-    Spacer(Modifier.height(22.dp))
-    Big(label = action, accent = accent, filled = true, onClick = onAction)
+    Column(Modifier.fillMaxWidth()) {
+        Head(title)
+        Spacer(Modifier.height(10.dp))
+        Text(body, color = mau.chuMo, fontSize = 14.sp, lineHeight = 21.sp)
+        Spacer(Modifier.height(22.dp))
+        Big(label = action, accent = accent, filled = true, onClick = onAction)
+    }
 }
 
 /** Nut lon, bo tron het co - khong dung nut mac dinh de giu net rieng. */
@@ -1282,14 +1413,14 @@ private fun Big(label: String, accent: Color, filled: Boolean, onClick: () -> Un
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(50))
-            .background(if (filled) accent else Color.White.copy(alpha = 0.10f))
+            .background(if (filled) accent else mau.nenChim)
             .clickable(onClick = onClick)
             .padding(vertical = 17.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             label,
-            color = Color.White,
+            color = if (filled) Color.White else mau.chu,
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center
@@ -1311,5 +1442,5 @@ internal fun appLabel(packageName: String): String = when {
 }
 
 /** Nen goc cua ca app; man hinh soan loi dung chung de nhin lien mach. */
-internal val BACKDROP = Color(0xFF0E0B14)
+/** Mau dung khi anh bia khong cho ra mau nao - hoac chua co bai nao. */
 private val FALLBACK = Color(0xFF6D28D9)

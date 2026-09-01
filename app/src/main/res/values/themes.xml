@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Compose tu lo phan mau; day chi la khung toi thieu de he thong dung Activity -->
-    <style name="Theme.Lyra" parent="android:Theme.Material.NoActionBar" />
+    <!--
+        Compose lo gan het phan mau; cai duy nhat can khai o day la mau nen cua
+        CUA SO.
+
+        He thong ve mau nen nay trong khoang thoi gian giua luc bam vao biua
+        tuong va luc Compose ve khung dau tien. De trong thi no lay mau xam toi
+        cua Material, va tren mot app nen giay thi doan do la mot cai nhay den
+        - nhin nhu app hong chu khong nhu app dang mo.
+
+        Mau o day phai KHOP voi `BangMau.Giay` trong `ui/Kieu.kt`; ban toi nam
+        o `values-night`.
+    -->
+    <style name="Theme.Lyra" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/nen_giay</item>
+    </style>
 </resources>

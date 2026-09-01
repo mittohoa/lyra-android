@@ -57,17 +57,17 @@ fun LyricEditor(
     Column(
         Modifier
             .fillMaxSize()
-            .background(BACKDROP)
+            .background(mau.nen)
             .statusBarsPadding()
             .imePadding()
             .padding(horizontal = 22.dp)
     ) {
         Spacer(Modifier.height(16.dp))
-        Text("Tự nhập lời", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text("Tự nhập lời", color = mau.chu, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
         Text(
             songLabel,
-            color = Color.White.copy(alpha = 0.5f),
+            color = mau.chuMo,
             fontSize = 13.sp,
             maxLines = 2
         )
@@ -76,7 +76,7 @@ fun LyricEditor(
         Text(
             "Dán lời vào đây. Có mốc thời gian dạng [00:12.34] thì lời sẽ chạy theo " +
                 "nhạc; không có thì hiện dạng chữ trơn.",
-            color = Color.White.copy(alpha = 0.45f),
+            color = mau.chuRatMo,
             fontSize = 12.5.sp,
             lineHeight = 18.sp
         )
@@ -87,7 +87,7 @@ fun LyricEditor(
                 .weight(1f)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color.White.copy(alpha = 0.06f))
+                .background(mau.nenChim)
                 .padding(14.dp)
         ) {
             // `BasicTextField` chu khong phai `TextField` cua Material: o day
@@ -97,13 +97,13 @@ fun LyricEditor(
                 value = text,
                 onValueChange = { text = it },
                 modifier = Modifier.fillMaxSize(),
-                textStyle = TextStyle(color = Color.White, fontSize = 15.sp, lineHeight = 23.sp),
+                textStyle = TextStyle(color = mau.chu, fontSize = 15.sp, lineHeight = 23.sp),
                 cursorBrush = SolidColor(accent)
             )
             if (text.isEmpty()) {
                 Text(
                     "[00:12.34]Câu đầu tiên\n[00:18.00]Câu thứ hai\n…",
-                    color = Color.White.copy(alpha = 0.25f),
+                    color = mau.chuRatMo,
                     fontSize = 15.sp,
                     lineHeight = 23.sp
                 )
@@ -118,10 +118,10 @@ fun LyricEditor(
                 .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Pillbtn("Huỷ", Color.White.copy(alpha = 0.10f), Modifier.weight(1f), onCancel)
+            Pillbtn("Huỷ", mau.nenChim, Modifier.weight(1f), onCancel)
             if (initial.isNotEmpty()) {
                 // Xoa loi tu nhap thi app quay lai tra tu ba nguon nhu binh thuong
-                Pillbtn("Xoá", Color.White.copy(alpha = 0.10f), Modifier.weight(1f)) { onSave("") }
+                Pillbtn("Xoá", mau.nenChim, Modifier.weight(1f)) { onSave("") }
             }
             Pillbtn("Lưu", accent, Modifier.weight(1.4f)) { onSave(text) }
         }
@@ -143,6 +143,6 @@ private fun Pillbtn(
             .padding(vertical = 15.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Color.White, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
+        Text(label, color = mau.chu, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
     }
 }

@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.mittohoa.lyra.data.Playlist
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.sources.MusicSource
+import com.mittohoa.lyra.sources.NguonNgoai
 import com.mittohoa.lyra.sources.Track
 
 /**
@@ -118,6 +119,7 @@ fun SearchPane(
     Column(Modifier.fillMaxSize().imePadding()) {
         SearchField(
             accent = accent,
+            coOnline = NguonNgoai.CO_ONLINE,
             query = query,
             onQueryChange = onQueryChange,
             onSubmit = {
@@ -126,53 +128,78 @@ fun SearchPane(
             }
         )
 
+        // Ban Play khong co nguon online nao - xem `NguonNgoai`. Moi cau chu o
+        // duoi phai doc bien nay chu khong duoc noi chac mot dieu chi dung cho
+        // ban tai thang: mot ban dung khong co Zing ma van moi nguoi dung tim
+        // Zing thi khong chi sai, no con lam ho tuong app hong.
+        val coOnline = NguonNgoai.CO_ONLINE
+
         when {
             searching && results.isEmpty() -> Center {
                 LyraMark(size = 44.dp, busy = true)
                 Spacer(Modifier.height(14.dp))
-                Text("Đang tìm…", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
+                Text("Đang tìm…", color = mau.chuMo, fontSize = 14.sp)
             }
 
-            results.isEmpty() && query.isNotBlank() && !searching -> Center {
-                Text(
-                    "Không tìm thấy bài nào",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 16.sp
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Thử tên bài không dấu, hoặc thêm tên ca sĩ.",
-                    color = Color.White.copy(alpha = 0.45f),
-                    fontSize = 13.sp
-                )
-            }
-
-            // O tim con trong: hien nhac cua chinh nguoi dung. Mot man hinh
-            // trong voi mot cau moi go la mot man hinh khong lam gi ca, trong
-            // khi thu ho hay mo nhat lai dang nam san trong may.
+            // Xin quyen doc nhac phai dung TRUOC ket luan "khong tim thay".
+            //
+            // Khong co quyen thi kho de tim la RONG, nen ket qua rong khong noi
+            // len dieu gi ve bai hat ca - no chi noi rang Lyra chua duoc phep
+            // nhin. Ket luan "khong tim thay" o day la mot cau tra loi sai, va
+            // no che mat dung cai nut sua duoc chuyen do. Nang nhat o ban Play,
+            // noi ma nhac trong may la kho DUY NHAT.
             results.isEmpty() && !canReadLibrary -> Center {
                 Ask(
-                    title = "Nhạc trong máy",
-                    body = "Cho Lyra đọc nhạc đã có sẵn trong máy để phát và tìm cùng " +
-                        "với hai nguồn online. Lyra chỉ xin quyền đọc NHẠC — không đụng " +
-                        "tới ảnh, video hay tài liệu của bạn.",
+                    title = if (query.isBlank()) "Nhạc trong máy" else "Chưa tìm được",
+                    body = if (coOnline) {
+                        "Cho Lyra đọc nhạc đã có sẵn trong máy để phát và tìm cùng " +
+                            "với hai nguồn online. Lyra chỉ xin quyền đọc NHẠC — không " +
+                            "đụng tới ảnh, video hay tài liệu của bạn."
+                    } else {
+                        "Bản này tìm trong nhạc đã có sẵn trong máy bạn, và Lyra chưa " +
+                            "được phép đọc. Lyra chỉ xin quyền đọc NHẠC — không đụng tới " +
+                            "ảnh, video hay tài liệu của bạn."
+                    },
                     action = "Cho phép",
                     accent = accent,
                     onAction = onAskLibrary
                 )
             }
 
+            results.isEmpty() && query.isNotBlank() && !searching -> Center {
+                Text(
+                    "Không tìm thấy bài nào",
+                    color = mau.chuMo,
+                    fontSize = 16.sp
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    when {
+                        coOnline -> "Thử tên bài không dấu, hoặc thêm tên ca sĩ."
+                        library.isEmpty() ->
+                            "Bản này chỉ tìm trong nhạc có sẵn trong máy, mà Lyra " +
+                                "chưa thấy bài nào ở đây."
+                        else ->
+                            "Bản này chỉ tìm trong ${library.size} bài có trong máy. " +
+                                "Thử tên bài không dấu."
+                    },
+                    color = mau.chuRatMo,
+                    fontSize = 13.sp
+                )
+            }
+
             results.isEmpty() && library.isEmpty() && playlists.isEmpty() -> Center {
                 Text(
                     "Nghe gì hôm nay?",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = mau.chuMo,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Tìm trong Zing MP3 và NhacCuaTui cùng lúc.",
-                    color = Color.White.copy(alpha = 0.45f),
+                    if (coOnline) "Tìm trong Zing MP3 và NhacCuaTui cùng lúc."
+                    else "Chép nhạc vào máy rồi tìm ở đây — lời bài hát thì Lyra tự tra.",
+                    color = mau.chuRatMo,
                     fontSize = 13.sp
                 )
             }
@@ -186,7 +213,7 @@ fun SearchPane(
                 if (library.isNotEmpty()) item {
                     Text(
                         "Trong máy · ${library.size} bài",
-                        color = Color.White.copy(alpha = 0.45f),
+                        color = mau.chuRatMo,
                         fontSize = 11.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 24.dp, top = 6.dp, bottom = 6.dp)
@@ -228,35 +255,49 @@ fun SearchPane(
 @Composable
 private fun SearchField(
     accent: Color,
+    coOnline: Boolean,
     query: String,
     onQueryChange: (String) -> Unit,
     onSubmit: () -> Unit
 ) {
-    Box(
+    // Ô tìm là một DÒNG KẺ, không phải một viên thuốc.
+    //
+    // Viên thuốc bo tròn là hình dạng ô tìm của mọi app hôm nay. Trên một trang
+    // giấy thì chỗ để viết vào là một dòng có kẻ chân — nó vừa hợp với phần còn
+    // lại của trang, vừa nói đúng việc phải làm: viết lên đây.
+    Column(
         Modifier
-            .padding(horizontal = 22.dp, vertical = 10.dp)
+            .padding(start = 20.dp, end = 22.dp, top = 14.dp, bottom = 10.dp)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(50))
-            .background(Color.White.copy(alpha = 0.10f))
-            .padding(horizontal = 20.dp, vertical = 15.dp)
     ) {
+    Box(Modifier.fillMaxWidth().padding(bottom = 9.dp)) {
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+            textStyle = TextStyle(color = mau.chu, fontSize = 15.sp),
             cursorBrush = SolidColor(accent),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { onSubmit() })
         )
         if (query.isEmpty()) {
             Text(
-                "Tên bài, hoặc tên ca sĩ",
-                color = Color.White.copy(alpha = 0.35f),
+                if (coOnline) "Tên bài, hoặc tên ca sĩ"
+                else "Tìm trong nhạc của bạn",
+                color = mau.chuRatMo,
                 fontSize = 15.sp
             )
         }
+    }
+        // Nét kẻ chân đậm lên khi có chữ: dòng đang được viết thì đậm hơn dòng
+        // để trống, đúng như một tờ giấy có người vừa cầm bút.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(if (query.isEmpty()) 1.dp else 2.dp)
+                .background(if (query.isEmpty()) mau.vien else accent)
+        )
     }
 }
 
@@ -288,7 +329,7 @@ private fun TrackRow(
         Column(Modifier.weight(1f)) {
             Text(
                 track.title,
-                color = if (playing) accent else Color.White,
+                color = if (playing) accent else mau.chu,
                 fontSize = 15.5.sp,
                 fontWeight = if (playing) FontWeight.Bold else FontWeight.Medium,
                 maxLines = 1
@@ -297,14 +338,14 @@ private fun TrackRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     track.artist.ifBlank { "Không rõ ca sĩ" },
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = mau.chuMo,
                     fontSize = 12.5.sp,
                     maxLines = 1,
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 Text(
                     "  ·  ${track.source.label}",
-                    color = Color.White.copy(alpha = 0.32f),
+                    color = mau.chuRatMo,
                     fontSize = 12.sp,
                     maxLines = 1
                 )
@@ -314,7 +355,7 @@ private fun TrackRow(
         if (track.durationMs > 0) {
             Text(
                 clockLabel(track.durationMs),
-                color = Color.White.copy(alpha = 0.4f),
+                color = mau.chuRatMo,
                 fontSize = 12.5.sp
             )
             Spacer(Modifier.width(6.dp))
@@ -346,7 +387,7 @@ private fun TrackRow(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    null -> Text("↓", color = Color.White.copy(alpha = 0.45f), fontSize = 18.sp)
+                    null -> Text("↓", color = mau.chuRatMo, fontSize = 18.sp)
                 }
             }
         }
@@ -358,7 +399,7 @@ private fun TrackRow(
                 .clickable(onClick = onEnqueue),
             contentAlignment = Alignment.Center
         ) {
-            Text(actionLabel, color = Color.White.copy(alpha = 0.6f), fontSize = 22.sp)
+            Text(actionLabel, color = mau.chuMo, fontSize = 22.sp)
         }
     }
 }

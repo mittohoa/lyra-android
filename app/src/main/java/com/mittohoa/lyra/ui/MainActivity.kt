@@ -31,6 +31,13 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.annotation.RequiresApi
 import com.mittohoa.lyra.BuildConfig
 import com.mittohoa.lyra.R
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.text.TextStyle
+import androidx.core.view.WindowCompat
+import com.mittohoa.lyra.data.ChuDe
+import com.mittohoa.lyra.data.ChuDePrefs
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.service.LyraTileService
 import kotlinx.coroutines.delay
@@ -83,6 +90,29 @@ class MainActivity : ComponentActivity() {
         readPermissions()
 
         setContent {
+            // Mat giay: giay sang, muc toi, hay theo may. Giu o day chu khong
+            // day qua `Lyra` - no khong lien quan gi toi nhac, va no chi song
+            // trong mot man hinh duy nhat.
+            var chuDe by remember { mutableStateOf(ChuDePrefs(this).doc()) }
+            val toiTheoMay = isSystemInDarkTheme()
+            val giay = when (chuDe) {
+                ChuDe.GIAY -> true
+                ChuDe.MUC -> false
+                ChuDe.THEO_MAY -> !toiTheoMay
+            }
+            val bangMau = if (giay) BangMau.Giay else BangMau.Muc
+
+            // Hai dai he thong ve DE len nen cua app, nen chu cua chung phai
+            // doi theo mat giay - de nguyen chu trang tren nen giay ngà thi
+            // dong ho va vach song khong con doc duoc.
+            LaunchedEffect(giay) {
+                WindowCompat.getInsetsController(window, window.decorView)
+                    .apply {
+                        isAppearanceLightStatusBars = giay
+                        isAppearanceLightNavigationBars = giay
+                    }
+            }
+
             val now by Lyra.now.collectAsStateWithLifecycle()
             val lyrics by Lyra.lyrics.collectAsStateWithLifecycle()
             val loading by Lyra.loading.collectAsStateWithLifecycle()
@@ -120,6 +150,15 @@ class MainActivity : ComponentActivity() {
             var draft by remember { mutableStateOf<String?>(null) }
             val position = rememberPlaybackPosition()
 
+            // Mot cho duy nhat dat bang mau va bo chu cho ca cay giao dien.
+            //
+            // `LocalTextStyle` la duong ngan nhat de moi `Text` trong app doi
+            // sang Be Vietnam Pro: `material3.Text` tu tron kieu nay vao, nen
+            // khong phai sua vai tram cho goi `Text` de dat `fontFamily`.
+            CompositionLocalProvider(
+                LocalBangMau provides bangMau,
+                LocalTextStyle provides TextStyle(fontFamily = BoChu.Sans)
+            ) {
             HomeScreen(
                 now = now,
                 lyrics = lyrics,
@@ -196,6 +235,11 @@ class MainActivity : ComponentActivity() {
                 tuCaiDuoc = Lyra.tuCaiDuoc,
                 lyricEffect = lyricEffect,
                 onLyricEffectChange = { Lyra.datHieuUng(this, it) },
+                chuDe = chuDe,
+                onChuDeChange = {
+                    chuDe = it
+                    ChuDePrefs(this).ghi(it)
+                },
                 onCapNhat = {
                     // Bao hong roi thi nut doi nghia: mo trang phat hanh de nguoi
                     // dung cai tay, vi thu tu dong vua that bai.
@@ -233,6 +277,7 @@ class MainActivity : ComponentActivity() {
                     onCancel = { draft = null }
                 )
             }
+            } // het CompositionLocalProvider
         }
     }
 
