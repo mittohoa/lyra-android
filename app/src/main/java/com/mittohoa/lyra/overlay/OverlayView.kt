@@ -174,12 +174,24 @@ class OverlayView(context: Context) : View(context) {
         }
     }
 
-    /** Ten bai hien khi chua co loi, cho do trong. */
+    /**
+     * Ten bai hien khi CO bai nhung chua tim ra loi.
+     *
+     * Chuoi rong nghia la khong co bai nao - luc do khung tu thu minh lai het
+     * co, xem `onMeasure`. Mot hop trong lo lung tren man hinh chinh ghi "chua
+     * phat bai nao" thi khong noi duoc gi, va no chinh la thu khien nguoi dung
+     * tuong app da tat ma cai khung con dinh lai.
+     */
     fun setIdleText(text: String) {
         if (idleText == text) return
+        val doiCao = idleText.isEmpty() != text.isEmpty()
         idleText = text
+        if (doiCao) requestLayout()
         invalidate()
     }
+
+    /** Khong co bai nao va cung khong co loi thi khong co gi de ve. */
+    private fun rong(): Boolean = lines.isEmpty() && idleText.isEmpty()
 
     /** Dong dang hat o lan ve truoc - de biet khi nao that su can ve lai. */
     private var drawnIndex = Int.MIN_VALUE
@@ -291,6 +303,9 @@ class OverlayView(context: Context) : View(context) {
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
+        // Khong co gi de noi thi khong chiem cho. Cong tac "dang bat" van bat;
+        // khung chi thu lai het co roi tu no lon lai khi co bai.
+        if (rong()) { setMeasuredDimension(0, 0); return }
         // Cao vua du so dong se ve, cong hang dich neu co, cong le tren duoi
         val rows = 1 + contextLines * 2
         var height = rows * lineHeight() + dp(20f)

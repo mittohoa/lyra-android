@@ -551,6 +551,14 @@ object Lyra {
     private const val TICK_MS = 100L
 
     /**
+     * Nhip khi man hinh tat.
+     *
+     * Luc do khung noi khong duoc ve, chi con the media can dung cau. Mot giay
+     * mot lan la du cho mot dong chu vai giay moi doi.
+     */
+    private const val TICK_NGU_MS = 1_000L
+
+    /**
      * Cau da dua len the media lan truoc.
      *
      * Giu lai de chi cap nhat khi DOI CAU. The media di qua he thong toi giao
@@ -559,10 +567,27 @@ object Lyra {
      */
     private var cardLine: String? = null
 
+    /**
+     * Man hinh dang sang hay khong.
+     *
+     * Giu lai chu khong hoi `PowerManager` moi nhip: hoi he thong 10 lan mot
+     * giay chinh la kieu lang phi ma cho nay sinh ra de chan.
+     */
+    @Volatile
+    private var manHinhSang = true
+
     private val tick = object : Runnable {
         override fun run() {
             val position = livePosition()
-            if (overlay.isShowing) overlay.update {
+
+            // Man hinh tat thi KHONG ve khung noi: no dang vo hinh, va ve mot
+            // cua so khong ai nhin la dot pin thang. Truoc day khong co dieu
+            // kien nay - bat khung roi khoa may la Lyra ve lai 10 lan moi giay
+            // suot dem.
+            //
+            // The media thi van cap nhat: no hien tren man hinh khoa, va do
+            // dung la luc man hinh vua bat len.
+            if (manHinhSang && overlay.isShowing) overlay.update {
                 setPosition(position)
                 val n = _now.value
                 setTransport(n?.duration ?: 0L, n?.isPlaying == true)
@@ -572,10 +597,28 @@ object Lyra {
             // Chay tiep chung nao con viec de lam. Truoc day nhip chi song theo
             // khung noi; gio Lyra tu phat duoc, va luc do the media van can duoc
             // cap nhat du khung noi dang tat.
+            //
+            // Man hinh tat thi CHAM lai chu khong dung han: cau dang hat van
+            // phai dung tren the media o man hinh khoa. Mot giay mot lan la du -
+            // khong ai doc nhanh hon the.
             if (overlay.isShowing || localPlayer?.isPlaying == true) {
-                handler.postDelayed(this, TICK_MS)
+                handler.postDelayed(this, if (manHinhSang) TICK_MS else TICK_NGU_MS)
             }
         }
+    }
+
+    /**
+     * Bao cho nhip biet man hinh vua tat hay vua bat.
+     *
+     * Goi tu `LyraNotificationListener` - dich vu do song lau hon moi Activity,
+     * va la cho duy nhat con song khi nguoi dung da roi app.
+     */
+    fun manHinhDoi(sang: Boolean) {
+        if (manHinhSang == sang) return
+        manHinhSang = sang
+        // Vua bat lai: ve ngay chu khong doi het nhip cham - mo may len ma nhin
+        // mot khung loi da chet mot giay thi thay lien.
+        if (sang) startTick()
     }
 
     /** Doc lai bai dang phat tu bo may phat cua chinh Lyra. */
@@ -749,7 +792,9 @@ object Lyra {
     private fun idleText(): String {
         val n = _now.value
         return when {
-            n == null -> "Chưa phát bài nào"
+            // Rong = khung tu an. Khong co bai nao thi khong co loi nao, va
+            // mot hop trong lo lung khong phuc vu ai.
+            n == null -> ""
             n.artist.isNotEmpty() -> "${n.artist} — ${n.title}"
             else -> n.title
         }
