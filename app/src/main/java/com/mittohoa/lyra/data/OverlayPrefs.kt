@@ -26,6 +26,14 @@ data class OverlayLook(
     val backgroundOpacity: Float = 0.35f,
     /** So dong hien them truoc va sau dong dang hat. */
     val contextLines: Int = 1,
+    /**
+     * Hien thanh dieu khien o DAY khung.
+     *
+     * Dat duoi cung chu khong de len loi: loi la thu nguoi ta dang doc, va mot
+     * hang nut noi giua no la lay cho cua chinh minh.
+     */
+    val showControls: Boolean = false,
+
     /** Cham co di xuyen qua khung xuong app ben duoi khong. */
     val clickThrough: Boolean = false,
     /** Vi tri da keo toi, nho lai cho lan mo sau. */
@@ -58,6 +66,7 @@ class OverlayPrefs(context: Context) {
         strokeWidthDp = prefs.getFloat("strokeWidth", 2f),
         backgroundOpacity = prefs.getFloat("bgOpacity", 0.35f),
         contextLines = prefs.getInt("contextLines", 1),
+        showControls = prefs.getBoolean("showControls", false),
         clickThrough = prefs.getBoolean("clickThrough", false),
         x = prefs.getInt("x", 0),
         y = prefs.getInt("y", 240)
@@ -71,6 +80,7 @@ class OverlayPrefs(context: Context) {
             .putFloat("strokeWidth", look.strokeWidthDp)
             .putFloat("bgOpacity", look.backgroundOpacity)
             .putInt("contextLines", look.contextLines)
+            .putBoolean("showControls", look.showControls)
             .putBoolean("clickThrough", look.clickThrough)
             .putInt("x", look.x)
             .putInt("y", look.y)

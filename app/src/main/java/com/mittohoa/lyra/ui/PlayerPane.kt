@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mittohoa.lyra.media.NowPlaying
+import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.sources.Track
 import androidx.compose.foundation.Image
@@ -134,10 +135,23 @@ fun PlayerPane(
         return
     }
 
-    // Lyra tu phat thi co nut bam; nhac o app khac thi khong. Khong app nao
-    // dieu khien duoc bo phat cua app khac, va bay nut ra roi bam khong an gi
-    // con te hon la khong co nut.
-    val mine = queue.isNotEmpty() && queueIndex >= 0
+    // Co nut bam hay khong, cho CA nhac o app khac.
+    //
+    // Cho nay truoc day viet: "khong app nao dieu khien duoc bo phat cua app
+    // khac". Sai. Quyen doc thong bao cho ta cac `MediaController`, moi cai
+    // mang mot bo `TransportControls` - va do la duong chinh thuc ma dong ho
+    // thong minh va man hinh xe hoi dung de bam nut nhac. Vi tin la khong lam
+    // duoc nen ca trang giau nut suot mot thoi gian dai.
+    //
+    // Van hoi lai moi lan ve: mot so app khong mo `SEEK_TO`, va bay ra mot
+    // thanh tua khong keo duoc con te hon la khong co thanh nao.
+    val mine = Lyra.dieuKhienDuoc()
+    val tuaDuoc = Lyra.tuaDuoc()
+
+    // Hang doi la chuyen KHAC han: no chi ton tai khi Lyra la ben dang phat.
+    // Nhac o Spotify thi ta bam duoc nut cua ho, nhung khong nhin thay hang doi
+    // cua ho - va bay ra mot muc "Tiep theo" trong ron la noi doi.
+    val hangDoiRieng = queue.isNotEmpty() && queueIndex >= 0
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -169,7 +183,7 @@ fun PlayerPane(
                 accent = accent,
                 position = position,
                 duration = now.duration,
-                enabled = mine,
+                enabled = tuaDuoc,
                 onSeek = onSeek
             )
 
@@ -218,7 +232,7 @@ fun PlayerPane(
                 )
             }
 
-            if (mine) {
+            if (hangDoiRieng) {
                 Spacer(Modifier.height(30.dp))
                 Row(
                     Modifier.fillMaxWidth(),
@@ -256,7 +270,7 @@ fun PlayerPane(
             }
         }
 
-        if (mine) {
+        if (hangDoiRieng) {
             val from = (queueIndex + 1).coerceAtMost(queue.size)
             itemsIndexed(
                 queue.subList(from, queue.size),

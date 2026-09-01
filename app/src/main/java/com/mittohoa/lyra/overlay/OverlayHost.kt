@@ -68,6 +68,13 @@ class OverlayHost {
      */
     var onDismiss: (() -> Unit)? = null
 
+    /** Bam nut tren dai dieu khien. */
+    var onTruoc: (() -> Unit)? = null
+    var onPhatDung: (() -> Unit)? = null
+    var onSau: (() -> Unit)? = null
+    /** Cham vao thanh song: ti le 0..1 trong bai. */
+    var onTua: ((Float) -> Unit)? = null
+
     fun show(context: Context) {
         if (view != null) return
         if (!Settings.canDrawOverlays(context)) {
@@ -248,6 +255,20 @@ class OverlayHost {
                         System.currentTimeMillis() - downAt < TAP_MS
                     ) {
                         // Khong xe dich va nhac tay nhanh = mot cu cham
+                        // Dai dieu khien duoc xet TRUOC: no nam de len vung
+                        // cua mot dong loi, va cham vao nut ma lai can lai loi
+                        // thi khong ai hieu chuyen gi vua xay ra.
+                        val cham = target.chamDieuKhien(event.x, event.y)
+                        if (cham != null) {
+                            target.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                            when (cham) {
+                                OverlayView.ChamDieuKhien.Truoc -> onTruoc?.invoke()
+                                OverlayView.ChamDieuKhien.PhatDung -> onPhatDung?.invoke()
+                                OverlayView.ChamDieuKhien.Sau -> onSau?.invoke()
+                                is OverlayView.ChamDieuKhien.Tua -> onTua?.invoke(cham.tiLe)
+                            }
+                            return@setOnTouchListener false
+                        }
                         val index = target.lineIndexAt(event.y)
                         if (index >= 0) {
                             // Rung nhe de bao da nhan: nguoi dung dang nhin app

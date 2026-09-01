@@ -144,6 +144,40 @@ class MediaSessionWatcher {
         return controller.playbackState?.currentPosition() ?: 0L
     }
 
+    /**
+     * Phien dang duoc theo doi, de gui lenh dieu khien.
+     *
+     * Chon y het `publish`: uu tien phien DANG PHAT, khong co thi lay phien dau
+     * con metadata. Phai cung mot phep chon, khong thi nut bam se dieu khien
+     * mot bai khac voi bai dang hien loi - va khong ai hieu vi sao.
+     */
+    private fun chosen(): MediaController? {
+        val controllers = attached.keys.toList()
+        return controllers.firstOrNull { it.playbackState.isActuallyPlaying() }
+            ?: controllers.firstOrNull { it.metadata != null }
+    }
+
+    /**
+     * Dieu khien bo phat cua app khac.
+     *
+     * Lam duoc that, va day la duong chinh thuc: quyen doc thong bao cho ta cac
+     * `MediaController`, va moi controller mang mot bo `TransportControls`. Do
+     * la cach dong ho thong minh va man hinh xe hoi bam nut nhac.
+     *
+     * Tra `false` khi khong co phien nao - ben goi con biet ma khong ve nut.
+     */
+    fun dieuKhien(lam: MediaController.TransportControls.() -> Unit): Boolean {
+        val c = chosen() ?: return false
+        return runCatching { c.transportControls.lam() }.isSuccess
+    }
+
+    /** Phien hien tai co cho phep tua khong. */
+    fun tuaDuoc(): Boolean {
+        val c = chosen() ?: return false
+        val actions = c.playbackState?.actions ?: return false
+        return actions and PlaybackState.ACTION_SEEK_TO != 0L
+    }
+
     private companion object {
         const val TAG = "LyraWatcher"
     }

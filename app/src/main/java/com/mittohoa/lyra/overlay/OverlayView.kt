@@ -37,6 +37,16 @@ class OverlayView(context: Context) : View(context) {
     var backgroundColorValue: Int = Color.BLACK
     var backgroundOpacity: Float = 0.35f
     var contextLines: Int = 1
+    var showControls: Boolean = false
+
+    /** Do dai bai va trang thai phat - chi dung cho dai dieu khien. */
+    private var duration: Long = 0
+    private var dangPhat: Boolean = false
+
+    /** Vung da ve cua dai dieu khien, de doi mot cu cham thanh mot hanh dong. */
+    private var controlsTop = Float.MAX_VALUE
+    private var waveRect: ClosedFloatingPointRange<Float> = 0f..0f
+    private var waveY: ClosedFloatingPointRange<Float> = 0f..0f
 
     private var lines: List<LyricLine> = emptyList()
     private var translations: List<String> = emptyList()
@@ -85,6 +95,8 @@ class OverlayView(context: Context) : View(context) {
         strokeWidthDp = look.strokeWidthDp
         backgroundOpacity = look.backgroundOpacity
         contextLines = look.contextLines
+        val doiCao = showControls != look.showControls
+        showControls = look.showControls
         drawnIndex = Int.MIN_VALUE
         requestLayout()
         invalidate()
@@ -116,6 +128,50 @@ class OverlayView(context: Context) : View(context) {
         // Them hay bot hang dich la doi CHIEU CAO cua ca cua so
         if (hadRow != next.isNotEmpty()) requestLayout()
         invalidate()
+    }
+
+    /**
+     * Do dai bai va trang thai phat, cho dai dieu khien.
+     *
+     * Ve lai NGAY khi doi trang thai phat - nut phai doi hinh cung luc nguoi
+     * dung bam, khong cho toi lan doi dong tiep theo.
+     */
+    fun setTransport(duration: Long, dangPhat: Boolean) {
+        val doi = this.dangPhat != dangPhat || this.duration != duration
+        this.duration = duration
+        this.dangPhat = dangPhat
+        if (doi && showControls) invalidate()
+    }
+
+    /**
+     * Cham vao dai dieu khien: tra ve viec can lam, hoac null neu cham cho khac.
+     *
+     * `Tua` mang ti le 0..1 chu khong mang mili-giay: view khong biet ben goi
+     * se tua bo phat nao, va do dai o day chi de VE.
+     */
+    sealed interface ChamDieuKhien {
+        data object Truoc : ChamDieuKhien
+        data object PhatDung : ChamDieuKhien
+        data object Sau : ChamDieuKhien
+        data class Tua(val tiLe: Float) : ChamDieuKhien
+    }
+
+    fun chamDieuKhien(x: Float, y: Float): ChamDieuKhien? {
+        if (!showControls || y < controlsTop) return null
+        if (y in waveY) {
+            if (x !in waveRect) return null
+            val rong = waveRect.endInclusive - waveRect.start
+            if (rong <= 0f) return null
+            return ChamDieuKhien.Tua(((x - waveRect.start) / rong).coerceIn(0f, 1f))
+        }
+        // Hang nut: chia ba vung theo be ngang, khong doi cham dung tam nut -
+        // nut nho ma vung cham nho nua thi bam mai khong trung.
+        val giua = width / 2f
+        return when {
+            x < giua - dp(23f) -> ChamDieuKhien.Truoc
+            x > giua + dp(23f) -> ChamDieuKhien.Sau
+            else -> ChamDieuKhien.PhatDung
+        }
     }
 
     /** Ten bai hien khi chua co loi, cho do trong. */
@@ -230,13 +286,95 @@ class OverlayView(context: Context) : View(context) {
     /** Hang dich thap hon hang loi: no la chu thich, khong phai loi bai hat. */
     private fun translationHeight() = sp(fontSizeSp) * TRANSLATION_SCALE * 1.34f
 
+    /** Cao cua dai dieu khien o day khung, 0 khi khong hien. */
+    private fun controlsHeight() = if (showControls) dp(58f) else 0f
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         // Cao vua du so dong se ve, cong hang dich neu co, cong le tren duoi
         val rows = 1 + contextLines * 2
         var height = rows * lineHeight() + dp(20f)
         if (translations.isNotEmpty()) height += translationHeight()
+        height += controlsHeight()
         setMeasuredDimension(width, height.toInt())
+    }
+
+    /**
+     * Ve dai dieu khien o DAY khung: thanh song lam timeline, va ba nut.
+     *
+     * Song chi la HINH DANG, khong phai song am that cua bai. Song that doi
+     * doc mau am thanh, ma am thanh cua app khac chi lay duoc qua `Visualizer`
+     * - can quyen ghi am micro. Voi mot app loi bai hat thi do la cai gia
+     * khong tra noi: chinh sach quyen rieng tu dang ghi "khong micro", va Play
+     * Protect von da kho tinh voi app nay roi.
+     *
+     * Nen day la mot thanh tien do mang hinh song. No khong gia vo la gi khac.
+     */
+    private fun drawControls(canvas: Canvas, top: Float) {
+        val h = controlsHeight()
+        val giua = top + h / 2f
+
+        // ---- Thanh song ----
+        val leTrai = dp(16f)
+        val rong = width - leTrai * 2
+        if (rong <= 0f) return
+
+        val tienDo = if (duration > 0L) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f
+        val soCot = (rong / dp(4.5f)).toInt().coerceIn(8, 96)
+        val ysong = top + h * 0.30f
+        val caoNhat = h * 0.30f
+
+        for (i in 0 until soCot) {
+            val x = leTrai + i * (rong / soCot) + dp(1f)
+            // Hinh song co dinh, sinh tu chi so cot - khong doi theo bai, nen
+            // khong ai tuong no dang do am thanh that.
+            val n = kotlin.math.sin(i * 0.7f) * kotlin.math.cos(i * 0.31f)
+            val cao = (caoNhat * (0.30f + 0.70f * kotlin.math.abs(n))).coerceAtLeast(dp(2f))
+            val daQua = i.toFloat() / soCot <= tienDo
+            backdrop.color = textColor
+            backdrop.alpha = if (daQua) 230 else 70
+            canvas.drawRoundRect(
+                x, ysong - cao / 2f, x + rong / soCot - dp(2f), ysong + cao / 2f,
+                dp(1.5f), dp(1.5f), backdrop
+            )
+        }
+
+        // ---- Ba nut ----
+        val ynut = top + h * 0.72f
+        val co = dp(9f)
+        backdrop.color = textColor
+        backdrop.alpha = 235
+        val giuaX = width / 2f
+        val cach = dp(46f)
+
+        veTamGiac(canvas, giuaX - cach, ynut, co, trai = true)
+        if (dangPhat) {
+            canvas.drawRect(giuaX - co * 0.55f, ynut - co, giuaX - co * 0.15f, ynut + co, backdrop)
+            canvas.drawRect(giuaX + co * 0.15f, ynut - co, giuaX + co * 0.55f, ynut + co, backdrop)
+        } else {
+            veTamGiac(canvas, giuaX, ynut, co, trai = false)
+        }
+        veTamGiac(canvas, giuaX + cach, ynut, co, trai = false)
+        // Vach dung canh nut bai truoc/sau cho ra hinh "tua"
+        canvas.drawRect(giuaX - cach - co * 0.95f, ynut - co, giuaX - cach - co * 0.6f, ynut + co, backdrop)
+        canvas.drawRect(giuaX + cach + co * 0.6f, ynut - co, giuaX + cach + co * 0.95f, ynut + co, backdrop)
+
+        controlsTop = top
+        waveRect = leTrai..(leTrai + rong)
+        waveY = (top)..(top + h * 0.55f)
+    }
+
+    private fun veTamGiac(canvas: Canvas, cx: Float, cy: Float, r: Float, trai: Boolean) {
+        val path = android.graphics.Path()
+        if (trai) {
+            path.moveTo(cx + r * 0.8f, cy - r); path.lineTo(cx + r * 0.8f, cy + r)
+            path.lineTo(cx - r * 0.7f, cy)
+        } else {
+            path.moveTo(cx - r * 0.8f, cy - r); path.lineTo(cx - r * 0.8f, cy + r)
+            path.lineTo(cx + r * 0.7f, cy)
+        }
+        path.close()
+        canvas.drawPath(path, backdrop)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -255,14 +393,17 @@ class OverlayView(context: Context) : View(context) {
         if (rows.isEmpty()) {
             if (idleText.isNotEmpty()) {
                 paint.textSize = sp(fontSizeSp) * 0.82f
-                drawRow(canvas, idleText, height / 2f, bold = false, alpha = 150)
+                drawRow(canvas, idleText, (height - controlsHeight()) / 2f, bold = false, alpha = 150)
             }
+            if (showControls) drawControls(canvas, height - controlsHeight())
             return
         }
 
-        // Dong dang hat luon nam giua khung; cac hang khac xep quanh no
+        // Dong dang hat luon nam giua PHAN LOI - khong phai giua ca cua so,
+        // vi dai dieu khien chiem phan duoi va se keo lech chu len tren.
+        val caoLoi = height - controlsHeight()
         val activeRow = rows.indexOfFirst { it.bold }.coerceAtLeast(0)
-        var baseline = height / 2f + sp(fontSizeSp) * 0.35f
+        var baseline = caoLoi / 2f + sp(fontSizeSp) * 0.35f
         for (i in 0 until activeRow) baseline -= rows[i].height
 
         for (row in rows) {
@@ -295,6 +436,8 @@ class OverlayView(context: Context) : View(context) {
             )
             baseline += row.height
         }
+
+        if (showControls) drawControls(canvas, height - controlsHeight())
     }
 
     /**

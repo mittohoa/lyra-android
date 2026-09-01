@@ -912,6 +912,16 @@ private fun TunePane(
             )
         }
 
+        Spacer(Modifier.height(26.dp))
+        Toggle(
+            label = "Thanh điều khiển dưới khung nổi",
+            hint = "Nút phát và thanh sóng làm timeline, nằm dưới cùng nên không đè lời. " +
+                "Chạy được cả với nhạc phát ở app khác.",
+            checked = look.showControls,
+            accent = accent,
+            onChange = { onLookChange(look.copy(showControls = it)) }
+        )
+
         Spacer(Modifier.height(30.dp))
         Text(
             "Hiệu ứng chữ ở trang Lời",

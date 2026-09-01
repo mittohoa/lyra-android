@@ -207,7 +207,32 @@ object Lyra {
 
     fun cycleRepeat(context: Context) = Playback.cycleRepeat(context)
 
-    fun seekTo(context: Context, positionMs: Long) = Playback.seekTo(context, positionMs)
+    fun seekTo(context: Context, positionMs: Long) {
+        if (tuPhat()) Playback.seekTo(context, positionMs)
+        else watcher.dieuKhien { seekTo(positionMs) }
+    }
+
+    /**
+     * Lyra co phai la ben dang phat khong.
+     *
+     * Quyet dinh moi nut bam di duong nao: bo phat cua chinh minh, hay bo phat
+     * cua app khac qua `MediaController`.
+     */
+    private fun tuPhat(): Boolean = localPlayer?.isPlaying == true
+
+    /**
+     * Nhac o app khac co dieu khien duoc khong.
+     *
+     * Truoc day ca app tin la KHONG - co han mot dong chu thich trong
+     * `PlayerPane` noi "khong app nao dieu khien duoc bo phat cua app khac", va
+     * trang Dang phat giau het nut khi nhac o app khac. Sai: quyen doc thong
+     * bao cho ta cac `MediaController`, moi cai mang mot bo `TransportControls`,
+     * va do la duong chinh thuc ma dong ho thong minh va man hinh xe hoi dung.
+     */
+    fun dieuKhienDuoc(): Boolean = tuPhat() || watcher.dieuKhien { }
+
+    /** Phien hien tai co cho tua khong. Khong phai app nao cung cho. */
+    fun tuaDuoc(): Boolean = tuPhat() || watcher.tuaDuoc()
 
     private var searchJob: Job? = null
 
@@ -494,11 +519,31 @@ object Lyra {
 
     fun removeFromQueue(context: Context, index: Int) = Playback.removeFromQueue(context, index)
 
-    fun next(context: Context) = Playback.next(context)
+    /**
+     * Ba nut nay di mot trong hai duong.
+     *
+     * Lyra dang phat thi bam thang vao bo phat cua minh - chinh xac hon va
+     * khong qua trung gian nao. Nhac o app khac thi gui lenh qua
+     * `MediaController` cua ho.
+     */
+    fun next(context: Context) {
+        if (tuPhat()) Playback.next(context) else watcher.dieuKhien { skipToNext() }
+    }
 
-    fun previous(context: Context) = Playback.previous(context)
+    fun previous(context: Context) {
+        if (tuPhat()) Playback.previous(context) else watcher.dieuKhien { skipToPrevious() }
+    }
 
-    fun playPause(context: Context) = Playback.playPause(context)
+    fun playPause(context: Context) {
+        if (tuPhat()) { Playback.playPause(context); return }
+        // Tam dung roi thi `tuPhat` la false, nhung neu Lyra van la ben giu hang
+        // doi thi nut Phat phai danh thuc bo phat cua Lyra chu khong phai app
+        // khac - nguoi dung vua nghe bai cua Lyra, khong doi y giua chung.
+        if (_queueIndex.value >= 0 && watcher.now.value?.isPlaying != true) {
+            Playback.playPause(context); return
+        }
+        watcher.dieuKhien { if (now.value?.isPlaying == true) pause() else play() }
+    }
 
     private var wired = false
 
@@ -517,7 +562,11 @@ object Lyra {
     private val tick = object : Runnable {
         override fun run() {
             val position = livePosition()
-            if (overlay.isShowing) overlay.update { setPosition(position) }
+            if (overlay.isShowing) overlay.update {
+                setPosition(position)
+                val n = _now.value
+                setTransport(n?.duration ?: 0L, n?.isPlaying == true)
+            }
             pushLineToCard(position)
 
             // Chay tiep chung nao con viec de lam. Truoc day nhip chi song theo
@@ -716,6 +765,17 @@ object Lyra {
         // Giu tay tren khung = tat khung. Gan cung cho voi `onLineTap` va vi
         // cung mot ly do: khung co the bi dung roi dung lai nhieu lan.
         overlay.onDismiss = { hideOverlay() }
+        // Ba nut va thanh song tren dai dieu khien. Chung di qua dung cac ham
+        // dinh tuyen o tren, nen bam tren khung noi hay bam trong app deu ra
+        // cung mot hanh vi.
+        val app = context.applicationContext
+        overlay.onTruoc = { previous(app) }
+        overlay.onPhatDung = { playPause(app) }
+        overlay.onSau = { next(app) }
+        overlay.onTua = { tiLe ->
+            val dai = _now.value?.duration ?: 0L
+            if (dai > 0L) seekTo(app, (dai * tiLe).toLong())
+        }
         overlay.show(context.applicationContext)
 
         // Do trang thai hien tai vao khung VUA DUNG XONG.
