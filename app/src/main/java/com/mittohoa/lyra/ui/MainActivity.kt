@@ -242,6 +242,7 @@ class MainActivity : ComponentActivity() {
                 tuCaiDuoc = Lyra.tuCaiDuoc,
                 lyricEffect = lyricEffect,
                 onLyricEffectChange = { Lyra.datHieuUng(this, it) },
+                onXemLoi = { Lyra.xemLoi(it) },
                 chuDe = chuDe,
                 onChuDeChange = {
                     chuDe = it

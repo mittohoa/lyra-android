@@ -79,9 +79,15 @@ fun SearchPane(
     onRenamePlaylist: (String) -> Unit,
     onDeletePlaylist: () -> Unit,
     downloads: Map<String, Lyra.Downloading>,
-    onDownload: (Track) -> Unit
+    onDownload: (Track) -> Unit,
+    onXemLoi: (Track) -> Unit
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
+
+    // Nhạc trong máy thì bản nào cũng phát được. Nhạc ở Zing/NCT thì tuỳ bản
+    // dựng — xem `NguonNgoai`. Bản Play tìm được nhưng không phát, nên chạm
+    // vào kết quả là TRA LỜI chứ không phải phát.
+    fun phatDuoc(t: Track) = t.source == MusicSource.LOCAL || NguonNgoai.PHAT_DUOC
 
     if (openedPlaylist != null) {
         Column(Modifier.fillMaxSize()) {
@@ -197,8 +203,15 @@ fun SearchPane(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (coOnline) "Tìm trong Zing MP3 và NhacCuaTui cùng lúc."
-                    else "Chép nhạc vào máy rồi tìm ở đây — lời bài hát thì Lyra tự tra.",
+                    when {
+                        coOnline && NguonNgoai.PHAT_DUOC ->
+                            "Tìm trong Zing MP3 và NhacCuaTui cùng lúc."
+                        coOnline ->
+                            "Tìm bài trong Zing MP3 và NhacCuaTui để tra lời. Bản này " +
+                                "không phát nhạc từ hai nguồn đó — nhạc thì phát từ máy bạn."
+                        else ->
+                            "Chép nhạc vào máy rồi tìm ở đây — lời bài hát thì Lyra tự tra."
+                    },
                     color = mau.chuRatMo,
                     fontSize = 14.sp
                 )
@@ -241,7 +254,10 @@ fun SearchPane(
                         track = track,
                         accent = accent,
                         playing = track.playbackUri == playingUri,
-                        onPlay = { onPlay(i) },
+                        onPlay = {
+                            if (phatDuoc(track)) onPlay(i) else onXemLoi(track)
+                        },
+                        chiXemLoi = !phatDuoc(track),
                         onEnqueue = { onEnqueue(track) },
                         download = downloads[track.playbackUri],
                         onDownload = { onDownload(track) }
@@ -317,7 +333,9 @@ private fun TrackRow(
     onEnqueue: () -> Unit,
     actionLabel: String = "+",
     download: Lyra.Downloading? = null,
-    onDownload: () -> Unit = {}
+    onDownload: () -> Unit = {},
+    /** Bài này chỉ tra lời được, không phát được ở bản dựng này. */
+    chiXemLoi: Boolean = false
 ) {
     Row(
         Modifier
@@ -344,7 +362,10 @@ private fun TrackRow(
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 Text(
-                    "  ·  ${track.source.label}",
+                    // Nói ngay trên hàng rằng chạm vào sẽ ra lời chứ không ra
+                    // nhạc. Để người dùng chạm rồi mới ngạc nhiên là tệ hơn.
+                    if (chiXemLoi) "  ·  ${track.source.label}  ·  xem lời"
+                    else "  ·  ${track.source.label}",
                     color = mau.chuRatMo,
                     fontSize = 13.sp,
                     maxLines = 1
@@ -392,14 +413,19 @@ private fun TrackRow(
             }
         }
 
-        Box(
-            Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(50))
-                .clickable(onClick = onEnqueue),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(actionLabel, color = mau.chuMo, fontSize = 22.sp)
+        // Khong xep vao hang doi thu khong phat duoc. Hang doi la danh sach
+        // SE PHAT; nhet vao do mot bai ban nay khong phat duoc thi den luot no
+        // la mot khoang im lang khong ai giai thich duoc.
+        if (!chiXemLoi) {
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(50))
+                    .clickable(onClick = onEnqueue),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(actionLabel, color = mau.chuMo, fontSize = 22.sp)
+            }
         }
     }
 }

@@ -190,6 +190,11 @@ fun BaiPane(
     val dieuKhienDuoc = Lyra.dieuKhienDuoc()
     val tuaDuoc = Lyra.tuaDuoc()
 
+    // Bài chỉ TRA LỜI, không phát — bản Play tìm được nhạc ở Zing/NCT nhưng
+    // không phát được. Lúc đó thanh tua và hàng nút là hai thứ chết: giấu đi
+    // chứ không bày ra rồi để chúng không ăn gì.
+    val chiXem = Lyra.laDangXem()
+
     // Hàng đợi CHỈ tồn tại khi Lyra là bên đang phát. Nhạc ở Spotify thì ta bấm
     // được nút của họ nhưng không nhìn thấy hàng đợi của họ.
     val hangDoiRieng = queue.isNotEmpty() && queueIndex >= 0
@@ -238,6 +243,7 @@ fun BaiPane(
                         queue = queue,
                         queueIndex = queueIndex,
                         hangDoiRieng = hangDoiRieng,
+                        chiXem = chiXem,
                         nguon = nguonHangDoi,
                         onSkipInQueue = onSkipInQueue,
                         onRemoveFromQueue = onRemoveFromQueue,
@@ -306,7 +312,7 @@ fun BaiPane(
                 .height(1.dp)
                 .background(mau.vien)
         )
-        Column(Modifier.padding(start = 26.dp, end = 26.dp, top = 10.dp, bottom = 6.dp)) {
+        if (!chiXem) Column(Modifier.padding(start = 26.dp, end = 26.dp, top = 10.dp, bottom = 6.dp)) {
             Seek(
                 accent = accent,
                 position = position,
@@ -545,6 +551,7 @@ private fun MatBia(
     queue: List<Track>,
     queueIndex: Int,
     hangDoiRieng: Boolean,
+    chiXem: Boolean,
     nguon: String?,
     onSkipInQueue: (Int) -> Unit,
     onRemoveFromQueue: (Int) -> Unit,
@@ -590,7 +597,8 @@ private fun MatBia(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
+                    if (chiXem) "Đang tra lời — bản này không phát nhạc từ nguồn đó"
+                    else "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
                     color = mau.chuRatMo,
                     fontSize = 13.5.sp
                 )

@@ -10,23 +10,26 @@ import kotlinx.coroutines.coroutineScope
 /**
  * Hai nguồn nhạc Việt: Zing MP3 và NhacCuaTui.
  *
- * Bản SIDELOAD: có thật.
+ * Bản SIDELOAD: đủ cả — tìm, phát, và lấy lời.
  *
- * Đây là đường ranh giữa hai biến thể, và nó được kẻ ở **bộ mã nguồn** chứ
- * không phải ở một cái cờ bật/tắt lúc chạy. Một cái cờ vẫn để lại toàn bộ mã
- * gọi API của Zing và NhacCuaTui nằm trong file cài đặt; người duyệt Play mở
- * file ra xem thì thấy, và họ có lý khi cho rằng thứ nằm trong app là thứ app
- * làm được. Tách bằng source set thì bản Play **không mang** dòng nào.
+ * Ranh giới giữa hai biến thể kẻ ở **bộ mã nguồn**, nhưng nó đã dời chỗ. Trước
+ * 0.3.2 bản Play không mang một dòng nào của hai nguồn này; giờ nó mang phần
+ * TÌM, và chỉ phần tìm. Lý do đổi: thứ khiến một app bị gỡ khỏi Play là phục
+ * vụ nội dung có bản quyền, không phải liệt kê tên bài — nên cắt ở chỗ nội
+ * dung mới đúng chỗ, còn cắt cả phần tìm là cắt thừa.
  *
- * Vì sao bản Play không được mang: hai API này là API nội bộ, không ai cấp
- * phép cho Lyra dùng, và thứ chúng trả về là cả một kho nhạc thương mại. Phát
- * kho đó miễn phí qua một app trên Play là chuyện bị gỡ, và gỡ kèm cả tài
- * khoản nhà phát triển. Bản tải thẳng thì người dùng tự quyết định.
+ * Bản này khác bản Play ở ba dòng dưới đây, và chỉ ba dòng đó:
+ *   - `PHAT_DUOC` bật, nên `duongPhat()` trả đường thật.
+ *   - `NGUON_LOI` có Zing và NCT xếp sau LRCLIB.
+ * Người dùng bản tải thẳng tự quyết định chuyện đó cho máy mình.
  */
 object NguonNgoai {
 
-    /** Bản dựng này có tìm và phát nhạc online không. */
+    /** Bản dựng này có TÌM được nhạc online không. */
     const val CO_ONLINE = true
+
+    /** Bản dựng này có PHÁT được nhạc từ hai nguồn đó không. */
+    const val PHAT_DUOC = true
 
     /**
      * Tìm ở CẢ HAI nguồn cùng lúc. Mỗi nguồn một danh sách, để bên gọi trộn

@@ -66,6 +66,9 @@ object Lyra {
     /** Ten goi gia cho bai do chinh Lyra phat - de phan biet voi app khac. */
     private const val OWN = "lyra"
 
+    /** Ten goi gia cho bai chi XEM LOI, khong phat. */
+    private const val XEM = "lyra-xem"
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handler = Handler(Looper.getMainLooper())
 
@@ -526,6 +529,7 @@ object Lyra {
 
     /** Phat ca danh sach tu mot bai. */
     fun playPlaylist(context: Context, id: String, index: Int = 0) {
+        _dangXem.value = null
         val ds = playlistStore?.byId(id) ?: return
         _nguonHangDoi.value = ds.name
         Playback.playQueue(context, ds.tracks, index)
@@ -557,6 +561,7 @@ object Lyra {
 
     /** Phat ca thu vien tu mot bai. */
     fun playFromLibrary(context: Context, index: Int) {
+        _dangXem.value = null
         _nguonHangDoi.value = "Nhạc trong máy"
         Playback.playQueue(context, _library.value, index)
     }
@@ -578,11 +583,46 @@ object Lyra {
     }
 
     fun playFromResults(context: Context, index: Int) {
+        _dangXem.value = null
         _nguonHangDoi.value = "Kết quả tìm"
         Playback.playQueue(context, _results.value, index)
     }
 
     fun enqueue(context: Context, track: Track) = Playback.enqueue(context, track)
+
+    /**
+     * Bài đang XEM LỜI mà không phát.
+     *
+     * Bản Play tìm được nhạc ở Zing và NhacCuaTui nhưng không phát được — xem
+     * `NguonNgoai`. Chạm vào một kết quả ở đó thì việc đúng để làm là TRA LỜI
+     * cho bài ấy, chứ không phải bày ra một nút phát không bao giờ ăn gì.
+     *
+     * Dựng một `NowPlaying` giả với `isPlaying = false`: cả bộ máy tra lời, dịch
+     * và hiển thị đã chạy quanh `NowPlaying` sẵn rồi, nên không cần một đường
+     * riêng nào cả. Tên gói đặt là `XEM` để mọi chỗ phân biệt được "đang xem"
+     * với "đang phát" — nhất là để giấu thanh tua và hàng nút, hai thứ vô nghĩa
+     * khi không có gì đang chạy.
+     */
+    private val _dangXem = MutableStateFlow<NowPlaying?>(null)
+
+    fun xemLoi(track: Track) {
+        _dangXem.value = NowPlaying(
+            packageName = XEM,
+            title = track.title,
+            artist = track.artist,
+            album = "",
+            duration = track.durationMs,
+            position = 0L,
+            isPlaying = false
+        )
+    }
+
+    fun thoiXemLoi() {
+        _dangXem.value = null
+    }
+
+    /** Bài đang hiện có phải là bài chỉ xem lời không. */
+    fun laDangXem(): Boolean = _now.value?.packageName == XEM
 
     fun skipInQueue(context: Context, index: Int) = Playback.skipToIndex(context, index)
 
@@ -818,9 +858,16 @@ object Lyra {
         wired = true
 
         scope.launch {
-            combine(watcher.now, localNow) { external, local ->
+            // Thu tu uu tien: cai gi DANG KEU thi thang do.
+            //
+            // "Xem loi" xep chot va chi thang khi khong con gi khac - no la mot
+            // bai nguoi dung tra cuu, khong phai mot bai dang chay. Bat mot bai
+            // len thi no bien mat ngay, va do la dung y.
+            combine(watcher.now, localNow, _dangXem) { external, local, xem ->
                 when {
                     local != null && local.isPlaying -> local
+                    external != null && external.isPlaying -> external
+                    xem != null -> xem
                     external != null -> external
                     else -> local
                 }

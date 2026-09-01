@@ -173,7 +173,8 @@ fun HomeScreen(
     chuDe: ChuDe,
     onChuDeChange: (ChuDe) -> Unit,
     kieuChu: KieuChu,
-    onKieuChuChange: (KieuChu) -> Unit
+    onKieuChuChange: (KieuChu) -> Unit,
+    onXemLoi: (com.mittohoa.lyra.sources.Track) -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -304,7 +305,11 @@ fun HomeScreen(
                         onRenamePlaylist = onRenamePlaylist,
                         onDeletePlaylist = onDeletePlaylist,
                         downloads = downloads,
-                        onDownload = onDownload
+                        onDownload = onDownload,
+                        onXemLoi = {
+                            onXemLoi(it)
+                            scope.launch { pager.animateScrollToPage(1) }
+                        }
                     )
                     1 -> BaiPane(
                         now = now,
