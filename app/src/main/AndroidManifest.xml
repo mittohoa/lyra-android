@@ -100,5 +100,26 @@
             </intent-filter>
         </service>
 
+        <!--
+            Duong gui mot tam the loi ra app khac.
+
+            `authorities` gan vao `applicationId` chu khong viet cung: ban tai
+            thang va ban debug cai canh nhau duoc, ma hai app khai trung mot
+            authority thi cai sau KHONG CAI DUOC - he thong tu choi, khong bao
+            ly do gi ro rang.
+
+            `exported="false"` va `grantUriPermissions="true"`: khong app nao
+            doc bua duoc, chi app nao duoc `ACTION_SEND` trao quyen tam thoi.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.chiase"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/duong_chia_se" />
+        </provider>
+
     </application>
 </manifest>

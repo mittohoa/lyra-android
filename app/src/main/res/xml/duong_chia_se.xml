@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Chi mo dung mot thu muc trong bo nho tam, va chi thu muc do.
+
+    `FileProvider` cho phep khai ca `cache-path` goc, nhung khai rong ra thi
+    moi file tam cua app deu chia se duoc neu ai do doan trung ten - trong khi
+    thu duy nhat can gui di la mot tam anh vua ve xong.
+-->
+<paths>
+    <cache-path name="the-loi" path="the-loi/" />
+</paths>

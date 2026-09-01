@@ -37,6 +37,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
@@ -189,6 +190,15 @@ fun HomeScreen(
     }
     val accent by animateColorAsState(target, tween(900), label = "accent")
 
+    // Câu đang mở thẻ lời; -1 là đang đóng.
+    //
+    // Giữ ở TẦNG MÀN HÌNH chứ không trong `BaiPane`. Bản đầu để trong đó và
+    // dựng tấm thẻ làm con thứ hai của một trang `HorizontalPager` — nút bấm
+    // chạy, trạng thái đổi, mà tấm thẻ không bao giờ hiện ra: chỗ đặt nội dung
+    // một trang pager không hứa hẹn gì về việc xếp chồng nhiều con. Ở đây thì
+    // nó là con của một `Box` thật, và `Box` thì xếp chồng theo đúng thứ tự.
+    var cauChiaSe by remember { mutableIntStateOf(-1) }
+
     val pager = rememberPagerState(initialPage = START_PANE, pageCount = { PANES.size })
     val scope = rememberCoroutineScope()
 
@@ -324,7 +334,8 @@ fun HomeScreen(
                         onClearOffset = onClearOffset,
                         onEditLyrics = onEditLyrics,
                         onDownloadModel = onDownloadModel,
-                        effect = lyricEffect
+                        effect = lyricEffect,
+                        onChiaSeCau = { cauChiaSe = it.coerceAtLeast(0) }
                     )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
@@ -353,6 +364,18 @@ fun HomeScreen(
                 current = pager.currentPage,
                 accent = mucMau,
                 onPick = { scope.launch { pager.animateScrollToPage(it) } }
+            )
+        }
+
+        if (cauChiaSe >= 0 && now != null) {
+            TheLoiManHinh(
+                cacDong = lyrics.lines,
+                dongDau = cauChiaSe,
+                tenBai = now.title,
+                caSi = now.artist,
+                accent = mucMau,
+                kieuChu = kieuChu,
+                onDong = { cauChiaSe = -1 }
             )
         }
     }

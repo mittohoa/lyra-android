@@ -107,7 +107,9 @@ fun BaiPane(
     onClearOffset: () -> Unit,
     onEditLyrics: () -> Unit,
     onDownloadModel: () -> Unit,
-    effect: LyricEffect
+    effect: LyricEffect,
+    /** Mở màn hình thẻ lời ở câu này. -1 nghĩa là chưa có câu nào đang hát. */
+    onChiaSeCau: (Int) -> Unit
 ) {
     var naming by remember { mutableStateOf(false) }
 
@@ -164,13 +166,21 @@ fun BaiPane(
 
     var xemBia by remember { mutableStateOf(false) }
 
+    // Dòng đang hát tính MỘT lần ở đây rồi truyền xuống: mặt lời cần nó để tô
+    // sáng, thẻ lời cần nó để mở đúng câu vừa nghe.
+    val dongDangHat by remember(lyrics) {
+        derivedStateOf { activeLineIndex(lyrics.lines, position.value, lyrics.offset) }
+    }
+
     Column(Modifier.fillMaxSize()) {
         DaiNguCanh(
             now = now,
             bia = artwork ?: now.artwork,
             accent = accent,
             xemBia = xemBia,
-            onDoiMat = { xemBia = it }
+            onDoiMat = { xemBia = it },
+            chiaSeDuoc = lyrics.lines.isNotEmpty(),
+            onChiaSe = { onChiaSeCau(dongDangHat) }
         )
 
         Box(Modifier.weight(1f)) {
@@ -190,6 +200,7 @@ fun BaiPane(
                 } else {
                     MatLoi(
                         lyrics = lyrics,
+                        active = dongDangHat,
                         loading = loading,
                         position = position,
                         accent = accent,
@@ -273,7 +284,9 @@ private fun DaiNguCanh(
     bia: android.graphics.Bitmap?,
     accent: Color,
     xemBia: Boolean,
-    onDoiMat: (Boolean) -> Unit
+    onDoiMat: (Boolean) -> Unit,
+    chiaSeDuoc: Boolean,
+    onChiaSe: () -> Unit
 ) {
     Row(
         Modifier
@@ -323,7 +336,20 @@ private fun DaiNguCanh(
                 )
             }
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(8.dp))
+        if (chiaSeDuoc) {
+            Box(
+                Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(mau.nenChim)
+                    .clickable(onClick = onChiaSe),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("↗", color = mau.chuMo, fontSize = 17.sp)
+            }
+            Spacer(Modifier.width(8.dp))
+        }
         ChipMat("Lời", !xemBia, accent) { onDoiMat(false) }
         Spacer(Modifier.width(6.dp))
         ChipMat("Bìa", xemBia, accent) { onDoiMat(true) }
@@ -452,6 +478,7 @@ private fun MatBia(
 @Composable
 private fun MatLoi(
     lyrics: Lyrics,
+    active: Int,
     loading: Boolean,
     position: State<Long>,
     accent: Color,
@@ -473,13 +500,6 @@ private fun MatLoi(
             kotlinx.coroutines.delay(4000)
             baoKhongTua = false
         }
-    }
-
-    // `derivedStateOf`: vị trí phát đổi 5 lần mỗi giây, nhưng dòng đang hát thì
-    // vài giây mới đổi một lần. Không bọc thì cả danh sách bị dựng lại liên tục
-    // — đây chính là chỗ dễ sinh giật nhất.
-    val active by remember(lyrics) {
-        derivedStateOf { activeLineIndex(lyrics.lines, position.value, lyrics.offset) }
     }
 
     // Mốc đang ngờ thì KHÔNG tô sáng và KHÔNG tự cuộn. Tô sáng nhầm một dòng
