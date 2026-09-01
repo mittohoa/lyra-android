@@ -184,7 +184,7 @@ fun SearchPane(
                                 "Thử tên bài không dấu."
                     },
                     color = mau.chuRatMo,
-                    fontSize = 13.sp
+                    fontSize = 14.sp
                 )
             }
 
@@ -200,7 +200,7 @@ fun SearchPane(
                     if (coOnline) "Tìm trong Zing MP3 và NhacCuaTui cùng lúc."
                     else "Chép nhạc vào máy rồi tìm ở đây — lời bài hát thì Lyra tự tra.",
                     color = mau.chuRatMo,
-                    fontSize = 13.sp
+                    fontSize = 14.sp
                 )
             }
 
@@ -214,7 +214,7 @@ fun SearchPane(
                     Text(
                         "Trong máy · ${library.size} bài",
                         color = mau.chuRatMo,
-                        fontSize = 11.5.sp,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 24.dp, top = 6.dp, bottom = 6.dp)
                     )
@@ -339,14 +339,14 @@ private fun TrackRow(
                 Text(
                     track.artist.ifBlank { "Không rõ ca sĩ" },
                     color = mau.chuMo,
-                    fontSize = 12.5.sp,
+                    fontSize = 13.5.sp,
                     maxLines = 1,
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 Text(
                     "  ·  ${track.source.label}",
                     color = mau.chuRatMo,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     maxLines = 1
                 )
             }
@@ -356,7 +356,7 @@ private fun TrackRow(
             Text(
                 clockLabel(track.durationMs),
                 color = mau.chuRatMo,
-                fontSize = 12.5.sp
+                fontSize = 13.5.sp
             )
             Spacer(Modifier.width(6.dp))
         }
@@ -377,7 +377,7 @@ private fun TrackRow(
                     is Lyra.Downloading.Working -> Text(
                         if (download.percent < 0) "…" else "${download.percent}%",
                         color = accent,
-                        fontSize = 10.5.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Lyra.Downloading.Done -> Text("✓", color = accent, fontSize = 16.sp)

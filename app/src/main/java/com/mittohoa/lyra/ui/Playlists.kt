@@ -54,7 +54,7 @@ fun PlaylistRow(
     Text(
         "Danh sách phát",
         color = mau.chuRatMo,
-        fontSize = 11.5.sp,
+        fontSize = 12.5.sp,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp)
     )
@@ -77,13 +77,13 @@ fun PlaylistRow(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
-                    lineHeight = 19.sp
+                    lineHeight = 20.sp
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "${playlist.tracks.size} bài",
                     color = mau.chuMo,
-                    fontSize = 12.sp
+                    fontSize = 13.sp
                 )
             }
         }
@@ -140,7 +140,7 @@ fun PlaylistScreen(
                 Text(
                     "${playlist.tracks.size} bài",
                     color = mau.chuRatMo,
-                    fontSize = 12.5.sp
+                    fontSize = 13.5.sp
                 )
             }
         }
@@ -204,7 +204,7 @@ private fun Pill(
             .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = textColor, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
+        Text(label, color = textColor, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -290,7 +290,7 @@ fun ConfirmDialog(
             Text(
                 body,
                 color = mau.chuMo,
-                fontSize = 13.5.sp,
+                fontSize = 14.5.sp,
                 lineHeight = 20.sp
             )
             Spacer(Modifier.height(18.dp))

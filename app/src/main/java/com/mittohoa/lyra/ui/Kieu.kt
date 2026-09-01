@@ -127,14 +127,28 @@ data class BangMau(
     }
 
     companion object {
+        /*
+         * Hai mặt KHÔNG dùng chung một bộ độ mờ, và đó là chỗ bản đầu làm sai.
+         *
+         * Mờ đi thì mực đen trên giấy mất tương phản nhanh hơn hẳn chữ sáng
+         * trên nền tối — cùng độ mờ 0,56 cho ra 4,08:1 trên giấy nhưng 6,16:1
+         * trên mực. Bản đầu chép y nguyên bộ số từ mặt này sang mặt kia, nên
+         * mặt giấy có hai bậc chữ đều KHÔNG đạt chuẩn WCAG 4,5:1: chú thích ở
+         * 4,08 và chữ mờ nhất ở 2,05. Trên máy thật thì nó hiện ra đúng như
+         * con số nói: khó đọc.
+         *
+         * Các con số dưới đây được đo chứ không ước lượng. Mọi bậc chữ ở cả
+         * hai mặt đều đạt 4,5:1 trở lên.
+         */
+
         /** Giấy ngà, mực đen. Hơi ấm chứ không trắng tinh — trắng tinh chói mắt. */
         val Giay = BangMau(
             nen = Color(0xFFFBF6EC),
             nenChim = Color(0xFFF1E9DA),
-            chu = Color(0xFF191510),
-            chuMo = Color(0xFF191510).copy(alpha = 0.56f),
-            chuRatMo = Color(0xFF191510).copy(alpha = 0.32f),
-            vien = Color(0xFF191510).copy(alpha = 0.13f),
+            chu = Color(0xFF191510),                                  // 16,9:1
+            chuMo = Color(0xFF191510).copy(alpha = 0.74f),            //  7,4:1
+            chuRatMo = Color(0xFF191510).copy(alpha = 0.60f),         //  4,6:1
+            vien = Color(0xFF191510).copy(alpha = 0.22f),
             laGiay = true
         )
 
@@ -142,10 +156,10 @@ data class BangMau(
         val Muc = BangMau(
             nen = Color(0xFF13110D),
             nenChim = Color(0xFF1D1A15),
-            chu = Color(0xFFF6F1E6),
-            chuMo = Color(0xFFF6F1E6).copy(alpha = 0.58f),
-            chuRatMo = Color(0xFFF6F1E6).copy(alpha = 0.32f),
-            vien = Color(0xFFF6F1E6).copy(alpha = 0.15f),
+            chu = Color(0xFFF6F1E6),                                  // 16,7:1
+            chuMo = Color(0xFFF6F1E6).copy(alpha = 0.62f),            //  6,9:1
+            chuRatMo = Color(0xFFF6F1E6).copy(alpha = 0.50f),         //  4,7:1
+            vien = Color(0xFFF6F1E6).copy(alpha = 0.20f),
             laGiay = false
         )
     }

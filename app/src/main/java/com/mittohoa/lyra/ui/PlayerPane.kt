@@ -130,7 +130,7 @@ fun PlayerPane(
                 Text(
                     "Vuốt sang trái để tìm bài, hoặc mở app nhạc khác — Lyra vẫn hiện lời.",
                     color = mau.chuMo,
-                    fontSize = 13.5.sp
+                    fontSize = 14.5.sp
                 )
             }
         }
@@ -204,7 +204,7 @@ fun PlayerPane(
                 Text(
                     now.artist.uppercase(),
                     color = mau.chuMo,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.8.sp,
                     maxLines = 1
@@ -223,7 +223,7 @@ fun PlayerPane(
                 Text(
                     "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
                     color = mau.chuRatMo,
-                    fontSize = 12.5.sp
+                    fontSize = 13.5.sp
                 )
             }
 
@@ -269,7 +269,7 @@ fun PlayerPane(
                         else
                             "Hết hàng đợi",
                         color = mau.chuRatMo,
-                        fontSize = 11.5.sp,
+                        fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     // Hang doi la cho lam viec; danh sach phat la thu giu lai.
@@ -285,7 +285,7 @@ fun PlayerPane(
                         Text(
                             "Lưu thành danh sách",
                             color = mau.chu,
-                            fontSize = 11.5.sp,
+                            fontSize = 12.5.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -461,11 +461,11 @@ private fun Seek(
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(clockLabel(shown), color = mau.chuRatMo, fontSize = 11.5.sp)
+            Text(clockLabel(shown), color = mau.chuRatMo, fontSize = 12.5.sp)
             Text(
                 if (duration > 0) clockLabel(duration) else "--:--",
                 color = mau.chuRatMo,
-                fontSize = 11.5.sp
+                fontSize = 12.5.sp
             )
         }
     }
@@ -560,7 +560,7 @@ private fun QueueRow(track: Track, onSkip: () -> Unit, onRemove: () -> Unit) {
             Text(
                 track.artist.ifBlank { track.source.label },
                 color = mau.chuRatMo,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 maxLines = 1
             )
         }

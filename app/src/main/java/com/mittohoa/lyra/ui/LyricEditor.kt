@@ -68,7 +68,7 @@ fun LyricEditor(
         Text(
             songLabel,
             color = mau.chuMo,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             maxLines = 2
         )
 
@@ -77,8 +77,8 @@ fun LyricEditor(
             "Dán lời vào đây. Có mốc thời gian dạng [00:12.34] thì lời sẽ chạy theo " +
                 "nhạc; không có thì hiện dạng chữ trơn.",
             color = mau.chuRatMo,
-            fontSize = 12.5.sp,
-            lineHeight = 18.sp
+            fontSize = 13.5.sp,
+            lineHeight = 19.sp
         )
 
         Spacer(Modifier.height(14.dp))

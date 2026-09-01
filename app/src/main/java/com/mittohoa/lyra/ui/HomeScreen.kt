@@ -235,7 +235,7 @@ fun HomeScreen(
                 Text(
                     "LYRA",
                     color = mau.chuMo,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 2.6.sp
                 )
@@ -429,7 +429,7 @@ private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
                         Text(
                             name,
                             color = Color.White,
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     } else {
@@ -783,7 +783,7 @@ private fun LyricsPane(
                             text = meaning,
                             color = mucMau,
                             fontSize = if (isActive) 15.sp else 13.5.sp,
-                            lineHeight = 21.sp,
+                            lineHeight = 22.sp,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -815,8 +815,8 @@ fun Notice(
         Text(
             text,
             color = mau.chu,
-            fontSize = 12.5.sp,
-            lineHeight = 18.sp,
+            fontSize = 13.5.sp,
+            lineHeight = 19.sp,
             modifier = Modifier.weight(1f)
         )
         if (action != null && onAction != null) {
@@ -828,7 +828,7 @@ fun Notice(
                     .clickable(onClick = onAction)
                     .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
-                Text(action, color = mau.chu, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text(action, color = mau.chu, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -913,7 +913,7 @@ private fun TunePane(
         Text(
             "Hình thức khung nổi",
             color = mau.chuMo,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(4.dp))
@@ -1005,8 +1005,8 @@ private fun TunePane(
                 "Vài app ngân hàng từ chối hoạt động khi có lớp phủ màn hình — đó là " +
                 "cách họ tự bảo vệ, không sửa được từ phía Lyra. Gặp thì kéo về Tắt.",
             color = mau.chuRatMo,
-            fontSize = 12.5.sp,
-            lineHeight = 19.sp
+            fontSize = 13.5.sp,
+            lineHeight = 20.sp
         )
 
         Spacer(Modifier.height(26.dp))
@@ -1031,7 +1031,7 @@ private fun TunePane(
         Text(
             "Dịch lời",
             color = mau.chuMo,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(4.dp))
@@ -1050,7 +1050,7 @@ private fun TunePane(
             Text(
                 "Bạn đọc được tiếng",
                 color = mau.chuMo,
-                fontSize = 13.sp
+                fontSize = 14.sp
             )
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1072,7 +1072,7 @@ private fun TunePane(
                         Text(
                             label,
                             color = mau.chu,
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Normal
                         )
                     }
@@ -1117,9 +1117,9 @@ private fun TunePane(
                                 fontSize = 14.5.sp,
                                 fontWeight = if (chon) FontWeight.SemiBold else FontWeight.Normal
                             )
-                            Text(kc.moTa, color = mau.chuMo, fontSize = 12.5.sp)
+                            Text(kc.moTa, color = mau.chuMo, fontSize = 13.5.sp)
                         }
-                        if (chon) Text("●", color = accent, fontSize = 13.sp)
+                        if (chon) Text("●", color = accent, fontSize = 14.sp)
                     }
                 }
             }
@@ -1129,8 +1129,8 @@ private fun TunePane(
                     "trong app nên không cần mạng; chọn “Phông máy” thì Lyra dùng " +
                     "đúng bộ chữ hệ thống, như mọi app khác.",
                 color = mau.chuRatMo,
-                fontSize = 12.5.sp,
-                lineHeight = 19.sp
+                fontSize = 13.5.sp,
+                lineHeight = 20.sp
             )
         }
         Muc(
@@ -1158,9 +1158,9 @@ private fun TunePane(
                                 fontSize = 14.5.sp,
                                 fontWeight = if (chon) FontWeight.SemiBold else FontWeight.Normal
                             )
-                            Text(cd.moTa, color = mau.chuMo, fontSize = 12.5.sp)
+                            Text(cd.moTa, color = mau.chuMo, fontSize = 13.5.sp)
                         }
-                        if (chon) Text("●", color = accent, fontSize = 13.sp)
+                        if (chon) Text("●", color = accent, fontSize = 14.sp)
                     }
                 }
             }
@@ -1170,8 +1170,8 @@ private fun TunePane(
                     "mục trên, vì nó nằm đè lên app khác chứ không nằm trên giấy " +
                     "của Lyra.",
                 color = mau.chuRatMo,
-                fontSize = 12.5.sp,
-                lineHeight = 19.sp
+                fontSize = 13.5.sp,
+                lineHeight = 20.sp
             )
         }
         Muc(
@@ -1183,7 +1183,7 @@ private fun TunePane(
         Text(
             "Hiệu ứng chữ ở trang Lời",
             color = mau.chuMo,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(10.dp))
@@ -1212,10 +1212,10 @@ private fun TunePane(
                             if (e.tonPin) e.moTa + " · tốn pin hơn" else e.moTa,
                             color = if (e.tonPin) Color(0xFFF0B24A).copy(alpha = 0.85f)
                                     else mau.chuMo,
-                            fontSize = 12.5.sp
+                            fontSize = 13.5.sp
                         )
                     }
-                    if (chon) Text("●", color = accent, fontSize = 13.sp)
+                    if (chon) Text("●", color = accent, fontSize = 14.sp)
                 }
             }
         }
@@ -1229,8 +1229,8 @@ private fun TunePane(
                 "Hai hiệu ứng đó bắt khung nổi vẽ lại liên tục thay vì mỗi câu một " +
                 "lần, nên tốn pin hơn rõ. Bốn hiệu ứng còn lại không đổi gì về nhịp vẽ.",
             color = mau.chuRatMo,
-            fontSize = 12.5.sp,
-            lineHeight = 19.sp
+            fontSize = 13.5.sp,
+            lineHeight = 20.sp
         )
 
         }
@@ -1246,7 +1246,7 @@ private fun TunePane(
         Text(
             "Tắt nhanh",
             color = mau.chuMo,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(10.dp))
@@ -1255,7 +1255,7 @@ private fun TunePane(
                 "đã nhận. Đây là đường ngắn nhất: ngón tay đang ở sẵn trên thứ " +
                 "cần tắt, không phải rời app nhạc.",
             color = mau.chuMo,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             lineHeight = 20.sp
         )
 
@@ -1279,8 +1279,8 @@ private fun TunePane(
                 "Hoặc kéo ô Lời nổi vào bảng Cài đặt nhanh (vuốt thanh thông báo " +
                     "xuống, sửa các ô) để bật tắt ngay khi đang nghe nhạc.",
             color = mau.chuRatMo,
-            fontSize = 12.5.sp,
-            lineHeight = 18.sp
+            fontSize = 13.5.sp,
+            lineHeight = 19.sp
         )
         Spacer(Modifier.height(20.dp))
         }
@@ -1403,7 +1403,7 @@ private fun Muc(
                     Text(
                         tomTat,
                         color = mau.chuRatMo,
-                        fontSize = 12.5.sp
+                        fontSize = 13.5.sp
                     )
                 }
             }
@@ -1431,12 +1431,12 @@ private fun Slider(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, color = mau.chu, fontSize = 14.sp)
             if (suggestion == null) {
-                Text(display, color = mau.chuMo, fontSize = 13.sp)
+                Text(display, color = mau.chuMo, fontSize = 14.sp)
             } else {
                 Text(
                     "$display → ${suggestion.toInt()}",
                     color = accent,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
@@ -1478,7 +1478,7 @@ private fun Toggle(
         Column(Modifier.weight(1f).padding(end = 14.dp)) {
             Text(label, color = mau.chu, fontSize = 14.sp)
             Spacer(Modifier.height(3.dp))
-            Text(hint, color = mau.chuRatMo, fontSize = 12.sp, lineHeight = 17.sp)
+            Text(hint, color = mau.chuRatMo, fontSize = 13.sp, lineHeight = 18.sp)
         }
         androidx.compose.material3.Switch(
             checked = checked,
@@ -1531,7 +1531,7 @@ internal fun Ask(
     Column(Modifier.fillMaxWidth()) {
         Head(title)
         Spacer(Modifier.height(10.dp))
-        Text(body, color = mau.chuMo, fontSize = 14.sp, lineHeight = 21.sp)
+        Text(body, color = mau.chuMo, fontSize = 14.sp, lineHeight = 22.sp)
         Spacer(Modifier.height(22.dp))
         Big(label = action, accent = accent, filled = true, onClick = onAction)
     }
