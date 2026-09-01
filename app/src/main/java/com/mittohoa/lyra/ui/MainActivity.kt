@@ -38,6 +38,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.core.view.WindowCompat
 import com.mittohoa.lyra.data.ChuDe
 import com.mittohoa.lyra.data.ChuDePrefs
+import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.service.LyraTileService
 import kotlinx.coroutines.delay
@@ -94,6 +95,8 @@ class MainActivity : ComponentActivity() {
             // day qua `Lyra` - no khong lien quan gi toi nhac, va no chi song
             // trong mot man hinh duy nhat.
             var chuDe by remember { mutableStateOf(ChuDePrefs(this).doc()) }
+            var kieuChu by remember { mutableStateOf(ChuDePrefs(this).docKieuChu()) }
+            val boChuDung = BoChuDung.tu(kieuChu)
             val toiTheoMay = isSystemInDarkTheme()
             val giay = when (chuDe) {
                 ChuDe.GIAY -> true
@@ -157,7 +160,10 @@ class MainActivity : ComponentActivity() {
             // khong phai sua vai tram cho goi `Text` de dat `fontFamily`.
             CompositionLocalProvider(
                 LocalBangMau provides bangMau,
-                LocalTextStyle provides TextStyle(fontFamily = BoChu.Sans)
+                LocalBoChu provides boChuDung,
+                // `null` la de nguyen bo chu cua may - dung dieu nguoi dung
+                // chon "Phong may" muon.
+                LocalTextStyle provides TextStyle(fontFamily = boChuDung.giaoDien)
             ) {
             HomeScreen(
                 now = now,
@@ -239,6 +245,13 @@ class MainActivity : ComponentActivity() {
                 onChuDeChange = {
                     chuDe = it
                     ChuDePrefs(this).ghi(it)
+                },
+                kieuChu = kieuChu,
+                onKieuChuChange = {
+                    kieuChu = it
+                    ChuDePrefs(this).ghiKieuChu(it)
+                    // Khung noi khong nam trong cay Compose nay - phai bao rieng
+                    Lyra.datKieuChu(this, it)
                 },
                 onCapNhat = {
                     // Bao hong roi thi nut doi nghia: mo trang phat hanh de nguoi

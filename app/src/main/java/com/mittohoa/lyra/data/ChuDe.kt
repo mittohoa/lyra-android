@@ -31,4 +31,31 @@ class ChuDePrefs(context: Context) {
     fun ghi(chuDe: ChuDe) {
         p.edit().putString("chu-de", chuDe.name).apply()
     }
+
+    fun docKieuChu(): KieuChu = KieuChu.tu(p.getString("kieu-chu", null))
+
+    fun ghiKieuChu(kieuChu: KieuChu) {
+        p.edit().putString("kieu-chu", kieuChu.name).apply()
+    }
+}
+
+/**
+ * Bộ chữ dùng trong app và trong khung lời nổi.
+ *
+ * Có mục này vì bản 0.2.0 đổi hẳn bộ chữ, và ép một bộ chữ lên người dùng mà
+ * không chừa đường quay lại là một việc không nên làm: chữ là thứ người ta nhìn
+ * suốt, và khẩu vị chữ thì không ai giống ai.
+ *
+ * Một lựa chọn duy nhất cho CẢ HAI bề mặt, không tách làm hai. Khung nổi và
+ * trang Lời hiện cùng một thứ — lời bài hát — nên chúng khác dáng chữ nhau thì
+ * là app hỏng chứ không phải app linh hoạt.
+ */
+enum class KieuChu(val nhan: String, val moTa: String) {
+    SACH("Trang sách", "Chữ có chân cho lời, chữ không chân cho giao diện"),
+    MOT_BO("Một bộ", "Be Vietnam Pro cho tất cả — gọn và đều"),
+    MAY("Phông máy", "Dùng đúng bộ chữ hệ thống, như mọi app khác");
+
+    companion object {
+        fun tu(ten: String?): KieuChu = entries.firstOrNull { it.name == ten } ?: SACH
+    }
 }

@@ -122,7 +122,7 @@ fun PlayerPane(
                 Text(
                     "Chưa có gì đang phát",
                     color = mau.chu,
-                    fontFamily = BoChu.Serif,
+                    fontFamily = boChu.loi,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -190,7 +190,7 @@ fun PlayerPane(
             Text(
                 now.title,
                 color = mau.chu,
-                fontFamily = BoChu.Serif,
+                fontFamily = boChu.loi,
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Medium,
                 lineHeight = 36.sp,

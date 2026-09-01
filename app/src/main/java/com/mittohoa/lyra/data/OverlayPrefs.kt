@@ -23,6 +23,14 @@ data class OverlayLook(
     val textColor: Int = Color.WHITE,
     val strokeColor: Int = Color.BLACK,
     val strokeWidthDp: Float = 2f,
+    /**
+     * Mau nen cua khung, tach roi khoi do mo.
+     *
+     * Tach hai thu vi chung tra loi hai cau khac nhau: mau la "khung nay hop
+     * voi cai gi", con do mo la "chu co doc duoc tren nen ben duoi khong".
+     * Gop lam mot thi doi mau nao cung keo theo phai chinh lai do mo.
+     */
+    val backgroundColor: Int = Color.BLACK,
     val backgroundOpacity: Float = 0.35f,
     /** So dong hien them truoc va sau dong dang hat. */
     val contextLines: Int = 1,
@@ -72,6 +80,7 @@ class OverlayPrefs(context: Context) {
         textColor = prefs.getInt("textColor", Color.WHITE),
         strokeColor = prefs.getInt("strokeColor", Color.BLACK),
         strokeWidthDp = prefs.getFloat("strokeWidth", 2f),
+        backgroundColor = prefs.getInt("bgColor", Color.BLACK),
         backgroundOpacity = prefs.getFloat("bgOpacity", 0.35f),
         contextLines = prefs.getInt("contextLines", 1),
         showControls = prefs.getBoolean("showControls", false),
@@ -87,6 +96,7 @@ class OverlayPrefs(context: Context) {
             .putInt("textColor", look.textColor)
             .putInt("strokeColor", look.strokeColor)
             .putFloat("strokeWidth", look.strokeWidthDp)
+            .putInt("bgColor", look.backgroundColor)
             .putFloat("bgOpacity", look.backgroundOpacity)
             .putInt("contextLines", look.contextLines)
             .putBoolean("showControls", look.showControls)

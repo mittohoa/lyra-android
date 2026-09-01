@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.graphics.RectF
 import android.graphics.Shader
 import android.text.TextPaint
@@ -57,6 +58,25 @@ class OverlayView(context: Context) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
     }
+
+    /**
+     * Bộ chữ người dùng chọn; `null` là để nguyên bộ chữ của máy.
+     *
+     * Khung nổi và trang Lời hiện cùng một thứ, nên chúng phải cùng dáng chữ.
+     * Khung này sống ngoài cây Compose nên không tự đọc được lựa chọn đó —
+     * `Lyra` đẩy sang, xem `Lyra.datKieuChu`.
+     */
+    var chuRieng: Typeface? = null
+        set(value) {
+            if (field === value) return
+            field = value
+            paint.typeface = value
+            // Đổi bộ chữ là đổi bề rộng từng dòng, nên chỗ ngắt dòng và chiều
+            // cao khung đều phải tính lại chứ không chỉ vẽ lại.
+            drawnIndex = Int.MIN_VALUE
+            requestLayout()
+            invalidate()
+        }
     private val backdrop = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
 
@@ -93,6 +113,7 @@ class OverlayView(context: Context) : View(context) {
         textColor = look.textColor
         strokeColor = look.strokeColor
         strokeWidthDp = look.strokeWidthDp
+        backgroundColorValue = look.backgroundColor
         backgroundOpacity = look.backgroundOpacity
         contextLines = look.contextLines
         val doiCao = showControls != look.showControls

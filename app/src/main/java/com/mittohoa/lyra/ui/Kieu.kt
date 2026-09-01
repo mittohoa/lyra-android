@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import com.mittohoa.lyra.R
+import com.mittohoa.lyra.data.KieuChu
 
 /*
  * Bộ chữ và bảng màu của Lyra.
@@ -203,3 +204,30 @@ private fun tuHsl(h: Float, s: Float, l: Float): Color {
     }
     return Color(kenh(h + 1f / 3f), kenh(h), kenh(h - 1f / 3f))
 }
+
+/**
+ * Hai bộ chữ đang dùng: một cho giao diện, một cho lời bài hát.
+ *
+ * `null` nghĩa là để nguyên bộ chữ của máy — đó là một lựa chọn thật, không
+ * phải trạng thái thiếu.
+ */
+@Immutable
+data class BoChuDung(
+    val giaoDien: FontFamily?,
+    val loi: FontFamily?
+) {
+    companion object {
+        fun tu(kieu: KieuChu): BoChuDung = when (kieu) {
+            KieuChu.SACH -> BoChuDung(BoChu.Sans, BoChu.Serif)
+            KieuChu.MOT_BO -> BoChuDung(BoChu.Sans, BoChu.Sans)
+            KieuChu.MAY -> BoChuDung(null, null)
+        }
+    }
+}
+
+val LocalBoChu: ProvidableCompositionLocal<BoChuDung> =
+    compositionLocalOf { BoChuDung.tu(KieuChu.SACH) }
+
+/** Bộ chữ đang dùng. Viết tắt cho `LocalBoChu.current`. */
+val boChu: BoChuDung
+    @Composable get() = LocalBoChu.current

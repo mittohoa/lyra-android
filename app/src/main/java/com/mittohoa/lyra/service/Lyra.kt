@@ -17,6 +17,10 @@ import com.mittohoa.lyra.data.TranslateSettings
 import com.mittohoa.lyra.data.TranslationCache
 import com.mittohoa.lyra.data.UpdateChecker
 import com.mittohoa.lyra.update.ApkInstaller
+import androidx.core.content.res.ResourcesCompat
+import com.mittohoa.lyra.data.ChuDePrefs
+import com.mittohoa.lyra.data.KieuChu
+import com.mittohoa.lyra.R
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.lyrics.LyricsRepository
@@ -319,6 +323,30 @@ object Lyra {
     }
 
     /** Doc lua chon da luu. Goi khi dung app hoac dung khung noi. */
+    /**
+     * Đổi bộ chữ của KHUNG NỔI theo lựa chọn ở trang Chỉnh.
+     *
+     * Phần app tự đổi qua `LocalBoChu`; khung nổi thì không, vì nó là một
+     * `View` thuần nằm trong cửa sổ của `WindowManager`, ngoài cây Compose.
+     */
+    fun datKieuChu(context: Context, kieu: KieuChu) {
+        overlay.update { chuRieng = typefaceCho(context, kieu) }
+    }
+
+    fun napKieuChu(context: Context) {
+        datKieuChu(context, ChuDePrefs(context.applicationContext).docKieuChu())
+    }
+
+    /** `null` = bộ chữ của máy, và đó là một lựa chọn chứ không phải thiếu sót. */
+    private fun typefaceCho(context: Context, kieu: KieuChu): android.graphics.Typeface? =
+        runCatching {
+            when (kieu) {
+                KieuChu.SACH -> ResourcesCompat.getFont(context, R.font.newsreader)
+                KieuChu.MOT_BO -> ResourcesCompat.getFont(context, R.font.be_vietnam_pro_regular)
+                KieuChu.MAY -> null
+            }
+        }.getOrNull()
+
     fun napHieuUng(context: Context) {
         val e = LyricEffectPrefs(context.applicationContext).read()
         _hieuUng.value = e
@@ -821,6 +849,7 @@ object Lyra {
     fun showOverlay(context: Context) {
         wire()
         napHieuUng(context)
+        napKieuChu(context)
         // Cham vao mot cau tren khung noi = can lai loi theo cau dang nghe.
         // Gan o day chu khong o `wire`: khung noi co the bi dung roi dung lai
         // nhieu lan trong mot phien.

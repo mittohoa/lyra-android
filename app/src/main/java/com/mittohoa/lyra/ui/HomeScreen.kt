@@ -6,6 +6,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +62,7 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.mittohoa.lyra.data.ChuDe
+import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.data.TranslateSettings
@@ -164,7 +166,9 @@ fun HomeScreen(
     lyricEffect: LyricEffect,
     onLyricEffectChange: (LyricEffect) -> Unit,
     chuDe: ChuDe,
-    onChuDeChange: (ChuDe) -> Unit
+    onChuDeChange: (ChuDe) -> Unit,
+    kieuChu: KieuChu,
+    onKieuChuChange: (KieuChu) -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -239,7 +243,7 @@ fun HomeScreen(
                 Text(
                     if (loading) "đang tìm lời…" else PANES[pager.currentPage].lowercase(),
                     color = mau.chuRatMo,
-                    fontFamily = BoChu.Serif,
+                    fontFamily = boChu.loi,
                     fontStyle = FontStyle.Italic,
                     fontSize = 14.sp
                 )
@@ -357,7 +361,9 @@ fun HomeScreen(
                         lyricEffect = lyricEffect,
                         onLyricEffectChange = onLyricEffectChange,
                         chuDe = chuDe,
-                        onChuDeChange = onChuDeChange
+                        onChuDeChange = onChuDeChange,
+                        kieuChu = kieuChu,
+                        onKieuChuChange = onKieuChuChange
                     )
                 }
             }
@@ -712,12 +718,12 @@ private fun LyricsPane(
 
                         Box {
                             Text(
-                                text = chu, color = mo, fontFamily = BoChu.Serif,
+                                text = chu, color = mo, fontFamily = boChu.loi,
                                 fontSize = coChu, fontWeight = damNhat, lineHeight = caoDong,
                                 onTextLayout = { bocCuc = it }
                             )
                             Text(
-                                text = chu, color = mau.chu, fontFamily = BoChu.Serif,
+                                text = chu, color = mau.chu, fontFamily = boChu.loi,
                                 fontSize = coChu, fontWeight = damNhat, lineHeight = caoDong,
                                 modifier = Modifier.drawWithContent {
                                     val bc = bocCuc
@@ -753,7 +759,7 @@ private fun LyricsPane(
                     } else Text(
                         text = chu,
                         color = mau.chu,
-                        fontFamily = BoChu.Serif,
+                        fontFamily = boChu.loi,
                         fontSize = coChu,
                         fontWeight = damNhat,
                         lineHeight = caoDong,
@@ -852,7 +858,9 @@ private fun TunePane(
     lyricEffect: LyricEffect,
     onLyricEffectChange: (LyricEffect) -> Unit,
     chuDe: ChuDe,
-    onChuDeChange: (ChuDe) -> Unit
+    onChuDeChange: (ChuDe) -> Unit,
+    kieuChu: KieuChu,
+    onKieuChuChange: (KieuChu) -> Unit
 ) {
     Column(
         Modifier
@@ -925,6 +933,24 @@ private fun TunePane(
             suggestion = suggestedFontSize.takeIf { it.toInt() != look.fontSizeSp.toInt() },
             onSuggestion = { onLookChange(look.copy(fontSizeSp = suggestedFontSize)) }
         )
+        Spacer(Modifier.height(22.dp))
+        MauChon(
+            nhan = "Màu chữ",
+            dangChon = look.textColor,
+            bang = MAU_CHU,
+            accent = accent,
+            onChon = { onLookChange(look.copy(textColor = it)) }
+        )
+        Spacer(Modifier.height(18.dp))
+        MauChon(
+            nhan = "Màu nền khung",
+            dangChon = look.backgroundColor,
+            bang = MAU_NEN,
+            accent = accent,
+            onChon = { onLookChange(look.copy(backgroundColor = it)) }
+        )
+        Spacer(Modifier.height(4.dp))
+
         Slider(
             label = "Nền mờ",
             value = look.backgroundOpacity,
@@ -1065,6 +1091,47 @@ private fun TunePane(
         }
 
 
+        }
+        Muc(
+            tieuDe = "Bộ chữ",
+            accent = accent,
+            tomTat = kieuChu.nhan
+        ) {
+            Spacer(Modifier.height(20.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (kc in KieuChu.entries) {
+                    val chon = kc == kieuChu
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (chon) accent.copy(alpha = 0.22f) else mau.nenChim)
+                            .clickable { onKieuChuChange(kc) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                kc.nhan,
+                                color = mau.chu,
+                                fontSize = 14.5.sp,
+                                fontWeight = if (chon) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                            Text(kc.moTa, color = mau.chuMo, fontSize = 12.5.sp)
+                        }
+                        if (chon) Text("●", color = accent, fontSize = 13.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Áp cho cả app lẫn khung lời nổi. Hai bộ chữ của Lyra nằm sẵn " +
+                    "trong app nên không cần mạng; chọn “Phông máy” thì Lyra dùng " +
+                    "đúng bộ chữ hệ thống, như mọi app khác.",
+                color = mau.chuRatMo,
+                fontSize = 12.5.sp,
+                lineHeight = 19.sp
+            )
         }
         Muc(
             tieuDe = "Mặt giấy",
@@ -1218,6 +1285,70 @@ private fun TunePane(
         Spacer(Modifier.height(20.dp))
         }
     }
+    }
+}
+
+/**
+ * Bang mau cho khung loi noi.
+ *
+ * Vai o chon san chu khong phai mot vong mau day du. Day la khung de LIEC khi
+ * dang xem thu khac, nen cai quyet dinh chi la "chu co doc duoc tren nen kia
+ * khong" - mot vong mau bat nguoi dung chinh ba con so de tra loi mot cau ho
+ * tra loi duoc bang mot cu cham.
+ *
+ * Mau chu thi sang, mau nen thi toi: hai bang khac nhau vi chung lam hai viec
+ * khac nhau, va tron chung lai thi de chon ra mot cap khong doc duoc.
+ */
+private val MAU_CHU = listOf(
+    "Trắng" to 0xFFFFFFFF,
+    "Ngà" to 0xFFF6F1E6,
+    "Vàng" to 0xFFFFD54A,
+    "Đào" to 0xFFFFAB91,
+    "Bạc hà" to 0xFF9FE8C8,
+    "Đen" to 0xFF101010
+)
+
+private val MAU_NEN = listOf(
+    "Đen" to 0xFF000000,
+    "Than" to 0xFF1A1A1A,
+    "Đêm" to 0xFF0E1730,
+    "Nâu" to 0xFF241C14,
+    "Rêu" to 0xFF12211A,
+    "Trắng" to 0xFFFFFFFF
+)
+
+/** Mot hang o mau tron, o dang chon co vong sang quanh no. */
+@Composable
+private fun MauChon(
+    nhan: String,
+    dangChon: Int,
+    bang: List<Pair<String, Long>>,
+    accent: Color,
+    onChon: (Int) -> Unit
+) {
+    Column {
+        Text(nhan, color = mau.chu, fontSize = 14.sp)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            for ((ten, gia) in bang) {
+                val ma = gia.toInt()
+                val chon = ma == dangChon
+                Box(
+                    Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(50))
+                        // Vong ngoai danh dau o dang chon. Khong dung dau tick ve
+                        // len tren o: o mau nao cung co the trung mau voi dau tick.
+                        .background(if (chon) accent else Color.Transparent)
+                        .padding(if (chon) 4.dp else 0.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(gia))
+                        // Vien mo de o mau sang khong biet mat tren nen giay
+                        .border(1.dp, mau.vien, RoundedCornerShape(50))
+                        .clickable { onChon(ma) }
+                )
+            }
+        }
     }
 }
 
@@ -1382,7 +1513,7 @@ internal fun Head(text: String) {
     Text(
         text,
         color = mau.chu,
-        fontFamily = BoChu.Serif,
+        fontFamily = boChu.loi,
         fontSize = 27.sp,
         fontWeight = FontWeight.Medium,
         lineHeight = 33.sp
