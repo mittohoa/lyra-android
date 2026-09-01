@@ -5,6 +5,8 @@ import android.util.Log
 import android.os.Handler
 import android.os.Looper
 import com.mittohoa.lyra.data.LyricCache
+import com.mittohoa.lyra.data.LyricEffect
+import com.mittohoa.lyra.data.LyricEffectPrefs
 import com.mittohoa.lyra.data.ManualLyricStore
 import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.data.Playlist
@@ -257,6 +259,28 @@ object Lyra {
 
     private val _capNhat = MutableStateFlow<TrangThaiCapNhat?>(null)
     val capNhat: StateFlow<TrangThaiCapNhat?> = _capNhat.asStateFlow()
+
+    /**
+     * Hieu ung chu, dung chung cho trang Loi va khung noi.
+     *
+     * Giu o `Lyra` chu khong o rieng man hinh: khung noi song ngoai vong doi
+     * cua Activity, va no can biet lua chon nay ke ca khi khong ai mo app.
+     */
+    private val _hieuUng = MutableStateFlow(LyricEffect.SANG_DAN)
+    val hieuUng: StateFlow<LyricEffect> = _hieuUng.asStateFlow()
+
+    fun datHieuUng(context: Context, effect: LyricEffect) {
+        _hieuUng.value = effect
+        overlay.effect = effect
+        LyricEffectPrefs(context.applicationContext).write(effect)
+    }
+
+    /** Doc lua chon da luu. Goi khi dung app hoac dung khung noi. */
+    fun napHieuUng(context: Context) {
+        val e = LyricEffectPrefs(context.applicationContext).read()
+        _hieuUng.value = e
+        overlay.effect = e
+    }
 
     /** Ban dung nay tu tai va cai ban moi duoc khong. */
     val tuCaiDuoc: Boolean get() = ApkInstaller.SUPPORTED
@@ -684,6 +708,7 @@ object Lyra {
 
     fun showOverlay(context: Context) {
         wire()
+        napHieuUng(context)
         // Cham vao mot cau tren khung noi = can lai loi theo cau dang nghe.
         // Gan o day chu khong o `wire`: khung noi co the bi dung roi dung lai
         // nhieu lan trong mot phien.

@@ -19,16 +19,28 @@ import android.content.Context
  * thật, chứ không giả vờ biết chỗ tiếng hát đang tới. Trông rất giống karaoke,
  * và khác nhau ở chỗ nó không nói dối.
  */
-enum class LyricEffect(val nhan: String, val moTa: String) {
+enum class LyricEffect(
+    val nhan: String,
+    val moTa: String,
+    /**
+     * Khung lời nổi phải vẽ lại liên tục để chạy hiệu ứng này.
+     *
+     * Khung nổi bình thường chỉ vẽ lại khi ĐỔI DÒNG - vài giây một lần. Hai
+     * hiệu ứng quét bắt nó vẽ hàng chục lần mỗi giây suốt bài, mà đây là cửa
+     * sổ nằm đè lên app khác nên hệ thống còn phải trộn nó vào từng khung
+     * hình. Người dùng có quyền chọn, nhưng phải được nói trước.
+     */
+    val tonPin: Boolean = false
+) {
 
     /** Chỉ đổi cỡ chữ và độ mờ theo khoảng cách, như trước giờ. */
     KHONG("Không", "Chỉ mờ dần theo khoảng cách"),
 
     /** Câu đang hát sáng dần từ trái sang phải theo tiến độ. */
-    SANG_DAN("Sáng dần", "Câu đang hát sáng dần từ trái sang"),
+    SANG_DAN("Sáng dần", "Câu đang hát sáng dần từ trái sang", tonPin = true),
 
     /** Chữ hiện ra dần, phần chưa tới thì trong suốt. */
-    HIEN_CHU("Hiện chữ", "Chữ hiện dần ra theo câu hát"),
+    HIEN_CHU("Hiện chữ", "Chữ hiện dần ra theo câu hát", tonPin = true),
 
     /** Đổi dòng thì câu mới nảy lên một cái rồi đứng lại. */
     NAY("Nảy", "Đổi dòng thì câu mới nảy lên một cái"),

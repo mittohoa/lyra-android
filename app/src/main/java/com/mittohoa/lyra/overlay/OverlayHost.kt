@@ -6,6 +6,7 @@ import android.graphics.PixelFormat
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.data.OverlayPrefs
 import android.util.Log
@@ -41,6 +42,17 @@ class OverlayHost {
             applyFlags()
         }
 
+    /**
+     * Hieu ung chu. Nho o day chu khong chi dat vao view: khung co the bi dung
+     * roi dung lai nhieu lan, va moi lan la mot `OverlayView` moi tinh khong
+     * biet gi ve lua chon cua nguoi dung.
+     */
+    var effect: LyricEffect = LyricEffect.SANG_DAN
+        set(value) {
+            field = value
+            view?.effect = value
+        }
+
     /** Noi luu hinh thuc; gan khi mo, de con ghi lai vi tri sau moi lan keo. */
     private var prefs: OverlayPrefs? = null
 
@@ -67,7 +79,10 @@ class OverlayHost {
         val look = store.read()
 
         val wm = context.getSystemService(WindowManager::class.java) ?: return
-        val overlay = OverlayView(context).apply { applyLook(look) }
+        val overlay = OverlayView(context).apply {
+            applyLook(look)
+            effect = this@OverlayHost.effect
+        }
         clickThrough = look.clickThrough
         val lp = buildParams(look.x, look.y)
 

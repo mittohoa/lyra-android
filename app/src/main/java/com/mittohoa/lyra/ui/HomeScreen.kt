@@ -942,8 +942,9 @@ private fun TunePane(
                             fontWeight = if (chon) FontWeight.SemiBold else FontWeight.Normal
                         )
                         Text(
-                            e.moTa,
-                            color = Color.White.copy(alpha = 0.55f),
+                            if (e.tonPin) e.moTa + " · tốn pin hơn" else e.moTa,
+                            color = if (e.tonPin) Color(0xFFF0B24A).copy(alpha = 0.85f)
+                                    else Color.White.copy(alpha = 0.55f),
                             fontSize = 12.5.sp
                         )
                     }
@@ -953,10 +954,13 @@ private fun TunePane(
         }
         Spacer(Modifier.height(10.dp))
         Text(
-            "Lời lấy từ LRCLIB chỉ có mốc theo từng dòng, không có mốc theo từng " +
-                "chữ — nên không hiệu ứng nào ở đây tô sáng theo tiếng hát tới " +
-                "đâu. “Sáng dần” và “Hiện chữ” chạy theo tiến độ trong câu, thứ " +
-                "biết chắc từ mốc dòng này tới dòng sau.",
+            "Áp cho cả trang Lời lẫn khung lời nổi.\n\n" +
+                "Lời lấy từ LRCLIB chỉ có mốc theo từng dòng, không có mốc theo từng " +
+                "chữ — nên không hiệu ứng nào ở đây tô sáng theo tiếng hát tới đâu. " +
+                "“Sáng dần” và “Hiện chữ” chạy theo tiến độ trong câu, thứ biết chắc " +
+                "từ mốc dòng này tới dòng sau.\n\n" +
+                "Hai hiệu ứng đó bắt khung nổi vẽ lại liên tục thay vì mỗi câu một " +
+                "lần, nên tốn pin hơn rõ. Bốn hiệu ứng còn lại không đổi gì về nhịp vẽ.",
             color = Color.White.copy(alpha = 0.45f),
             fontSize = 12.5.sp,
             lineHeight = 19.sp
