@@ -32,6 +32,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -188,6 +196,7 @@ fun BaiPane(
 
     var xemBia by remember { mutableStateOf(false) }
     val doanLap by Lyra.doanLap.collectAsStateWithLifecycle()
+    val nguonHangDoi by Lyra.nguonHangDoi.collectAsStateWithLifecycle()
     val tocDo by Lyra.tocDo.collectAsStateWithLifecycle()
 
     // Dòng đang hát tính MỘT lần ở đây rồi truyền xuống: mặt lời cần nó để tô
@@ -229,8 +238,10 @@ fun BaiPane(
                         queue = queue,
                         queueIndex = queueIndex,
                         hangDoiRieng = hangDoiRieng,
+                        nguon = nguonHangDoi,
                         onSkipInQueue = onSkipInQueue,
                         onRemoveFromQueue = onRemoveFromQueue,
+                        onDoiCho = { tu, den -> Lyra.doiChoTrongHangDoi(ngucanh, tu, den) },
                         onLuuHangDoi = { naming = true }
                     )
                 } else {
@@ -534,10 +545,21 @@ private fun MatBia(
     queue: List<Track>,
     queueIndex: Int,
     hangDoiRieng: Boolean,
+    nguon: String?,
     onSkipInQueue: (Int) -> Unit,
     onRemoveFromQueue: (Int) -> Unit,
+    onDoiCho: (Int, Int) -> Unit,
     onLuuHangDoi: () -> Unit
 ) {
+    // Kéo thả sắp lại hàng đợi.
+    //
+    // Chỉ dời VỀ HÌNH ẢNH trong lúc kéo, tới lúc thả mới sửa hàng đợi thật.
+    // Sửa ngay từng bước thì danh sách dựng lại giữa chừng, cái ô đang kéo
+    // nhảy sang chỉ số khác, bộ nhận cử chỉ bị dựng lại theo — và cú kéo đứt
+    // ngang giữa ngón tay.
+    var keoTu by remember { mutableIntStateOf(-1) }
+    var lech by remember { mutableFloatStateOf(0f) }
+    var caoMuc by remember { mutableIntStateOf(0) }
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 26.dp, end = 26.dp, bottom = 24.dp)
@@ -571,6 +593,17 @@ private fun MatBia(
                     "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
                     color = mau.chuRatMo,
                     fontSize = 13.5.sp
+                )
+            }
+
+            if (nguon != null) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "PHÁT TỪ · " + nguon.uppercase(),
+                    color = mau.chuRatMo,
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.2.sp
                 )
             }
 
@@ -611,12 +644,50 @@ private fun MatBia(
 
         if (hangDoiRieng) {
             val from = (queueIndex + 1).coerceAtMost(queue.size)
-            itemsIndexed(
-                queue.subList(from, queue.size),
-                key = { _, t -> t.playbackUri }
-            ) { i, track ->
+            val conLai = queue.subList(from, queue.size)
+            itemsIndexed(conLai, key = { _, t -> t.playbackUri }) { i, track ->
+                val dangKeo = keoTu == i
+                // Chỗ sẽ thả xuống, tính theo số ô đã trượt qua.
+                val dich = if (keoTu < 0 || caoMuc == 0) -1
+                    else (keoTu + Math.round(lech / caoMuc)).coerceIn(0, conLai.lastIndex)
+                // Các ô nằm giữa chỗ nhấc lên và chỗ sắp thả phải nhường chỗ,
+                // không thì người kéo không thấy mình đang chen vào đâu.
+                val nhuong = when {
+                    keoTu < 0 || dangKeo || dich < 0 -> 0
+                    keoTu < dich && i in (keoTu + 1)..dich -> -caoMuc
+                    keoTu > dich && i in dich until keoTu -> caoMuc
+                    else -> 0
+                }
+                val nhuongMuot by animateFloatAsState(nhuong.toFloat(), tween(120), label = "nhuong$i")
+
                 QueueRow(
                     track = track,
+                    modifier = Modifier
+                        .onSizeChanged { if (caoMuc == 0) caoMuc = it.height }
+                        .zIndex(if (dangKeo) 1f else 0f)
+                        .graphicsLayer {
+                            translationY = if (dangKeo) lech else nhuongMuot
+                            scaleX = if (dangKeo) 1.02f else 1f
+                            scaleY = if (dangKeo) 1.02f else 1f
+                            alpha = if (dangKeo) 0.92f else 1f
+                        }
+                        .pointerInput(conLai.size) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = { keoTu = i; lech = 0f },
+                                onDrag = { doi, keo ->
+                                    doi.consume()
+                                    lech += keo.y
+                                },
+                                onDragEnd = {
+                                    val den = if (caoMuc == 0) i
+                                        else (i + Math.round(lech / caoMuc)).coerceIn(0, conLai.lastIndex)
+                                    if (den != i) onDoiCho(from + i, from + den)
+                                    keoTu = -1
+                                    lech = 0f
+                                },
+                                onDragCancel = { keoTu = -1; lech = 0f }
+                            )
+                        },
                     onSkip = { onSkipInQueue(from + i) },
                     onRemove = { onRemoveFromQueue(from + i) }
                 )

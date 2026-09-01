@@ -155,6 +155,21 @@ object Playback {
         if (currentPosition > 5_000L) seekTo(0L) else seekToPreviousMediaItem()
     }
 
+    /**
+     * Dời một bài trong hàng đợi sang chỗ khác.
+     *
+     * Sửa cả `queue` giữ ở đây LẪN hàng đợi thật trong bộ phát. Chỉ sửa một
+     * bên thì màn hình và tiếng nhạc nói hai chuyện khác nhau, và bên sai lại
+     * là bên người dùng nhìn thấy.
+     */
+    fun doiChoTrongHangDoi(context: Context, tu: Int, den: Int) {
+        val ds = queue.toMutableList()
+        if (tu !in ds.indices || den !in ds.indices || tu == den) return
+        ds.add(den, ds.removeAt(tu))
+        queue = ds
+        run(context) { if (tu < mediaItemCount && den < mediaItemCount) moveMediaItem(tu, den) }
+    }
+
     fun removeFromQueue(context: Context, index: Int) {
         queue = queue.filterIndexed { i, _ -> i != index }
         run(context) { if (index in 0 until mediaItemCount) removeMediaItem(index) }

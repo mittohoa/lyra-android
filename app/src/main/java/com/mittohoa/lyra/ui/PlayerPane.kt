@@ -279,7 +279,12 @@ private fun Ghost(label: String, active: Boolean, accent: Color, onClick: () -> 
 }
 
 @Composable
-internal fun QueueRow(track: Track, onSkip: () -> Unit, onRemove: () -> Unit) {
+internal fun QueueRow(
+    track: Track,
+    modifier: Modifier = Modifier,
+    onSkip: () -> Unit,
+    onRemove: () -> Unit
+) {
     Row(
         Modifier
             .fillMaxWidth()

@@ -510,11 +510,30 @@ object Lyra {
 
     fun removeFromPlaylist(id: String, index: Int) = playlistStore?.removeAt(id, index)
 
+    /**
+     * Hàng đợi hiện tại lấy từ đâu ra — "Nhạc trong máy", tên một danh sách…
+     *
+     * Chỉ là một dòng chữ, nhưng nó trả lời câu hỏi mà màn hình Đang phát không
+     * trả lời được: bài này ở đâu ra, và mấy bài xếp sau nó là của cái gì. Zing
+     * ghi "PHÁT TỪ #zingchart Tuần 36" ngay đầu trang phát, và đó là thứ đáng
+     * lấy — nó biến một hàng đợi vô danh thành một thứ hiểu được.
+     *
+     * `null` khi nhạc phát ở app khác: lúc đó ta thấy bài đang phát nhưng không
+     * thấy hàng đợi của họ, nên cũng không biết nó từ đâu.
+     */
+    private val _nguonHangDoi = MutableStateFlow<String?>(null)
+    val nguonHangDoi: StateFlow<String?> = _nguonHangDoi.asStateFlow()
+
     /** Phat ca danh sach tu mot bai. */
     fun playPlaylist(context: Context, id: String, index: Int = 0) {
-        val tracks = playlistStore?.byId(id)?.tracks ?: return
-        Playback.playQueue(context, tracks, index)
+        val ds = playlistStore?.byId(id) ?: return
+        _nguonHangDoi.value = ds.name
+        Playback.playQueue(context, ds.tracks, index)
     }
+
+    /** Doi cho hai bai trong hang doi. */
+    fun doiChoTrongHangDoi(context: Context, tu: Int, den: Int) =
+        Playback.doiChoTrongHangDoi(context, tu, den)
 
     private val _library = MutableStateFlow<List<Track>>(emptyList())
     val library: StateFlow<List<Track>> = _library.asStateFlow()
@@ -537,8 +556,10 @@ object Lyra {
     }
 
     /** Phat ca thu vien tu mot bai. */
-    fun playFromLibrary(context: Context, index: Int) =
+    fun playFromLibrary(context: Context, index: Int) {
+        _nguonHangDoi.value = "Nhạc trong máy"
         Playback.playQueue(context, _library.value, index)
+    }
 
     fun search(query: String) {
         searchJob?.cancel()
@@ -556,8 +577,10 @@ object Lyra {
         }
     }
 
-    fun playFromResults(context: Context, index: Int) =
+    fun playFromResults(context: Context, index: Int) {
+        _nguonHangDoi.value = "Kết quả tìm"
         Playback.playQueue(context, _results.value, index)
+    }
 
     fun enqueue(context: Context, track: Track) = Playback.enqueue(context, track)
 
