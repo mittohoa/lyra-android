@@ -173,6 +173,16 @@ object Playback {
 
     fun seekTo(context: Context, positionMs: Long) = run(context) { seekTo(positionMs) }
 
+    /**
+     * Đổi tốc độ phát. Chỉ áp được cho bộ phát CỦA LYRA.
+     *
+     * `MediaController` của hệ thống — thứ dùng để bấm nút cho nhạc ở app khác —
+     * không có đường nào đổi tốc độ. Nên tính năng này chỉ hiện khi Lyra là bên
+     * đang phát; bày một thanh trượt không làm gì cho nhạc ở Spotify thì tệ hơn
+     * là không bày.
+     */
+    fun datTocDo(context: Context, tocDo: Float) = run(context) { setPlaybackSpeed(tocDo) }
+
     fun stop(context: Context) = run(context) {
         current = null
         stop()

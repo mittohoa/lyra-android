@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
@@ -111,7 +112,28 @@ fun BaiPane(
     /** Mở màn hình thẻ lời ở câu này. -1 nghĩa là chưa có câu nào đang hát. */
     onChiaSeCau: (Int) -> Unit
 ) {
+    val ngucanh = androidx.compose.ui.platform.LocalContext.current
     var naming by remember { mutableStateOf(false) }
+
+    // Chế độ luyện tập: lặp một đoạn và đổi tốc độ.
+    //
+    // Là một CHẾ ĐỘ có bật tắt chứ không phải thêm một cử chỉ nữa lên dòng lời.
+    // Chạm và nhấn giữ đều đã có việc; nhét việc thứ ba vào thì lại đúng cái
+    // lỗi vừa sửa hôm nay — một cử chỉ gánh hai việc, và không ai đoán được.
+    // Bật chế độ lên thì có một dải nói rõ đang chờ chọn gì.
+    var luyenTap by remember { mutableStateOf(false) }
+    var dongA by remember { mutableStateOf<Int?>(null) }
+
+    // Chạm vào câu mà nguồn không cho tua thì phải nói ra. Im lặng ở đây là tệ
+    // nhất: người dùng chạm, không có gì xảy ra, và không biết là app hỏng hay
+    // mình bấm sai chỗ.
+    var baoKhongTua by remember { mutableStateOf(false) }
+    LaunchedEffect(baoKhongTua) {
+        if (baoKhongTua) {
+            kotlinx.coroutines.delay(4000)
+            baoKhongTua = false
+        }
+    }
 
     // Hỏi quyền khi VÀ CHỈ KHI trang này thật sự trống. Lyra không cần quyền
     // nào để biết bài của chính nó đang phát, nên chặn cả trang khi thiếu quyền
@@ -165,6 +187,8 @@ fun BaiPane(
     val hangDoiRieng = queue.isNotEmpty() && queueIndex >= 0
 
     var xemBia by remember { mutableStateOf(false) }
+    val doanLap by Lyra.doanLap.collectAsStateWithLifecycle()
+    val tocDo by Lyra.tocDo.collectAsStateWithLifecycle()
 
     // Dòng đang hát tính MỘT lần ở đây rồi truyền xuống: mặt lời cần nó để tô
     // sáng, thẻ lời cần nó để mở đúng câu vừa nghe.
@@ -180,7 +204,19 @@ fun BaiPane(
             xemBia = xemBia,
             onDoiMat = { xemBia = it },
             chiaSeDuoc = lyrics.lines.isNotEmpty(),
-            onChiaSe = { onChiaSeCau(dongDangHat) }
+            onChiaSe = { onChiaSeCau(dongDangHat) },
+            luyenTapDuoc = lyrics.lines.isNotEmpty() && tuaDuoc,
+            dangLuyenTap = luyenTap || doanLap != null,
+            onLuyenTap = {
+                if (luyenTap || doanLap != null) {
+                    luyenTap = false
+                    dongA = null
+                    Lyra.boDoanLap()
+                } else {
+                    luyenTap = true
+                    dongA = null
+                }
+            }
         )
 
         Box(Modifier.weight(1f)) {
@@ -205,9 +241,20 @@ fun BaiPane(
                         position = position,
                         accent = accent,
                         translation = translation,
-                        tuaDuoc = tuaDuoc,
+                        baoKhongTua = baoKhongTua,
+                        onChamDong = { i ->
+                            when {
+                                luyenTap && dongA == null -> dongA = i
+                                luyenTap -> {
+                                    Lyra.datDoanLap(ngucanh, dongA!!, i)
+                                    dongA = null
+                                    luyenTap = false
+                                }
+                                tuaDuoc -> onSeekToLine(i)
+                                else -> baoKhongTua = true
+                            }
+                        },
                         onSyncToLine = onSyncToLine,
-                        onSeekToLine = onSeekToLine,
                         onClearOffset = onClearOffset,
                         onEditLyrics = onEditLyrics,
                         onDownloadModel = onDownloadModel,
@@ -215,6 +262,22 @@ fun BaiPane(
                     )
                 }
             }
+        }
+
+        if (luyenTap || doanLap != null) {
+            DaiLuyenTap(
+                accent = accent,
+                dongA = dongA,
+                doan = doanLap,
+                tocDo = tocDo,
+                doiTocDoDuoc = Lyra.laLyraPhat(),
+                onTocDo = { Lyra.datTocDo(ngucanh, it) },
+                onBo = {
+                    luyenTap = false
+                    dongA = null
+                    Lyra.boDoanLap()
+                }
+            )
         }
 
         // Điều khiển GHIM CỨNG, không bao giờ cuộn đi mất.
@@ -286,7 +349,10 @@ private fun DaiNguCanh(
     xemBia: Boolean,
     onDoiMat: (Boolean) -> Unit,
     chiaSeDuoc: Boolean,
-    onChiaSe: () -> Unit
+    onChiaSe: () -> Unit,
+    luyenTapDuoc: Boolean,
+    dangLuyenTap: Boolean,
+    onLuyenTap: () -> Unit
 ) {
     Row(
         Modifier
@@ -337,6 +403,24 @@ private fun DaiNguCanh(
             }
         }
         Spacer(Modifier.width(8.dp))
+        if (luyenTapDuoc) {
+            Box(
+                Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (dangLuyenTap) accent else mau.nenChim)
+                    .clickable(onClick = onLuyenTap),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "AB",
+                    color = if (dangLuyenTap) Color.White else mau.chuMo,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+        }
         if (chiaSeDuoc) {
             Box(
                 Modifier
@@ -371,6 +455,73 @@ private fun ChipMat(nhan: String, dangChon: Boolean, accent: Color, onClick: () 
             fontSize = 12.5.sp,
             fontWeight = FontWeight.SemiBold
         )
+    }
+}
+
+/**
+ * Dải luyện tập: lặp một đoạn, và đổi tốc độ.
+ *
+ * Chọn đoạn theo CÂU chứ không kéo hai mốc trên thanh thời gian — đó là chỗ
+ * Lyra làm được mà một bộ lặp A–B thường không: nó biết câu nào bắt đầu lúc nào.
+ *
+ * Tốc độ chỉ hiện khi Lyra là bên đang phát. `MediaController` của hệ thống
+ * không có đường đổi tốc độ cho nhạc ở app khác, và bày một nút không làm gì
+ * thì tệ hơn là không bày.
+ */
+@Composable
+private fun DaiLuyenTap(
+    accent: Color,
+    dongA: Int?,
+    doan: Lyra.DoanLap?,
+    tocDo: Float,
+    doiTocDoDuoc: Boolean,
+    onTocDo: (Float) -> Unit,
+    onBo: () -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 26.dp, vertical = 8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                when {
+                    doan != null -> "Lặp câu ${doan.tuDong + 1}–${doan.denDong + 1}"
+                    dongA != null -> "Câu ${dongA + 1} → chạm câu cuối đoạn"
+                    else -> "Chạm câu đầu của đoạn muốn lặp"
+                },
+                color = if (doan != null) accent else mau.chuMo,
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(50))
+                    .clickable(onClick = onBo)
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text("✕", color = mau.chuMo, fontSize = 15.sp)
+            }
+        }
+        if (doiTocDoDuoc) {
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (v in listOf(0.5f, 0.75f, 1f, 1.25f)) {
+                    val chon = kotlin.math.abs(tocDo - v) < 0.01f
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(if (chon) accent else mau.nenChim)
+                            .clickable { onTocDo(v) }
+                            .padding(horizontal = 13.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            if (v == 1f) "1×" else v.toString().trimEnd('0').replace('.', ',') + "×",
+                            color = if (chon) Color.White else mau.chuMo,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -483,25 +634,14 @@ private fun MatLoi(
     position: State<Long>,
     accent: Color,
     translation: TranslationState,
-    tuaDuoc: Boolean,
+    baoKhongTua: Boolean,
+    onChamDong: (Int) -> Unit,
     onSyncToLine: (Int) -> Unit,
-    onSeekToLine: (Int) -> Unit,
     onClearOffset: () -> Unit,
     onEditLyrics: () -> Unit,
     onDownloadModel: () -> Unit,
     effect: LyricEffect
 ) {
-    // Chạm vào câu mà nguồn không cho tua thì phải nói ra. Im lặng ở đây là tệ
-    // nhất: người dùng chạm, không có gì xảy ra, và không biết là app hỏng hay
-    // mình bấm sai chỗ.
-    var baoKhongTua by remember { mutableStateOf(false) }
-    LaunchedEffect(baoKhongTua) {
-        if (baoKhongTua) {
-            kotlinx.coroutines.delay(4000)
-            baoKhongTua = false
-        }
-    }
-
     // Mốc đang ngờ thì KHÔNG tô sáng và KHÔNG tự cuộn. Tô sáng nhầm một dòng
     // suốt cả bài còn tệ hơn là không tô gì.
     val trustTiming = lyrics.synced && !lyrics.timingSuspect
@@ -625,7 +765,7 @@ private fun MatLoi(
                     effect = effect,
                     quet = quet,
                     accent = accent,
-                    onCham = { if (tuaDuoc) onSeekToLine(i) else baoKhongTua = true },
+                    onCham = { onChamDong(i) },
                     onNhanGiu = { onSyncToLine(i) }
                 )
             }

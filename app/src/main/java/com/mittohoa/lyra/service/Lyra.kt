@@ -639,6 +639,7 @@ object Lyra {
                 setTransport(n?.duration ?: 0L, n?.isPlaying == true)
             }
             pushLineToCard(position)
+            appContext?.let { ngoDoanLap(it, position) }
 
             // Chay tiep chung nao con viec de lam. Truoc day nhip chi song theo
             // khung noi; gio Lyra tu phat duoc, va luc do the media van can duoc
@@ -647,7 +648,10 @@ object Lyra {
             // Man hinh tat thi CHAM lai chu khong dung han: cau dang hat van
             // phai dung tren the media o man hinh khoa. Mot giay mot lan la du -
             // khong ai doc nhanh hon the.
-            if (overlay.isShowing || localPlayer?.isPlaying == true) {
+            // Dang lap mot doan thi nhip phai chay du khung noi tat va du Lyra
+            // khong phai ben phat: cai quyet dinh la vi tri da toi cuoi doan
+            // chua, va cau hoi do chi tra loi duoc bang cach hoi lien tuc.
+            if (overlay.isShowing || localPlayer?.isPlaying == true || _doanLap.value != null) {
                 handler.postDelayed(this, if (manHinhSang) TICK_MS else TICK_NGU_MS)
             }
         }
@@ -904,6 +908,78 @@ object Lyra {
 
     /** Nguoi dung cham vao dong dang hat de can lai ca bai. */
     fun syncToLine(index: Int) = lyricsRepo.syncToLine(index, livePosition())
+
+    // ---- Luyện tập: lặp một đoạn, và đổi tốc độ ----
+
+    /** Đoạn đang lặp, tính theo CHỈ SỐ DÒNG lời chứ không theo mili-giây. */
+    data class DoanLap(val tuDong: Int, val denDong: Int)
+
+    private val _doanLap = MutableStateFlow<DoanLap?>(null)
+    val doanLap: StateFlow<DoanLap?> = _doanLap.asStateFlow()
+
+    private val _tocDo = MutableStateFlow(1f)
+    val tocDo: StateFlow<Float> = _tocDo.asStateFlow()
+
+    /**
+     * Chọn đoạn theo DÒNG, không theo thời gian.
+     *
+     * Đây là chỗ tính năng này khác mọi bộ lặp A–B khác: người ta chọn "từ câu
+     * này tới câu kia" chứ không kéo hai cái mốc trên một thanh thời gian. Lyra
+     * biết câu nào bắt đầu lúc nào, nên nó dịch giúp.
+     *
+     * Nhận hai dòng theo thứ tự nào cũng được — bấm nhầm thứ tự là chuyện thường.
+     */
+    fun datDoanLap(context: Context, a: Int, b: Int) {
+        val doan = DoanLap(minOf(a, b), maxOf(a, b))
+        _doanLap.value = doan
+
+        // NHẢY TỚI ĐẦU ĐOẠN NGAY, đừng đợi bài chạy tới đó.
+        //
+        // Bản đầu chỉ đặt đoạn rồi thôi. Chọn đoạn ở phút thứ ba trong lúc bài
+        // đang ở giây hai mươi thì hai phút liền không có gì xảy ra — người dùng
+        // kết luận là tính năng hỏng, và họ đúng: chọn một đoạn để luyện tập
+        // nghĩa là muốn nghe nó BÂY GIỜ.
+        val loi = lyricsRepo.lyrics.value
+        loi.lines.getOrNull(doan.tuDong)?.let {
+            seekTo(context, (it.time - loi.offset).coerceAtLeast(0L))
+        }
+
+        // Nhịp có thể đang ngủ (khung nổi tắt, Lyra không phát). Đánh thức nó,
+        // không thì đoạn vừa chọn không bao giờ được kiểm.
+        startTick()
+    }
+
+    fun boDoanLap() {
+        _doanLap.value = null
+    }
+
+    fun datTocDo(context: Context, giaTri: Float) {
+        _tocDo.value = giaTri
+        Playback.datTocDo(context, giaTri)
+    }
+
+    /** Lyra có phải là bên đang phát không — tốc độ chỉ đổi được khi đúng. */
+    fun laLyraPhat(): Boolean = _now.value?.packageName == OWN
+
+    /**
+     * Tới cuối đoạn thì quay lại đầu đoạn.
+     *
+     * Gọi từ nhịp chung. Kiểm bằng mốc thời gian của DÒNG SAU dòng cuối, chứ
+     * không phải mốc của chính dòng cuối: dòng cuối phải được hát hết đã, không
+     * thì nghe được đúng một chữ rồi nhảy.
+     */
+    private fun ngoDoanLap(context: Context, viTri: Long) {
+        val doan = _doanLap.value ?: return
+        val cacDong = lyricsRepo.lyrics.value.lines
+        val offset = lyricsRepo.lyrics.value.offset
+        val batDau = cacDong.getOrNull(doan.tuDong)?.time ?: return
+        // Hết đoạn = lúc dòng sau dòng cuối bắt đầu. Không có dòng sau thì để
+        // chạy tới hết bài rồi mới quay lại.
+        val ketThuc = cacDong.getOrNull(doan.denDong + 1)?.time ?: return
+        if (viTri + offset >= ketThuc) {
+            seekTo(context, (batDau - offset).coerceAtLeast(0L))
+        }
+    }
 
     /**
      * Tua tới đúng chỗ câu thứ `index` bắt đầu.
