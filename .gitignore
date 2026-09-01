@@ -9,3 +9,6 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+
+# Gradle sinh ra tu ban Kotlin 2.x, khong thuoc ve ma nguon
+.kotlin/
