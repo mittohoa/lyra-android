@@ -645,6 +645,31 @@ object Lyra {
     @Volatile
     private var manHinhSang = true
 
+    /**
+     * Bao lâu nữa thì gọi nhịp lần sau.
+     *
+     * Màn hình sáng thì nhịp dày: khung lời nổi có quét sáng chạy trong câu,
+     * và cái đó cần vẽ liên tục.
+     *
+     * Màn hình tắt thì thứ duy nhất còn phải đúng là CÂU trên thẻ media ở màn
+     * hình khoá. Một nhịp một giây phẳng lì khiến thẻ trễ tới gần một giây so
+     * với lúc câu thật sự đổi — nhìn ra được, và đó chính là kiểu "thẻ chạy sau
+     * một dòng" mà người dùng hay thấy.
+     *
+     * Nên thay vì một giây phẳng, ngủ tới ĐÚNG lúc câu sau bắt đầu — hoặc một
+     * giây, tuỳ cái nào tới trước. Không tốn thêm lần thức nào so với trước:
+     * vẫn tối đa một lần mỗi giây, chỉ là rơi đúng chỗ có việc để làm.
+     */
+    private fun nhipToi(viTri: Long): Long {
+        if (manHinhSang) return TICK_MS
+        val loi = lyricsRepoOrNull?.lyrics?.value ?: return TICK_NGU_MS
+        if (!loi.synced || loi.timingSuspect) return TICK_NGU_MS
+        val t = viTri + loi.offset
+        val sau = loi.lines.firstOrNull { it.time > t } ?: return TICK_NGU_MS
+        // Thêm 30ms cho chắc là đã qua mốc chứ không đứng ngay trên nó.
+        return (sau.time - t + 30L).coerceIn(50L, TICK_NGU_MS)
+    }
+
     private val tick = object : Runnable {
         override fun run() {
             val position = livePosition()
@@ -675,7 +700,7 @@ object Lyra {
             // khong phai ben phat: cai quyet dinh la vi tri da toi cuoi doan
             // chua, va cau hoi do chi tra loi duoc bang cach hoi lien tuc.
             if (overlay.isShowing || localPlayer?.isPlaying == true || _doanLap.value != null) {
-                handler.postDelayed(this, if (manHinhSang) TICK_MS else TICK_NGU_MS)
+                handler.postDelayed(this, nhipToi(position))
             }
         }
     }
