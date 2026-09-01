@@ -128,31 +128,35 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản thử nghiệm của Lyra trên Play.
+Bản 0.2.0 — Lyra đổi mặt.
 
-• Lời nổi trên màn hình cho nhạc phát ở Spotify, YouTube Music, hay app bất kỳ
-• Sáu hiệu ứng chữ cho cả trang lời lẫn khung nổi
-• Lệch nhịp thì chạm vào câu đang hát là tự căn lại cả bài
-• Dịch lời sang tiếng Việt ngay trên máy, không cần mạng
-• Trình phát nhạc trong máy, có hàng đợi và danh sách phát
-• Câu đang hát hiện trên thẻ điều khiển ở màn hình khoá
+• Nền giấy ngà chữ mực, lật được sang nền mực chữ ngà (Chỉnh › Mặt giấy)
+• Hai bộ chữ mới, hoặc giữ phông máy (Chỉnh › Bộ chữ)
+• Khung lời nổi chọn được màu chữ và màu nền
 
-Phần lời cho app khác cần quyền đọc thông báo. Không bật vẫn là một trình phát đầy đủ.
+Sửa lỗi:
+• Bốn mục cài đặt bị che mất — dịch lời, hiệu ứng chữ, ô bật nhanh giờ mới bấm được
+• Ô tìm mời tìm nguồn nhạc bản này không có, thay vì mời cấp quyền đọc nhạc trong máy
+• Bìa album sai khi bài phát ở app khác
+
+Nhờ thử: mở Chỉnh, cuộn hết trang — phải đủ năm mục.
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Test build of Lyra on Play.
+Version 0.2.0 — Lyra gets a face of its own.
 
-• Floating lyrics over music in Spotify, YouTube Music, or any app
-• Six text effects, on both the lyrics page and the floating window
-• Tap the line you hear to realign the whole song
-• On-device translation to Vietnamese, works offline
-• Built-in player for local music, with queue and playlists
-• Current line shows on the lock-screen media card
+• Ivory paper with ink text, or flip to ink (Tune › Surface)
+• Two new typefaces, or keep your system font (Tune › Typeface)
+• Pick text and background colour for the floating window
 
-Notification access is needed for lyrics over other apps. Without it, Lyra is still a full player.
+Fixes:
+• Four hidden settings sections are back: translation, effects, quick tile
+• Search offered sources this build does not ship, not library access
+• Wrong cover art for music playing in another app
+
+Please check: open Tune, scroll down — five sections.
 ```
 
 ### Bản tiếng Anh của thông tin cửa hàng
