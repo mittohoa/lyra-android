@@ -202,6 +202,7 @@ fun BaiPane(
     var xemBia by remember { mutableStateOf(false) }
     val doanLap by Lyra.doanLap.collectAsStateWithLifecycle()
     val nguonHangDoi by Lyra.nguonHangDoi.collectAsStateWithLifecycle()
+    val trangThaiGop by Lyra.gop.collectAsStateWithLifecycle()
     val tocDo by Lyra.tocDo.collectAsStateWithLifecycle()
 
     // Dòng đang hát tính MỘT lần ở đây rồi truyền xuống: mặt lời cần nó để tô
@@ -275,7 +276,10 @@ fun BaiPane(
                         onClearOffset = onClearOffset,
                         onEditLyrics = onEditLyrics,
                         onDownloadModel = onDownloadModel,
-                        effect = effect
+                        effect = effect,
+                        gop = trangThaiGop,
+                        onGop = { Lyra.gopLoiChoLrclib() },
+                        onThoiGop = { Lyra.thoiGopLoi() }
                     )
                 }
             }
@@ -719,7 +723,10 @@ private fun MatLoi(
     onClearOffset: () -> Unit,
     onEditLyrics: () -> Unit,
     onDownloadModel: () -> Unit,
-    effect: LyricEffect
+    effect: LyricEffect,
+    gop: Lyra.TrangThaiGop?,
+    onGop: () -> Unit,
+    onThoiGop: () -> Unit
 ) {
     // Mốc đang ngờ thì KHÔNG tô sáng và KHÔNG tự cuộn. Tô sáng nhầm một dòng
     // suốt cả bài còn tệ hơn là không tô gì.
@@ -805,6 +812,36 @@ private fun MatLoi(
             action = if (lyrics.from == "tự nhập") "Sửa lời" else "Tự nhập",
             onAction = onEditLyrics
         )
+
+        // Góp lời ngược lại cho LRCLIB.
+        //
+        // Chỉ mời khi lời là do người dùng TỰ NHẬP: lời tải về từ LRCLIB thì
+        // gửi lại chính nó là vô nghĩa, còn lời từ Zing/NCT thì không phải của
+        // mình mà đem cho.
+        //
+        // Và chỉ MỜI, không tự làm. Đây là đăng lên một kho công cộng ai cũng
+        // đọc được và không rút lại được.
+        if (lyrics.from == "tự nhập" || gop != null) {
+            Notice(
+                accent = accent,
+                text = when (gop) {
+                    null -> "Góp bản lời này cho LRCLIB để ai cũng dùng được."
+                    is Lyra.TrangThaiGop.DangGiai ->
+                        "Đang giải thử thách chống spam… " +
+                            "${gop.daThu / 1000} nghìn lần bằm"
+                    Lyra.TrangThaiGop.DangGui -> "Đang gửi…"
+                    Lyra.TrangThaiGop.Xong -> "Đã góp cho LRCLIB. Cảm ơn bạn."
+                    is Lyra.TrangThaiGop.Hong -> gop.vi
+                },
+                action = when (gop) {
+                    null -> "Góp"
+                    is Lyra.TrangThaiGop.DangGiai -> "Huỷ"
+                    is Lyra.TrangThaiGop.Hong -> "Thử lại"
+                    else -> null
+                },
+                onAction = if (gop is Lyra.TrangThaiGop.DangGiai) onThoiGop else onGop
+            )
+        }
 
         if (baoKhongTua) {
             Notice(

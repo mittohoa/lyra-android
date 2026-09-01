@@ -35,6 +35,7 @@ import com.mittohoa.lyra.player.Artwork
 import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.sources.Catalog
 import com.mittohoa.lyra.sources.LocalLibrary
+import com.mittohoa.lyra.sources.LrclibPublish
 import com.mittohoa.lyra.sources.Track
 import com.mittohoa.lyra.translate.TranslationRepository
 import com.mittohoa.lyra.translate.TranslationState
@@ -876,6 +877,8 @@ object Lyra {
 
         scope.launch {
             _now.collect { now ->
+                // Doi bai thi ket qua gop cua bai truoc khong con y nghia gi.
+                if (_gop.value != null) thoiGopLoi()
                 lyricsRepo.onNowPlaying(now)
                 overlay.update { setIdleText(idleText()) }
             }
@@ -1101,6 +1104,55 @@ object Lyra {
 
     /** Luu loi nguoi dung tu go hoac dan vao. */
     fun saveManualLyrics(raw: String) = lyricsRepo.saveManual(raw)
+
+    // ---- Góp lời ngược lại cho LRCLIB ----
+
+    sealed interface TrangThaiGop {
+        /** `daThu` là số lần bằm đã chạy, để màn hình nói được là đang làm gì. */
+        data class DangGiai(val daThu: Long) : TrangThaiGop
+        data object DangGui : TrangThaiGop
+        data object Xong : TrangThaiGop
+        data class Hong(val vi: String) : TrangThaiGop
+    }
+
+    private val _gop = MutableStateFlow<TrangThaiGop?>(null)
+    val gop: StateFlow<TrangThaiGop?> = _gop.asStateFlow()
+    private var gopJob: Job? = null
+
+    /**
+     * Đăng bản lời đang xem lên LRCLIB.
+     *
+     * Chỉ chạy khi người dùng bấm. Đây là đăng lên một kho công cộng ai cũng
+     * đọc được và không rút lại được — không bao giờ được là mặc định.
+     */
+    fun gopLoiChoLrclib() {
+        if (gopJob?.isActive == true) return
+        val n = _now.value ?: return
+        val loi = lyricsRepo.lyrics.value
+        gopJob = scope.launch {
+            _gop.value = TrangThaiGop.DangGiai(0)
+            val kq = LrclibPublish.gop(
+                tenBai = n.title,
+                caSi = n.artist,
+                album = n.album,
+                doDaiMs = n.duration,
+                cacDong = loi.lines,
+                coMoc = loi.synced,
+                tienDo = { _gop.value = TrangThaiGop.DangGiai(it) },
+                dangGui = { _gop.value = TrangThaiGop.DangGui }
+            )
+            _gop.value = when (kq) {
+                LrclibPublish.KetQua.Xong -> TrangThaiGop.Xong
+                is LrclibPublish.KetQua.Hong -> TrangThaiGop.Hong(kq.vi)
+            }
+        }
+    }
+
+    fun thoiGopLoi() {
+        gopJob?.cancel()
+        gopJob = null
+        _gop.value = null
+    }
 
     /** Chuoi de mo ra sua - loi da nhap, hoac loi dang co de sua lai. */
     fun manualDraft(): String = lyricsRepo.manualDraft()
