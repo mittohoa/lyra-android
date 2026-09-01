@@ -1,6 +1,7 @@
 package com.mittohoa.lyra.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -67,6 +68,7 @@ import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.data.TranslateSettings
+import com.mittohoa.lyra.lyrics.LyricLine
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.media.NowPlaying
@@ -99,7 +101,7 @@ import kotlin.math.roundToInt
  * loi, chinh. Trang mo dau la "Dang phat" chu khong phai "Tim" - phan lon lan
  * mo app la de xem dang phat gi, khong phai de tim bai moi.
  */
-private val PANES = listOf("Tìm", "Đang phát", "Lời", "Chỉnh")
+private val PANES = listOf("Tìm", "Bài", "Chỉnh")
 private const val START_PANE = 1
 
 @Composable
@@ -222,44 +224,17 @@ fun HomeScreen(
                 )
         )
 
-        Column(Modifier.fillMaxSize().padding(start = 6.dp)) {
-            // DAU TRANG, doc nhu dau trang mot cuon sach: ten sach ben trai,
-            // ten chuong dang mo ben phai. Khong phai thanh tieu de - no khong
-            // co nut nao, khong chan gi, chi noi minh dang o dau.
-            Row(
-                Modifier
-                    .statusBarsPadding()
-                    .padding(start = 20.dp, top = 14.dp, end = 22.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                LyraMark(size = 26.dp, busy = loading)
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    "LYRA",
-                    color = mau.chuMo,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 2.6.sp
-                )
-                Spacer(Modifier.weight(1f))
-                Text(
-                    if (loading) "đang tìm lời…" else PANES[pager.currentPage].lowercase(),
-                    color = mau.chuRatMo,
-                    fontFamily = boChu.loi,
-                    fontStyle = FontStyle.Italic,
-                    fontSize = 14.sp
-                )
-            }
-
-            // Ke ngang duoi dau trang. Mot net mo nhat, dung de tach dau trang
-            // khoi than trang - dung nhu mot trang in.
-            Box(
-                Modifier
-                    .padding(start = 20.dp, end = 22.dp, top = 12.dp)
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(mau.vien)
-            )
+        // KHONG co thanh tieu de.
+        //
+        // Truoc day o day co mot dau trang: dau hieu Lyra, chu "LYRA", va ten
+        // trang dang mo. No doc dep nhung no khong noi gi moi - vien thuoc duoi
+        // day da noi dang o trang nao, va trang Bai da co dai ngu canh noi dang
+        // nghe bai gi. Ba dong cung mot tin.
+        //
+        // Doi lai la gan 90dp chieu cao cho phan doc, tren mot man hinh ma thu
+        // dang doc la loi bai hat. Dau hieu cua app khong mat: le muc chay doc
+        // mep trai va bo chu co chan lam viec do o moi trang.
+        Column(Modifier.fillMaxSize().statusBarsPadding().padding(start = 6.dp, top = 8.dp)) {
 
             // Có bản mới thì báo ở TẦNG APP, không phải bên trong một trang.
             // Trang phát thoát sớm khi chưa có quyền đọc thông báo hoặc chưa có
@@ -321,11 +296,13 @@ fun HomeScreen(
                         downloads = downloads,
                         onDownload = onDownload
                     )
-                    1 -> PlayerPane(
+                    1 -> BaiPane(
                         now = now,
+                        lyrics = lyrics,
+                        loading = loading,
+                        position = position,
                         accent = mucMau,
                         artwork = artwork,
-                        position = position,
                         queue = queue,
                         queueIndex = queueIndex,
                         shuffle = shuffle,
@@ -341,11 +318,13 @@ fun HomeScreen(
                         onSkipInQueue = onSkipInQueue,
                         onRemoveFromQueue = onRemoveFromQueue,
                         onSaveQueue = onSaveQueue,
-                    )
-                    2 -> LyricsPane(
-                        lyrics, loading, position, accent, translation,
-                        onSyncToLine, onSeekToLine, onClearOffset, onEditLyrics, onDownloadModel,
-                        lyricEffect
+                        translation = translation,
+                        onSyncToLine = onSyncToLine,
+                        onSeekToLine = onSeekToLine,
+                        onClearOffset = onClearOffset,
+                        onEditLyrics = onEditLyrics,
+                        onDownloadModel = onDownloadModel,
+                        effect = lyricEffect
                     )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
@@ -380,458 +359,265 @@ fun HomeScreen(
 }
 
 /**
- * Vien thuoc noi - toan bo chrome cua app nam o day.
+ * Ba vạch ở đáy màn hình: đang ở trang nào, và chạm để sang trang khác.
  *
- * Ba cham, cham dang xem thi gian ra thanh ten trang. Doi trang bang cach cham
- * vao cham, hoac vuot ngang tren noi dung.
+ * Trước đây đây là một viên thuốc có nền, có chữ tên trang. Nó nói đúng nhưng
+ * nói to quá: trên trang Bài nó nằm ngay dưới hàng nút phát và thành ra hai
+ * hàng nút chồng lên nhau, còn cái vỏ nền thì cắt ngang đáy màn hình.
+ *
+ * Xem Zing, NCT, YouTube Music và cả Spotify thì trình phát của cả bốn đều
+ * CHE LUÔN thanh điều hướng — trong màn hình đang phát không app nào để tab
+ * bar. Cảm giác "liền mạch" của chúng đến từ chỗ đó.
+ *
+ * Bỏ hẳn thì không được: vuốt là cử chỉ vô hình, và người mở app lần đầu sẽ
+ * không biết còn hai trang nữa. Ba vạch là mức tối thiểu vẫn nói được điều đó —
+ * cùng lượng tin, mất cái vỏ nút, và trả lại khoảng 60dp chiều cao.
  */
 @Composable
 private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
     Row(
         Modifier
             .navigationBarsPadding()
-            .padding(bottom = 20.dp)
             .fillMaxWidth()
-            .padding(horizontal = 22.dp),
-        horizontalArrangement = Arrangement.Center
+            .padding(top = 6.dp, bottom = 10.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            Modifier
-                .clip(RoundedCornerShape(50))
-                .background(mau.nenChim)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            PANES.forEachIndexed { i, name ->
-                val selected = i == current
-                // Bien doi bang graphicsLayer/kich thuoc thay vi doi cay giao dien:
-                // khong co gi bi dung lai, chi mot lop bi ve lai
-                val weight by animateFloatAsState(
-                    if (selected) 1f else 0f,
-                    tween(260),
-                    label = "pill$i"
-                )
-
-                Row(
+        PANES.forEachIndexed { i, _ ->
+            val chon = i == current
+            // Vạch của trang đang mở dài ra chứ không đổi màu suông: chiều dài
+            // đọc được bằng đuôi mắt, còn màu thì không khi đang nhìn chỗ khác.
+            val dai by animateFloatAsState(if (chon) 22f else 6f, tween(240), label = "vach$i")
+            Box(
+                Modifier
+                    .padding(horizontal = 5.dp)
+                    // Vùng chạm rộng hơn nét vẽ: một vạch 6dp thì không ai bấm
+                    // trúng, mà 44dp là mức tối thiểu cho một chỗ bấm được.
+                    .clip(RoundedCornerShape(50))
+                    .clickable { onPick(i) }
+                    .padding(vertical = 14.dp, horizontal = 6.dp)
+            ) {
+                Box(
                     Modifier
-                        .padding(horizontal = 3.dp)
+                        .height(6.dp)
+                        .width(dai.dp)
                         .clip(RoundedCornerShape(50))
-                        .background(
-                            if (selected) accent.copy(alpha = 0.85f)
-                            else mau.nenChim
-                        )
-                        .clickable { onPick(i) }
-                        .padding(
-                            horizontal = (12 + 18 * weight).dp,
-                            vertical = 9.dp
-                        ),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (selected) {
-                        Text(
-                            name,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    } else {
-                        Box(
-                            Modifier
-                                .size(6.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(mau.chuMo)
-                        )
-                    }
-                }
+                        .background(if (chon) accent else mau.vien)
+                )
             }
         }
     }
 }
 /**
- * Trang loi.
+ * Một dòng lời trên trang Bài.
  *
- * Day la trai tim cua app, nen no duoc ca man hinh. Dong dang hat sang len va
- * to hon, cac dong khac mo di - dung nhu khung noi, de nhin mot cai la biet
- * ngay minh dang o dau trong bai.
+ * Tách ra khỏi chỗ gọi vì trang Bài dựng lời BÊN TRONG cùng một cột cuộn với
+ * bìa và nút bấm — không còn một trang riêng nào để chứa nó nữa. Mọi thứ dòng
+ * này từng đọc lén từ phạm vi bao ngoài giờ đi vào bằng tham số.
  */
-// `combinedClickable` van con la API thu nghiem o ban Compose nay. Chap nhan
-// dung: thu duy nhat can la mot cu cham va mot cu nhan giu tren cung mot cho,
-// va tu ghep hai bo nhan cu chi de tranh mot chu "experimental" thi doi lai
-// nhieu ma hon han.
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun LyricsPane(
-    lyrics: Lyrics,
-    loading: Boolean,
-    position: State<Long>,
+internal fun DongLoi(
+    chiSo: Int,
+    line: LyricLine,
+    /** Đây có phải câu đang hát không. */
+    dangHat: Boolean,
+    /** Cách câu đang hát mấy dòng, đã cắt ở 4. */
+    xa: Int,
+    /** Mốc thời gian có đáng tin không; không tin thì mọi dòng rõ như nhau. */
+    tinMoc: Boolean,
+    /** Bản dịch của đúng dòng này, rỗng nếu không có. */
+    banDich: String,
+    effect: LyricEffect,
+    quet: Animatable<Float, AnimationVector1D>,
     accent: Color,
-    translation: TranslationState,
-    onSyncToLine: (Int) -> Unit,
-    onSeekToLine: (Int) -> Unit,
-    onClearOffset: () -> Unit,
-    onEditLyrics: () -> Unit,
-    onDownloadModel: () -> Unit,
-    effect: LyricEffect
+    onCham: () -> Unit,
+    onNhanGiu: () -> Unit
 ) {
-    // Hỏi lại mỗi lần vẽ: vài app không mở `SEEK_TO`, và nhạc có thể đổi từ
-    // app này sang app khác giữa chừng. Xem thêm `PlayerPane`.
-    val tuaDuoc = Lyra.tuaDuoc()
+    val scale by animateFloatAsState(
+        if (!tinMoc) 1f else 1f - 0.045f * xa,
+        tween(280), label = "s$chiSo"
+    )
+    // Moc dang ngo thi moi dong deu ro nhu nhau - khong co dong nao
+    // duoc quyen sang hon, vi ta khong biet dong nao dung
+    val alpha by animateFloatAsState(
+        if (!tinMoc) 0.72f else when (xa) {
+            0 -> 1f
+            1 -> 0.52f
+            2 -> 0.34f
+            3 -> 0.24f
+            else -> 0.18f
+        },
+        tween(280), label = "a$chiSo"
+    )
+    // Nhoe chi cho nhung dong DA MO SAN - no lam sau them mot lop
+    // da co, khong tu minh giau chu nao. Bat dau tu bac 2 de dong
+    // ke ben van doc duoc ro.
+    //
+    // `Modifier.blur` can Android 12; may cu hon thi no lang le
+    // khong lam gi, va bo cuc van dung y het. Do la kieu xuong cap
+    // dung: mat mot lop trang tri, khong mat mot chuc nang nao.
+    val nhoe by animateFloatAsState(
+        if (!tinMoc || xa < 2) 0f else 0.7f * (xa - 1),
+        tween(280), label = "b$chiSo"
+    )
 
-    // Chạm vào câu mà nguồn không cho tua thì phải nói ra. Im lặng ở đây là
-    // tệ nhất: người dùng chạm, không có gì xảy ra, và không biết là app hỏng
-    // hay mình bấm sai chỗ.
-    var baoKhongTua by remember { mutableStateOf(false) }
-    LaunchedEffect(baoKhongTua) {
-        if (baoKhongTua) {
-            kotlinx.coroutines.delay(4000)
-            baoKhongTua = false
-        }
-    }
-    // `derivedStateOf`: vi tri phat doi 5 lan moi giay, nhung dong dang hat
-    // thi vai giay moi doi mot lan. Khong boc thi ca danh sach bi dung lai
-    // lien tuc - day chinh la cho de sinh giat nhat.
-    val active by remember(lyrics) {
-        derivedStateOf { activeLineIndex(lyrics.lines, position.value, lyrics.offset) }
-    }
-
-    // Moc dang ngo thi KHONG to sang va KHONG tu cuon. To sang nham mot dong
-    // suot ca bai con te hon la khong to gi - nguoi dung tin vao no roi phat
-    // hien bi lua. Cham mot cai la khop lai, va tu do tro di chay binh thuong.
-    val trustTiming = lyrics.synced && !lyrics.timingSuspect
-    val listState = rememberLazyListState()
-
-    // Boc mot lan o day thay vi hoi trang thai trong tung dong: danh sach co
-    // the vai tram dong, va moi dong tu doc trang thai la moi dong tu dang ky
-    // theo doi no.
-    val translated = (translation as? TranslationState.Done)?.lines ?: emptyList()
-
-    // Keo dong dang hat ve giua man hinh
-    LaunchedEffect(active, trustTiming) {
-        if (trustTiming && active >= 0 && lyrics.lines.isNotEmpty()) {
-            listState.animateScrollToItem(active.coerceAtLeast(0), scrollOffset = -260)
-        }
-    }
-
-    /**
-     * Cau dang hat sang dan tu trai sang phai theo tien do trong cau.
-     *
-     * KHONG phai karaoke tung chu. LRCLIB chi cho moc theo DONG, khong co moc
-     * theo tu - da kiem: loi tra ve chi co `[00:24.62]` dau dong, khong co
-     * `<00:24.62>` chen giua cac tu. Nen day khong gia vo biet dang hat toi chu
-     * nao; no cho biet cau da chay duoc bao nhieu, va do la thu biet chac: dong
-     * nay bat dau luc nao, dong sau bat dau luc nao.
-     *
-     * Chay bang mot hoat anh tuyen tinh dat mot lan moi khi doi dong, chu khong
-     * bam theo `position`. Vi tri phat chi cap nhat vai lan moi giay, va quet
-     * sang theo no thi thanh sang giat tung nac.
-     */
-    val quet = remember { Animatable(0f) }
-    LaunchedEffect(active, trustTiming, lyrics) {
-        if (!trustTiming || active < 0) {
-            quet.snapTo(0f)
-            return@LaunchedEffect
-        }
-        val batDau = lyrics.lines[active].time + lyrics.offset
-        val ketThuc = lyrics.lines.getOrNull(active + 1)?.let { it.time + lyrics.offset }
-            ?: (batDau + 4_000L)
-        val dai = (ketThuc - batDau).coerceAtLeast(1L)
-        val daQua = (position.value - batDau).coerceAtLeast(0L)
-
-        quet.snapTo((daQua.toFloat() / dai).coerceIn(0f, 1f))
-        val conLai = (dai - daQua).coerceAtLeast(0L)
-        if (conLai > 0) {
-            quet.animateTo(1f, tween(conLai.toInt(), easing = LinearEasing))
+    // Hai hieu ung "doi dong thi lam gi do" chay bang mot hoat anh
+    // dat lai moi lan dong nay TRO THANH dong dang hat. Cac dong
+    // khac khong dung toi, nen khong ton gi.
+    val vao = remember(chiSo) { Animatable(1f) }
+    LaunchedEffect(dangHat, effect) {
+        if (!dangHat) { vao.snapTo(1f); return@LaunchedEffect }
+        when (effect) {
+            LyricEffect.NAY -> {
+                vao.snapTo(0.86f)
+                vao.animateTo(1f, spring(dampingRatio = 0.34f, stiffness = 620f))
+            }
+            LyricEffect.TROI_LEN -> {
+                vao.snapTo(0f)
+                vao.animateTo(1f, tween(340))
+            }
+            else -> vao.snapTo(1f)
         }
     }
 
-    if (lyrics.isEmpty) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                LyraMark(size = 54.dp, busy = loading)
-                Spacer(Modifier.height(16.dp))
+    Column(
+        Modifier
+            // MOT cu chi, MOT viec.
+            //
+            // Cham vao mot cau thi nhay toi cau do - do la thu nguoi
+            // ta doan ra truoc khi doc bat ky huong dan nao, va la
+            // thu moi app loi bai hat khac deu lam.
+            //
+            // Can lech nhip lui ve nhan giu. No hiem hon han, va no
+            // tung an ngay tren cu cham: ai cham mot cau de nhay toi
+            // thi lai vo tinh doi moc thoi gian ca bai, roi khong
+            // hieu vi sao loi bong chay sai.
+            .combinedClickable(onClick = onCham, onLongClick = onNhanGiu)
+            .then(if (nhoe > 0.05f) Modifier.blur(nhoe.dp) else Modifier)
+            .graphicsLayer {
+                // Doi trong `graphicsLayer` bang lambda: chi cap nhat
+                // mot lop ve, khong dung lai cay giao dien
+                val nay = if (dangHat && effect == LyricEffect.NAY) vao.value else 1f
+                scaleX = scale * nay
+                scaleY = scale * nay
+                this.alpha =
+                    if (dangHat && effect == LyricEffect.TROI_LEN) alpha * vao.value
+                    else alpha
+                if (dangHat && effect == LyricEffect.TROI_LEN) {
+                    translationY = (1f - vao.value) * 34.dp.toPx()
+                }
+                transformOrigin =
+                    androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+            }
+    ) {
+        val chu = line.text.ifEmpty { "♪" }
+        val quetDuoc = dangHat &&
+            (effect == LyricEffect.SANG_DAN || effect == LyricEffect.HIEN_CHU)
+
+        // Lời bài hát đặt bằng bộ chữ CÓ CHÂN, khác hẳn phần giao
+        // diện. Đây là thứ duy nhất trên màn hình để ĐỌC chứ không
+        // phải để bấm, và tách nó ra bằng dáng chữ nói điều đó rõ
+        // hơn bất kỳ đường viền nào.
+        //
+        // Chữ có chân cần khoảng cách dòng rộng hơn chữ không chân
+        // cùng cỡ, nên `lineHeight` nới ra theo.
+        val coChu = if (dangHat) 26.sp else 22.sp
+        val damNhat = if (dangHat) FontWeight.SemiBold else FontWeight.Normal
+        val caoDong = if (dangHat) 36.sp else 32.sp
+        // `accent` tới đây đã chỉnh sẵn cho mặt giấy đang dùng.
+        val mucMau = accent
+
+        if (quetDuoc) {
+            // Quet phai chay THEO TUNG DONG, khong theo be ngang cua
+            // ca khoi chu.
+            //
+            // `Brush.horizontalGradient` ap cho ca `Text` thi cau bi
+            // rot xuong hai dong se sang DONG THOI ca hai, moi dong
+            // tu trai sang - trong nhu hai cau rieng cung chay, hoan
+            // toan khong ra thu tu doc. Cau ngan mot dong thi khong
+            // lo ra, nen loi nay song duoc mot ban phat hanh.
+            //
+            // Nen ve hai lop: lop duoi la chu mo, lop tren la chu
+            // sang bi CAT theo dung phan da qua - het dong mot moi
+            // sang dong hai. `TextLayoutResult` cho biet tung dong
+            // nam o dau.
+            var bocCuc by remember(chu, coChu) {
+                mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null)
+            }
+            val mo = if (effect == LyricEffect.HIEN_CHU) Color.Transparent
+            else mau.chuRatMo
+
+            Box {
                 Text(
-                    if (loading) "Đang tìm lời…" else "Chưa tìm thấy lời cho bài này",
-                    color = mau.chuMo,
-                    fontSize = 14.sp
+                    text = chu, color = mo, fontFamily = boChu.loi,
+                    fontSize = coChu, fontWeight = damNhat, lineHeight = caoDong,
+                    onTextLayout = { bocCuc = it }
                 )
-                if (!loading) {
-                    Spacer(Modifier.height(22.dp))
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(accent)
-                            .clickable(onClick = onEditLyrics)
-                            .padding(horizontal = 28.dp, vertical = 14.dp)
-                    ) {
-                        Text(
-                            "Tự nhập lời",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
-        return
-    }
+                Text(
+                    text = chu, color = mau.chu, fontFamily = boChu.loi,
+                    fontSize = coChu, fontWeight = damNhat, lineHeight = caoDong,
+                    modifier = Modifier.drawWithContent {
+                        val bc = bocCuc
+                        if (bc == null) { drawContent(); return@drawWithContent }
 
-    Column(Modifier.fillMaxSize()) {
-        // Mot dai bao duy nhat, va no LUON co loi vao cho sua loi. Truoc day
-        // khi dang co do lech thi dai bao chiem cho va nguoi dung mat han duong
-        // toi cho tu nhap - dung luc can nhat, vi loi sai thuong di kem lech.
-        Notice(
-            accent = accent,
-            text = when {
-                lyrics.timingSuspect ->
-                    "Lời của bản thu khác nên mốc có thể lệch. Nhấn giữ câu đang " +
-                        "hát để căn lại."
-                lyrics.offset != 0L ->
-                    "Đã căn lệch " + offsetLabel(lyrics.offset) + ". Bấm để bỏ."
-                lyrics.from == "tự nhập" -> "Lời bạn tự nhập."
-                else -> "Lời từ " + lyrics.from + "."
-            },
-            onClick = if (lyrics.offset != 0L) onClearOffset else null,
-            action = if (lyrics.from == "tự nhập") "Sửa lời" else "Tự nhập",
-            onAction = onEditLyrics
-        )
-
-        if (baoKhongTua) {
-            Notice(
-                accent = accent,
-                text = "App đang phát không cho tua. Nhấn giữ một câu để căn lệch nhịp thay vào đó."
-            )
-        }
-
-        // Dai bao rieng cho phan dich, va chi hien khi co chuyen de noi. Dich
-        // xong thi khong bao gi ca - ban dich da nam duoi tung dong, tu no da
-        // la loi thong bao ro nhat.
-        when (translation) {
-            is TranslationState.NeedsModel -> Notice(
-                accent = accent,
-                text = "Lời đang là tiếng " + languageName(translation.language) +
-                    ". Tải gói ngôn ngữ về máy để dịch, một lần dùng mãi.",
-                action = "Tải gói",
-                onAction = onDownloadModel
-            )
-            is TranslationState.Failed -> Notice(
-                accent = accent,
-                text = translation.why + "."
-            )
-            TranslationState.Working -> Notice(accent = accent, text = "Đang dịch lời…")
-            else -> Unit
-        }
-
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 26.dp, vertical = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            itemsIndexed(lyrics.lines, key = { i, _ -> i }) { i, line ->
-                val isActive = trustTiming && i == active
-
-                // Xa dong dang hat bao nhieu dong. Dung de do MOT CAI DOC thay
-                // vi mot cong tac bat/tat: dong ke ben con doc duoc, dong xa
-                // hon lui dan ve nen. Mat nguoi bam duoc cho dang hat ma khong
-                // phai doc chu, va van thay truoc cau sap toi.
-                //
-                // Cat o 4: xa hon nua thi mat da khong phan biet duoc nua, ma
-                // moi bac them la mot lop ve nua phai tinh.
-                val xa = if (trustTiming && active >= 0) (i - active).absoluteValue.coerceAtMost(4) else 0
-
-                val scale by animateFloatAsState(
-                    if (!trustTiming) 1f else 1f - 0.045f * xa,
-                    tween(280), label = "s$i"
-                )
-                // Moc dang ngo thi moi dong deu ro nhu nhau - khong co dong nao
-                // duoc quyen sang hon, vi ta khong biet dong nao dung
-                val alpha by animateFloatAsState(
-                    if (!trustTiming) 0.72f else when (xa) {
-                        0 -> 1f
-                        1 -> 0.52f
-                        2 -> 0.34f
-                        3 -> 0.24f
-                        else -> 0.18f
-                    },
-                    tween(280), label = "a$i"
-                )
-                // Nhoe chi cho nhung dong DA MO SAN - no lam sau them mot lop
-                // da co, khong tu minh giau chu nao. Bat dau tu bac 2 de dong
-                // ke ben van doc duoc ro.
-                //
-                // `Modifier.blur` can Android 12; may cu hon thi no lang le
-                // khong lam gi, va bo cuc van dung y het. Do la kieu xuong cap
-                // dung: mat mot lop trang tri, khong mat mot chuc nang nao.
-                val nhoe by animateFloatAsState(
-                    if (!trustTiming || xa < 2) 0f else 0.7f * (xa - 1),
-                    tween(280), label = "b$i"
-                )
-
-                // Hai hieu ung "doi dong thi lam gi do" chay bang mot hoat anh
-                // dat lai moi lan dong nay TRO THANH dong dang hat. Cac dong
-                // khac khong dung toi, nen khong ton gi.
-                val vao = remember(i) { Animatable(1f) }
-                LaunchedEffect(isActive, effect) {
-                    if (!isActive) { vao.snapTo(1f); return@LaunchedEffect }
-                    when (effect) {
-                        LyricEffect.NAY -> {
-                            vao.snapTo(0.86f)
-                            vao.animateTo(1f, spring(dampingRatio = 0.34f, stiffness = 620f))
+                        // Chia tien do cho cac dong theo BE NGANG
+                        // that cua tung dong: dong ngan phai qua
+                        // nhanh hon dong dai, khong thi nhip quet
+                        // giat khuc o cho xuong dong.
+                        val rong = (0 until bc.lineCount).map {
+                            bc.getLineRight(it) - bc.getLineLeft(it)
                         }
-                        LyricEffect.TROI_LEN -> {
-                            vao.snapTo(0f)
-                            vao.animateTo(1f, tween(340))
-                        }
-                        else -> vao.snapTo(1f)
-                    }
-                }
+                        val tong = rong.sum()
+                        if (tong <= 0f) { drawContent(); return@drawWithContent }
 
-                Column(
-                    Modifier
-                        // MOT cu chi, MOT viec.
-                        //
-                        // Cham vao mot cau thi nhay toi cau do - do la thu nguoi
-                        // ta doan ra truoc khi doc bat ky huong dan nao, va la
-                        // thu moi app loi bai hat khac deu lam.
-                        //
-                        // Can lech nhip lui ve nhan giu. No hiem hon han, va no
-                        // tung an ngay tren cu cham: ai cham mot cau de nhay toi
-                        // thi lai vo tinh doi moc thoi gian ca bai, roi khong
-                        // hieu vi sao loi bong chay sai.
-                        .combinedClickable(
-                            onClick = {
-                                if (tuaDuoc) onSeekToLine(i) else baoKhongTua = true
-                            },
-                            onLongClick = { onSyncToLine(i) }
-                        )
-                        .then(if (nhoe > 0.05f) Modifier.blur(nhoe.dp) else Modifier)
-                        .graphicsLayer {
-                            // Doi trong `graphicsLayer` bang lambda: chi cap nhat
-                            // mot lop ve, khong dung lai cay giao dien
-                            val nay = if (isActive && effect == LyricEffect.NAY) vao.value else 1f
-                            scaleX = scale * nay
-                            scaleY = scale * nay
-                            this.alpha =
-                                if (isActive && effect == LyricEffect.TROI_LEN) alpha * vao.value
-                                else alpha
-                            if (isActive && effect == LyricEffect.TROI_LEN) {
-                                translationY = (1f - vao.value) * 34.dp.toPx()
-                            }
-                            transformOrigin =
-                                androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
-                        }
-                ) {
-                    val chu = line.text.ifEmpty { "♪" }
-                    val quetDuoc = isActive &&
-                        (effect == LyricEffect.SANG_DAN || effect == LyricEffect.HIEN_CHU)
-
-                    // Lời bài hát đặt bằng bộ chữ CÓ CHÂN, khác hẳn phần giao
-                    // diện. Đây là thứ duy nhất trên màn hình để ĐỌC chứ không
-                    // phải để bấm, và tách nó ra bằng dáng chữ nói điều đó rõ
-                    // hơn bất kỳ đường viền nào.
-                    //
-                    // Chữ có chân cần khoảng cách dòng rộng hơn chữ không chân
-                    // cùng cỡ, nên `lineHeight` nới ra theo.
-                    val coChu = if (isActive) 26.sp else 22.sp
-                    val damNhat = if (isActive) FontWeight.SemiBold else FontWeight.Normal
-                    val caoDong = if (isActive) 36.sp else 32.sp
-                    // `accent` tới đây đã chỉnh sẵn cho mặt giấy đang dùng.
-                    val mucMau = accent
-
-                    if (quetDuoc) {
-                        // Quet phai chay THEO TUNG DONG, khong theo be ngang cua
-                        // ca khoi chu.
-                        //
-                        // `Brush.horizontalGradient` ap cho ca `Text` thi cau bi
-                        // rot xuong hai dong se sang DONG THOI ca hai, moi dong
-                        // tu trai sang - trong nhu hai cau rieng cung chay, hoan
-                        // toan khong ra thu tu doc. Cau ngan mot dong thi khong
-                        // lo ra, nen loi nay song duoc mot ban phat hanh.
-                        //
-                        // Nen ve hai lop: lop duoi la chu mo, lop tren la chu
-                        // sang bi CAT theo dung phan da qua - het dong mot moi
-                        // sang dong hai. `TextLayoutResult` cho biet tung dong
-                        // nam o dau.
-                        var bocCuc by remember(chu, coChu) {
-                            mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null)
-                        }
-                        val mo = if (effect == LyricEffect.HIEN_CHU) Color.Transparent
-                        else mau.chuRatMo
-
-                        Box {
-                            Text(
-                                text = chu, color = mo, fontFamily = boChu.loi,
-                                fontSize = coChu, fontWeight = damNhat, lineHeight = caoDong,
-                                onTextLayout = { bocCuc = it }
-                            )
-                            Text(
-                                text = chu, color = mau.chu, fontFamily = boChu.loi,
-                                fontSize = coChu, fontWeight = damNhat, lineHeight = caoDong,
-                                modifier = Modifier.drawWithContent {
-                                    val bc = bocCuc
-                                    if (bc == null) { drawContent(); return@drawWithContent }
-
-                                    // Chia tien do cho cac dong theo BE NGANG
-                                    // that cua tung dong: dong ngan phai qua
-                                    // nhanh hon dong dai, khong thi nhip quet
-                                    // giat khuc o cho xuong dong.
-                                    val rong = (0 until bc.lineCount).map {
-                                        bc.getLineRight(it) - bc.getLineLeft(it)
-                                    }
-                                    val tong = rong.sum()
-                                    if (tong <= 0f) { drawContent(); return@drawWithContent }
-
-                                    var conLai = quet.value.coerceIn(0f, 1f) * tong
-                                    val duong = androidx.compose.ui.graphics.Path()
-                                    for (i in 0 until bc.lineCount) {
-                                        if (conLai <= 0f) break
-                                        val phan = minOf(conLai, rong[i])
-                                        duong.addRect(
-                                            androidx.compose.ui.geometry.Rect(
-                                                bc.getLineLeft(i), bc.getLineTop(i),
-                                                bc.getLineLeft(i) + phan, bc.getLineBottom(i)
-                                            )
-                                        )
-                                        conLai -= phan
-                                    }
-                                    clipPath(duong) { this@drawWithContent.drawContent() }
-                                }
-                            )
-                        }
-                    } else Text(
-                        text = chu,
-                        color = mau.chu,
-                        fontFamily = boChu.loi,
-                        fontSize = coChu,
-                        fontWeight = damNhat,
-                        lineHeight = caoDong,
-                        style = when {
-                            isActive && effect == LyricEffect.TOA_SANG ->
-                                LocalTextStyle.current.copy(
-                                    shadow = Shadow(mucMau, Offset.Zero, 26f)
+                        var conLai = quet.value.coerceIn(0f, 1f) * tong
+                        val duong = androidx.compose.ui.graphics.Path()
+                        for (i in 0 until bc.lineCount) {
+                            if (conLai <= 0f) break
+                            val phan = minOf(conLai, rong[i])
+                            duong.addRect(
+                                androidx.compose.ui.geometry.Rect(
+                                    bc.getLineLeft(i), bc.getLineTop(i),
+                                    bc.getLineLeft(i) + phan, bc.getLineBottom(i)
                                 )
-                            else -> LocalTextStyle.current
+                            )
+                            conLai -= phan
                         }
-                    )
-                    // O trang Loi thi hien ban dich cho MOI dong, khac han khung
-                    // noi chi hien cho dong dang hat: o day nguoi dung dang doc
-                    // ca bai chu khong phai liec mat.
-                    val meaning = translated.getOrNull(i)?.trim().orEmpty()
-                    if (meaning.isNotEmpty() && meaning != line.text.trim()) {
-                        // Bản dịch đặt bằng chữ KHÔNG chân, cỡ nhỏ hơn - nó là
-                        // chú thích cho câu ở trên chứ không phải lời bài hát,
-                        // và trên một trang in thì chú thích trông khác chính văn.
-                        Text(
-                            text = meaning,
-                            color = mucMau,
-                            fontSize = if (isActive) 15.sp else 13.5.sp,
-                            lineHeight = 22.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                        clipPath(duong) { this@drawWithContent.drawContent() }
                     }
-                }
+                )
             }
+        } else Text(
+            text = chu,
+            color = mau.chu,
+            fontFamily = boChu.loi,
+            fontSize = coChu,
+            fontWeight = damNhat,
+            lineHeight = caoDong,
+            style = when {
+                dangHat && effect == LyricEffect.TOA_SANG ->
+                    LocalTextStyle.current.copy(
+                        shadow = Shadow(mucMau, Offset.Zero, 26f)
+                    )
+                else -> LocalTextStyle.current
+            }
+        )
+        // O trang Loi thi hien ban dich cho MOI dong, khac han khung
+        // noi chi hien cho dong dang hat: o day nguoi dung dang doc
+        // ca bai chu khong phai liec mat.
+        val meaning = banDich.trim()
+        if (meaning.isNotEmpty() && meaning != line.text.trim()) {
+            // Bản dịch đặt bằng chữ KHÔNG chân, cỡ nhỏ hơn - nó là
+            // chú thích cho câu ở trên chứ không phải lời bài hát,
+            // và trên một trang in thì chú thích trông khác chính văn.
+            Text(
+                text = meaning,
+                color = mucMau,
+                fontSize = if (dangHat) 15.sp else 13.5.sp,
+                lineHeight = 22.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
@@ -878,7 +664,7 @@ fun Notice(
 }
 
 /** "+1,5 giây" hoặc "−0,8 giây" — dấu cho biết lời hiện sớm hay muộn hơn. */
-private fun offsetLabel(ms: Long): String {
+internal fun offsetLabel(ms: Long): String {
     val seconds = kotlin.math.abs(ms) / 1000.0
     val sign = if (ms >= 0) "+" else "−"
     return sign + String.format("%.1f", seconds).replace('.', ',') + " giây"
@@ -1614,7 +1400,10 @@ internal fun appLabel(packageName: String): String = when {
     packageName.contains("youtube.music") -> "YouTube Music"
     packageName.contains("youtube") -> "YouTube"
     packageName.contains("zing") || packageName.contains("mp3.zing") -> "Zing MP3"
-    packageName.contains("nhaccuatui") -> "NhacCuaTui"
+    // Goi cua NhacCuaTui la "ht.nct", khong mang chu "nhaccuatui" nao ca.
+    // Khong bat thi man hinh ghi nguon la "nct" - mot cai ten cat tu ten goi ra,
+    // lo ngay rang cho nay chi doan bua.
+    packageName.contains("nhaccuatui") || packageName == "ht.nct" -> "NhacCuaTui"
     packageName.contains("soundcloud") -> "SoundCloud"
     else -> packageName.substringAfterLast('.')
 }
