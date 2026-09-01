@@ -17,10 +17,15 @@ import kotlin.coroutines.resume
  * bài bốn mươi câu là việc không ai làm; đọc từ ảnh thì mất vài giây, rồi đưa
  * thẳng sang công cụ căn giờ.
  *
- * Dùng bản NHÚNG SẴN mô hình chữ Latin chứ không phải bản tải qua Play Services.
- * Nặng hơn, nhưng máy không có Play Services vẫn dùng được, và không bắt người
- * dùng đợi tải mô hình ngay lần đầu — với một app mà điểm bán là chạy được lúc
- * mất mạng thì đó là đánh đổi đúng chiều.
+ * Dùng bản TẢI QUA PLAY SERVICES chứ không phải bản nhúng sẵn mô hình. Bản nhúng
+ * chạy được cả khi máy không có Play Services và không phải đợi tải lần đầu, nghe
+ * thì đúng chiều hơn — nhưng đo ra thì nó thêm 12 MB cho bản arm64 và 40 MB cho
+ * bản universal, tức tăng hơn nửa dung lượng app. Bản universal lại đúng là bản
+ * dành cho máy cũ, nhóm máy chật bộ nhớ nhất. Đổi 40 MB lấy một tính năng phần
+ * lớn người dùng chạy một lần rồi thôi là đổi hớ.
+ *
+ * Cái giá phải trả: máy phải có Play Services, và lần đọc đầu tiên phải đợi tải
+ * mô hình. Phần dịch trong app cũng đã tải gói ngôn ngữ khi chạy rồi.
  *
  * Mô hình chữ Latin đọc được dấu tiếng Việt.
  */
@@ -70,25 +75,25 @@ object DocChuTuAnh {
             .joinToString("\n")
 
     /**
-     * Bo nhung dong ro rang khong phai loi bai hat.
+     * Bỏ những dòng rõ ràng không phải lời bài hát.
      *
-     * Phan lon nguoi ta chup CA MAN HINH chu khong cat rieng phan loi, nen
-     * anh mang theo dong ho, ten nut, so phut giay, huy hieu thong bao. Doc
-     * het roi de nguyen thi nguoi dung phai ngoi xoa tung dong - va moi dong
-     * rac con ton them mot cu cham nua o buoc can gio.
+     * Phần lớn người ta chụp CẢ MÀN HÌNH chứ không cắt riêng phần lời, nên ảnh
+     * mang theo đồng hồ, tên nút, số phút giây, huy hiệu thông báo. Đọc hết rồi
+     * để nguyên thì người dùng phải ngồi xoá từng dòng — và mỗi dòng rác còn tốn
+     * thêm một cú chạm nữa ở bước căn giờ.
      *
-     * Chi loc theo HINH DANG, khong doan theo noi dung: khong co danh sach tu
-     * cam nao ca. Mot cau hat ngan that su van co the bi vut nham, nhung "Oh"
-     * hay "Yeah" thi go lai trong hai giay, con doan theo tu thi sai kieu
-     * khong ai luong truoc duoc.
+     * Chỉ lọc theo HÌNH DÁNG, không đoán theo nội dung: không có danh sách từ
+     * cấm nào cả. Một câu hát ngắn thật sự vẫn có thể bị vứt nhầm, nhưng "Oh"
+     * hay "Yeah" thì gõ lại trong hai giây, còn đoán theo từ thì sai kiểu không
+     * ai lường trước được.
      */
     private fun giuLai(dong: String): Boolean {
         if (dong.isBlank()) return false
-        // "4:06", "2:07 Co" - dong ho va so thoi luong
+        // "4:06", "2:07 Có" — đồng hồ và số thời lượng
         if (dong.matches(DONG_HO)) return false
-        // Qua ngan: "AB", "Loi", "Bia", "Gop" deu la nhan nut
+        // Quá ngắn: "AB", "Lời", "Bìa", "Góp" đều là nhãn nút
         if (dong.length <= 4) return false
-        // Phan lon khong phai chu cai: ":!! 100+", huy hieu, bieu tuong
+        // Phần lớn không phải chữ cái: ":!! 100+", huy hiệu, biểu tượng
         return dong.count { it.isLetter() } * 2 >= dong.length
     }
 
