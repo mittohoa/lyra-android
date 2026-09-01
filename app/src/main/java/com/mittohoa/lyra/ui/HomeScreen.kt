@@ -41,11 +41,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
@@ -627,29 +629,76 @@ private fun LyricsPane(
                     val quetDuoc = isActive &&
                         (effect == LyricEffect.SANG_DAN || effect == LyricEffect.HIEN_CHU)
 
-                    Text(
+                    val coChu = if (isActive) 23.sp else 20.sp
+                    val damNhat = if (isActive) FontWeight.Bold else FontWeight.Normal
+
+                    if (quetDuoc) {
+                        // Quet phai chay THEO TUNG DONG, khong theo be ngang cua
+                        // ca khoi chu.
+                        //
+                        // `Brush.horizontalGradient` ap cho ca `Text` thi cau bi
+                        // rot xuong hai dong se sang DONG THOI ca hai, moi dong
+                        // tu trai sang - trong nhu hai cau rieng cung chay, hoan
+                        // toan khong ra thu tu doc. Cau ngan mot dong thi khong
+                        // lo ra, nen loi nay song duoc mot ban phat hanh.
+                        //
+                        // Nen ve hai lop: lop duoi la chu mo, lop tren la chu
+                        // sang bi CAT theo dung phan da qua - het dong mot moi
+                        // sang dong hai. `TextLayoutResult` cho biet tung dong
+                        // nam o dau.
+                        var bocCuc by remember(chu, coChu) {
+                            mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null)
+                        }
+                        val mo = if (effect == LyricEffect.HIEN_CHU) Color.Transparent
+                        else Color.White.copy(alpha = 0.38f)
+
+                        Box {
+                            Text(
+                                text = chu, color = mo,
+                                fontSize = coChu, fontWeight = damNhat, lineHeight = 30.sp,
+                                onTextLayout = { bocCuc = it }
+                            )
+                            Text(
+                                text = chu, color = Color.White,
+                                fontSize = coChu, fontWeight = damNhat, lineHeight = 30.sp,
+                                modifier = Modifier.drawWithContent {
+                                    val bc = bocCuc
+                                    if (bc == null) { drawContent(); return@drawWithContent }
+
+                                    // Chia tien do cho cac dong theo BE NGANG
+                                    // that cua tung dong: dong ngan phai qua
+                                    // nhanh hon dong dai, khong thi nhip quet
+                                    // giat khuc o cho xuong dong.
+                                    val rong = (0 until bc.lineCount).map {
+                                        bc.getLineRight(it) - bc.getLineLeft(it)
+                                    }
+                                    val tong = rong.sum()
+                                    if (tong <= 0f) { drawContent(); return@drawWithContent }
+
+                                    var conLai = quet.value.coerceIn(0f, 1f) * tong
+                                    val duong = androidx.compose.ui.graphics.Path()
+                                    for (i in 0 until bc.lineCount) {
+                                        if (conLai <= 0f) break
+                                        val phan = minOf(conLai, rong[i])
+                                        duong.addRect(
+                                            androidx.compose.ui.geometry.Rect(
+                                                bc.getLineLeft(i), bc.getLineTop(i),
+                                                bc.getLineLeft(i) + phan, bc.getLineBottom(i)
+                                            )
+                                        )
+                                        conLai -= phan
+                                    }
+                                    clipPath(duong) { this@drawWithContent.drawContent() }
+                                }
+                            )
+                        }
+                    } else Text(
                         text = chu,
                         color = Color.White,
-                        fontSize = if (isActive) 23.sp else 20.sp,
-                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                        fontSize = coChu,
+                        fontWeight = damNhat,
                         lineHeight = 30.sp,
                         style = when {
-                            // Quet sang / hien chu: dung mot dai mau co canh cung
-                            // ngay tai vi tri tien do. Khong phai karaoke tung
-                            // chu - xem chu thich o `LyricEffect`.
-                            quetDuoc -> {
-                                val f = quet.value.coerceIn(0f, 1f)
-                                val sau = if (effect == LyricEffect.HIEN_CHU)
-                                    Color.Transparent else Color.White.copy(alpha = 0.38f)
-                                LocalTextStyle.current.copy(
-                                    brush = Brush.horizontalGradient(
-                                        0f to Color.White,
-                                        f to Color.White,
-                                        (f + 0.012f).coerceAtMost(1f) to sau,
-                                        1f to sau
-                                    )
-                                )
-                            }
                             isActive && effect == LyricEffect.TOA_SANG ->
                                 LocalTextStyle.current.copy(
                                     shadow = Shadow(accent, Offset.Zero, 26f)
