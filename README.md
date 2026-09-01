@@ -46,6 +46,7 @@ trên máy thật: gói thử không nằm trong `enabled_notification_listeners
 | Tự phát: tìm online, nhạc trong máy, hàng đợi | ✅ |
 | Danh sách phát | ✅ |
 | Lời trên thẻ màn hình khoá | ✅ |
+| Sáu hiệu ứng chữ, cho cả trang Lời lẫn khung nổi | ✅ |
 | Ô bật/tắt nhanh trong Cài đặt nhanh | ✅ |
 | Tải nhạc kèm lời nhúng trong file | ✅ chỉ bản `sideload` |
 
@@ -185,6 +186,47 @@ Chậm và giật là thứ dễ mất người dùng nhất.
 Chi tiết đáng nói nhất: bộ nhớ đệm trả về **trước khi** vào trạng thái "đang
 tìm". Nhấp nháy một khung trống rồi mới hiện chữ là cảm giác chậm nhất, dù thật
 ra chỉ tốn vài mili-giây.
+
+---
+
+## Hiệu ứng chữ
+
+Sáu kiểu, chọn trong trang Chỉnh, áp cho **cả trang Lời lẫn khung lời nổi**:
+**Không**, **Sáng dần**, **Hiện chữ**, **Nảy**, **Toả sáng**, **Trôi lên**.
+
+### Không cái nào tô sáng theo từng chữ, và đó là cố ý
+
+LRCLIB chỉ cho mốc theo **dòng**. Đã kiểm trên chính API của họ: lời trả về là
+`[00:24.62] Take my hand`, không có `<00:24.62>` chèn giữa các từ. Nên Lyra
+không biết tiếng hát đang tới chữ nào, và một hiệu ứng giả vờ biết là nói dối
+bằng giao diện — cùng loại với việc tô sáng một dòng khi mốc đáng ngờ, thứ app
+này vốn từ chối làm.
+
+Cái biết chắc là **tiến độ trong câu**: mốc dòng này tới mốc dòng sau. *Sáng*
+*dần* và *Hiện chữ* chạy theo đúng đại lượng đó. Trông rất giống karaoke, khác
+ở chỗ nó không bịa — và trang Chỉnh nói thẳng điều này cho người dùng.
+
+### Hai cái quét tốn pin, và chỗ đó phải nói trước
+
+Khung lời nổi cố ý chỉ vẽ lại **khi đổi dòng**: vị trí phát đưa vào 10 lần/giây
+nhưng vẽ lại chỉ ~0,3 lần/giây. Nó là cửa sổ nằm đè lên app khác, hệ thống còn
+phải trộn nó vào từng khung hình.
+
+| Hiệu ứng | Nhịp vẽ khung nổi |
+|---|---|
+| Không, Toả sáng | không đổi — chỉ là thuộc tính của nét vẽ |
+| Nảy, Trôi lên | động 340–420 ms mỗi lần đổi dòng rồi tắt |
+| **Sáng dần, Hiện chữ** | **vẽ liên tục suốt câu** |
+
+Hai cái cuối mang cờ `tonPin`, và trang Chỉnh hiện chữ *“tốn pin hơn”* ngay dưới
+tên chúng. Người dùng có quyền chọn, nhưng phải được nói trước — không giấu một
+cái giá vào trong một cái tên nghe hay.
+
+### Một cái bẫy khi vẽ
+
+`paint` dùng chung cho mọi hàng, nên sau mỗi hàng phải trả nó về nguyên trạng
+(`shader = null`, `clearShadowLayer()`). Để sót một shader là cả khung nhuộm
+theo dòng đang hát — loại lỗi trông như *“đôi khi bị”* và rất khó lần ra.
 
 ---
 

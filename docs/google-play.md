@@ -4,7 +4,7 @@ Mọi thứ dưới đây viết sẵn để chép thẳng vào Play Console. Ch
 thì đánh dấu **[quyết định]**.
 
 Bản nộp: `app/build/outputs/bundle/playRelease/app-play-release.aab` —
-`versionCode 5`, `versionName 0.1.5`, `targetSdk 36`, 35,8 MB.
+`versionCode 7`, `versionName 0.1.7`, `targetSdk 36`, 34,1 MB.
 
 ---
 
@@ -84,6 +84,12 @@ LỜI KHỚP TỪNG DÒNG
 Lời lấy từ LRCLIB, kho lời mở và miễn phí. Lệch nhịp thì chạm vào đúng câu đang
 hát là Lyra tự căn lại cho cả bài — không phải kéo thanh trượt mò mẫm.
 
+SÁU HIỆU ỨNG CHỮ
+
+Chọn kiểu lời chạy: sáng dần, hiện chữ, nảy, toả sáng, trôi lên — hoặc tắt hẳn.
+Áp cho cả trang lời lẫn khung nổi. Hai kiểu quét tốn pin hơn, và app nói rõ điều
+đó ngay tại chỗ chọn.
+
 DỊCH NGAY TRÊN MÁY
 
 Lời tiếng Anh, Nhật, Hàn, Trung dịch được sang tiếng Việt, chạy hoàn toàn trên
@@ -122,29 +128,31 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản thử nghiệm đầu tiên của Lyra trên Play.
+Bản thử nghiệm của Lyra trên Play.
 
-• Lời bài hát nổi trên màn hình cho nhạc phát ở Spotify, YouTube Music, hay bất kỳ app nào
-• Lời khớp từng dòng, lệch thì chạm vào câu đang hát là tự căn lại
+• Lời nổi trên màn hình cho nhạc phát ở Spotify, YouTube Music, hay app bất kỳ
+• Sáu hiệu ứng chữ cho cả trang lời lẫn khung nổi
+• Lệch nhịp thì chạm vào câu đang hát là tự căn lại cả bài
 • Dịch lời sang tiếng Việt ngay trên máy, không cần mạng
 • Trình phát nhạc trong máy, có hàng đợi và danh sách phát
 • Câu đang hát hiện trên thẻ điều khiển ở màn hình khoá
 
-Phần lời cho app khác cần quyền đọc thông báo. Không bật vẫn dùng được như một trình phát nhạc đầy đủ.
+Phần lời cho app khác cần quyền đọc thông báo. Không bật vẫn là một trình phát đầy đủ.
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-First test build of Lyra on Play.
+Test build of Lyra on Play.
 
-• Floating lyrics over music playing in Spotify, YouTube Music, or any other app
-• Line-by-line sync; tap the line you hear to realign the whole song
+• Floating lyrics over music in Spotify, YouTube Music, or any app
+• Six text effects, on both the lyrics page and the floating window
+• Tap the line you hear to realign the whole song
 • On-device translation to Vietnamese, works offline
-• Built-in player for music on your phone, with queue and playlists
+• Built-in player for local music, with queue and playlists
 • Current line shows on the lock-screen media card
 
-Notification access is required for lyrics over other apps. Without it, Lyra still works as a full music player.
+Notification access is needed for lyrics over other apps. Without it, Lyra is still a full player.
 ```
 
 ### Bản tiếng Anh của thông tin cửa hàng
@@ -185,6 +193,12 @@ LINE-BY-LINE SYNC
 Lyrics come from LRCLIB, an open and free lyrics library. If the timing drifts,
 tap the line you actually hear and Lyra realigns the whole song — no dragging a
 slider around.
+
+SIX TEXT EFFECTS
+
+Pick how the lyrics move: sweep, reveal, bounce, glow, rise — or none at all.
+Applies to both the lyrics page and the floating window. Two of them redraw
+continuously and cost more battery; the app says so where you pick them.
 
 ON-DEVICE TRANSLATION
 
