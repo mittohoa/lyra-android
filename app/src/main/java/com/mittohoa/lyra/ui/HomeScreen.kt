@@ -1432,6 +1432,10 @@ private fun Big(label: String, accent: Color, filled: Boolean, onClick: () -> Un
 internal fun appLabel(packageName: String): String = when {
     // Bai do chinh Lyra phat mang mot ten goi gia, xem `Lyra.OWN`
     packageName == "lyra" -> "Lyra"
+    // Mot ban Lyra KHAC tren cung may - ban cai tu Play va ban dung tay chay
+    // canh nhau. Khong bat thi nhanh cuoi cat ten goi ra thanh "lyra_player",
+    // va mot cai ten may moc nhu vay lo ngay ra rang cho nay chi doan bua.
+    packageName.startsWith("com.mittohoa.lyra") -> "Lyra"
     packageName.contains("spotify") -> "Spotify"
     packageName.contains("youtube.music") -> "YouTube Music"
     packageName.contains("youtube") -> "YouTube"
