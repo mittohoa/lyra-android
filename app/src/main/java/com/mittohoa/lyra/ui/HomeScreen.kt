@@ -842,7 +842,7 @@ private fun offsetLabel(ms: Long): String {
 }
 
 @Composable
-private fun TunePane(
+internal fun TunePane(
     canDrawOverlay: Boolean,
     overlayOn: Boolean,
     accent: Color,
