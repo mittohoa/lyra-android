@@ -186,6 +186,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onToggleOverlay = { Lyra.toggleOverlay(this) },
                 onSyncToLine = { Lyra.syncToLine(it) },
+                onSeekToLine = { Lyra.seekToLine(this, it) },
                 onClearOffset = { Lyra.clearOffset() },
                 onEditLyrics = { draft = Lyra.manualDraft() },
                 look = look,

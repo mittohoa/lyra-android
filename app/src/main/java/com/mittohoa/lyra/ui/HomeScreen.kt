@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -114,6 +115,7 @@ fun HomeScreen(
     onOpenOverlaySettings: () -> Unit,
     onToggleOverlay: () -> Unit,
     onSyncToLine: (Int) -> Unit,
+    onSeekToLine: (Int) -> Unit,
     onClearOffset: () -> Unit,
     look: OverlayLook,
     suggestedFontSize: Float,
@@ -342,7 +344,7 @@ fun HomeScreen(
                     )
                     2 -> LyricsPane(
                         lyrics, loading, position, accent, translation,
-                        onSyncToLine, onClearOffset, onEditLyrics, onDownloadModel,
+                        onSyncToLine, onSeekToLine, onClearOffset, onEditLyrics, onDownloadModel,
                         lyricEffect
                     )
                     else -> TunePane(
@@ -452,6 +454,11 @@ private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
  * to hon, cac dong khac mo di - dung nhu khung noi, de nhin mot cai la biet
  * ngay minh dang o dau trong bai.
  */
+// `combinedClickable` van con la API thu nghiem o ban Compose nay. Chap nhan
+// dung: thu duy nhat can la mot cu cham va mot cu nhan giu tren cung mot cho,
+// va tu ghep hai bo nhan cu chi de tranh mot chu "experimental" thi doi lai
+// nhieu ma hon han.
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun LyricsPane(
     lyrics: Lyrics,
@@ -460,11 +467,26 @@ private fun LyricsPane(
     accent: Color,
     translation: TranslationState,
     onSyncToLine: (Int) -> Unit,
+    onSeekToLine: (Int) -> Unit,
     onClearOffset: () -> Unit,
     onEditLyrics: () -> Unit,
     onDownloadModel: () -> Unit,
     effect: LyricEffect
 ) {
+    // Hỏi lại mỗi lần vẽ: vài app không mở `SEEK_TO`, và nhạc có thể đổi từ
+    // app này sang app khác giữa chừng. Xem thêm `PlayerPane`.
+    val tuaDuoc = Lyra.tuaDuoc()
+
+    // Chạm vào câu mà nguồn không cho tua thì phải nói ra. Im lặng ở đây là
+    // tệ nhất: người dùng chạm, không có gì xảy ra, và không biết là app hỏng
+    // hay mình bấm sai chỗ.
+    var baoKhongTua by remember { mutableStateOf(false) }
+    LaunchedEffect(baoKhongTua) {
+        if (baoKhongTua) {
+            kotlinx.coroutines.delay(4000)
+            baoKhongTua = false
+        }
+    }
     // `derivedStateOf`: vi tri phat doi 5 lan moi giay, nhung dong dang hat
     // thi vai giay moi doi mot lan. Khong boc thi ca danh sach bi dung lai
     // lien tuc - day chinh la cho de sinh giat nhat.
@@ -562,7 +584,8 @@ private fun LyricsPane(
             accent = accent,
             text = when {
                 lyrics.timingSuspect ->
-                    "Lời của bản thu khác nên mốc có thể lệch. Chạm câu đang hát để căn lại."
+                    "Lời của bản thu khác nên mốc có thể lệch. Nhấn giữ câu đang " +
+                        "hát để căn lại."
                 lyrics.offset != 0L ->
                     "Đã căn lệch " + offsetLabel(lyrics.offset) + ". Bấm để bỏ."
                 lyrics.from == "tự nhập" -> "Lời bạn tự nhập."
@@ -572,6 +595,13 @@ private fun LyricsPane(
             action = if (lyrics.from == "tự nhập") "Sửa lời" else "Tự nhập",
             onAction = onEditLyrics
         )
+
+        if (baoKhongTua) {
+            Notice(
+                accent = accent,
+                text = "App đang phát không cho tua. Nhấn giữ một câu để căn lệch nhịp thay vào đó."
+            )
+        }
 
         // Dai bao rieng cho phan dich, va chi hien khi co chuyen de noi. Dich
         // xong thi khong bao gi ca - ban dich da nam duoi tung dong, tu no da
@@ -659,9 +689,22 @@ private fun LyricsPane(
 
                 Column(
                     Modifier
-                        // Cham vao cau dang hat de can lai ca bai - mot cu cham
-                        // thay cho hang chuc lan bam +/- nua giay
-                        .clickable { onSyncToLine(i) }
+                        // MOT cu chi, MOT viec.
+                        //
+                        // Cham vao mot cau thi nhay toi cau do - do la thu nguoi
+                        // ta doan ra truoc khi doc bat ky huong dan nao, va la
+                        // thu moi app loi bai hat khac deu lam.
+                        //
+                        // Can lech nhip lui ve nhan giu. No hiem hon han, va no
+                        // tung an ngay tren cu cham: ai cham mot cau de nhay toi
+                        // thi lai vo tinh doi moc thoi gian ca bai, roi khong
+                        // hieu vi sao loi bong chay sai.
+                        .combinedClickable(
+                            onClick = {
+                                if (tuaDuoc) onSeekToLine(i) else baoKhongTua = true
+                            },
+                            onLongClick = { onSyncToLine(i) }
+                        )
                         .then(if (nhoe > 0.05f) Modifier.blur(nhoe.dp) else Modifier)
                         .graphicsLayer {
                             // Doi trong `graphicsLayer` bang lambda: chi cap nhat

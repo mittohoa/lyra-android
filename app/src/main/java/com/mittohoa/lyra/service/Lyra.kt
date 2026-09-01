@@ -905,6 +905,20 @@ object Lyra {
     /** Nguoi dung cham vao dong dang hat de can lai ca bai. */
     fun syncToLine(index: Int) = lyricsRepo.syncToLine(index, livePosition())
 
+    /**
+     * Tua tới đúng chỗ câu thứ `index` bắt đầu.
+     *
+     * Trừ đi `offset` chứ không cộng: `activeLineIndex` coi câu i là câu đang
+     * hát khi `lines[i].time <= vịTrí + offset`, nên muốn câu i thành câu đang
+     * hát thì vị trí phải là `time - offset`. Cộng nhầm dấu thì mỗi lần chạm
+     * lại nhảy lệch gấp đôi độ lệch đã căn.
+     */
+    fun seekToLine(context: Context, index: Int) {
+        val loi = lyricsRepo.lyrics.value
+        val cau = loi.lines.getOrNull(index) ?: return
+        seekTo(context, (cau.time - loi.offset).coerceAtLeast(0L))
+    }
+
     /** Bo do lech da chinh. */
     fun clearOffset() = lyricsRepo.clearOffset()
 
