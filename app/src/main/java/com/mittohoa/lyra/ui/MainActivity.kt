@@ -243,6 +243,7 @@ class MainActivity : ComponentActivity() {
                 lyricEffect = lyricEffect,
                 onLyricEffectChange = { Lyra.datHieuUng(this, it) },
                 onXemLoi = { Lyra.xemLoi(it) },
+                onLuuLoiDaCan = { Lyra.saveManualLyrics(it) },
                 chuDe = chuDe,
                 onChuDeChange = {
                     chuDe = it

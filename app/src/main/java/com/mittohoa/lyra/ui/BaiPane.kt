@@ -118,7 +118,8 @@ fun BaiPane(
     onDownloadModel: () -> Unit,
     effect: LyricEffect,
     /** Mở màn hình thẻ lời ở câu này. -1 nghĩa là chưa có câu nào đang hát. */
-    onChiaSeCau: (Int) -> Unit
+    onChiaSeCau: (Int) -> Unit,
+    onCanGio: () -> Unit
 ) {
     val ngucanh = androidx.compose.ui.platform.LocalContext.current
     var naming by remember { mutableStateOf(false) }
@@ -279,7 +280,8 @@ fun BaiPane(
                         effect = effect,
                         gop = trangThaiGop,
                         onGop = { Lyra.gopLoiChoLrclib() },
-                        onThoiGop = { Lyra.thoiGopLoi() }
+                        onThoiGop = { Lyra.thoiGopLoi() },
+                        onCanGio = onCanGio
                     )
                 }
             }
@@ -726,7 +728,8 @@ private fun MatLoi(
     effect: LyricEffect,
     gop: Lyra.TrangThaiGop?,
     onGop: () -> Unit,
-    onThoiGop: () -> Unit
+    onThoiGop: () -> Unit,
+    onCanGio: () -> Unit
 ) {
     // Mốc đang ngờ thì KHÔNG tô sáng và KHÔNG tự cuộn. Tô sáng nhầm một dòng
     // suốt cả bài còn tệ hơn là không tô gì.
@@ -812,6 +815,20 @@ private fun MatLoi(
             action = if (lyrics.from == "tự nhập") "Sửa lời" else "Tự nhập",
             onAction = onEditLyrics
         )
+
+        // Lời chữ trơn thì mời căn giờ.
+        //
+        // Chưa căn thì Lyra chỉ hiện được một khối chữ: không tô sáng câu đang
+        // hát, không khung lời nổi chạy theo, không lặp A–B, không thẻ lời. Gần
+        // hết những gì app làm đều đứng trên chỗ có mốc thời gian.
+        if (!lyrics.synced && lyrics.lines.isNotEmpty()) {
+            Notice(
+                accent = accent,
+                text = "Lời này chưa có mốc thời gian nên không chạy theo nhạc được.",
+                action = "Căn giờ",
+                onAction = onCanGio
+            )
+        }
 
         // Góp lời ngược lại cho LRCLIB.
         //

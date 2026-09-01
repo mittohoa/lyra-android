@@ -23,6 +23,12 @@ private val TAG = Regex("""^\[[a-zA-Z#]+:.*]$""")
  */
 fun parseLrc(content: String, from: String = ""): Lyrics {
     val lines = mutableListOf<LyricLine>()
+    // Song song voi danh sach tren: dong nay co mang moc that hay khong.
+    //
+    // Khong doan qua "time > 0" duoc: mot dong co moc [00:00.00] cung mang
+    // time bang 0, va doan kieu do se vut mat dung dong dau bai cua nhung ban
+    // loi bat dau ngay giay thu khong.
+    val tuMoc = mutableListOf<Boolean>()
     var sawStamp = false
     var offsetTag = 0L
 
@@ -43,7 +49,10 @@ fun parseLrc(content: String, from: String = ""): Lyrics {
 
         if (stamps.isEmpty()) {
             // Khong co moc - giu lai lam loi chu tron
-            if (text.isNotEmpty()) lines += LyricLine(0, text)
+            if (text.isNotEmpty()) {
+                lines += LyricLine(0, text)
+                tuMoc += false
+            }
             continue
         }
 
@@ -57,12 +66,24 @@ fun parseLrc(content: String, from: String = ""): Lyrics {
                 else -> 0L
             }
             lines += LyricLine(m.toLong() * 60_000 + s.toLong() * 1_000 + millis, text)
+            tuMoc += true
         }
     }
 
     if (lines.isEmpty()) return Lyrics.NONE
 
-    val sorted = if (sawStamp) lines.sortedBy { it.time } else lines
+    // File TRON - co dong mang moc, co dong khong - thi bo cac dong khong moc.
+    //
+    // Chung dang mang thoi gian 0, va sap xep theo thoi gian se day het chung
+    // len dau bai. Mot doan loi dao lon nhu vay te hon han la thieu vai dong:
+    // nguoi doc tin vao thu tu, va thu tu sai thi ho khong nhan ra la sai.
+    //
+    // Hay gap o file that: vai nguon de mot dong tieu de hoac ten nguoi dich
+    // khong mang moc lan giua cac dong co moc. Va cong cu can gio trong app
+    // cung tao ra dung loai file nay neu can do dang.
+    val locSach = if (sawStamp) lines.filterIndexed { i, _ -> tuMoc[i] } else lines
+
+    val sorted = if (sawStamp) locSach.sortedBy { it.time } else locSach
     return Lyrics(
         lines = sorted,
         synced = sawStamp,

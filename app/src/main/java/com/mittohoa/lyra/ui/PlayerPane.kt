@@ -256,7 +256,18 @@ private fun PlayButton(accent: Color, playing: Boolean, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(if (playing) "❚❚" else "▶", color = Color.White, fontSize = 23.sp)
+        // Dau to hon han so voi truoc: 23sp trong mot vong tron 72dp thi dau
+        // chi chiem chung mot phan ba, nhin ra la mot nut to rong ruot. Nut
+        // chinh cua ca man hinh thi dau phai doc duoc bang duoi mat.
+        //
+        // Hinh tam giac lech phai mot chut vi trong tam THI GIAC cua no nam
+        // ben trai hop bao quanh - dat dung giua hop thi mat thay no lech trai.
+        Text(
+            if (playing) "❚❚" else "▶",
+            color = Color.White,
+            fontSize = 31.sp,
+            modifier = if (playing) Modifier else Modifier.padding(start = 4.dp)
+        )
     }
 }
 
@@ -272,7 +283,7 @@ private fun Ghost(label: String, active: Boolean, accent: Color, onClick: () -> 
         Text(
             label,
             color = if (active) accent else mau.chuMo,
-            fontSize = 17.sp,
+            fontSize = 21.sp,
             fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
         )
     }

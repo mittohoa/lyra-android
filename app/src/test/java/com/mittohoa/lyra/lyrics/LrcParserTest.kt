@@ -114,4 +114,34 @@ class LrcParserTest {
         // Loi hien som hon 1 giay
         assertEquals(1, activeLineIndex(lines, 9_000, offset = 1_000))
     }
+
+    @Test
+    fun `file tron thi bo cac dong khong moc`() {
+        // Vai nguon de mot dong tieu de hoac ten nguoi dich khong mang moc lan
+        // giua cac dong co moc. Chung mang thoi gian 0 nen sap xep theo thoi
+        // gian se day het len dau bai - loi dao lon con te hon la thieu dong.
+        val loi = parseLrc(
+            """
+            Ten nguoi dich: ai do
+            [00:10.00]Cau mot
+            Mot dong lac
+            [00:20.00]Cau hai
+            """.trimIndent()
+        )
+        assertTrue(loi.synced)
+        assertEquals(listOf("Cau mot", "Cau hai"), loi.lines.map { it.text })
+    }
+
+    @Test
+    fun `dong dau o giay khong van duoc giu`() {
+        // Moc [00:00.00] cung cho time = 0. Loc theo "time > 0" se vut mat
+        // dung dong dau cua nhung ban loi bat dau ngay giay thu khong.
+        val loi = parseLrc(
+            """
+            [00:00.00]Ngay tu dau
+            [00:05.00]Sau do
+            """.trimIndent()
+        )
+        assertEquals(listOf("Ngay tu dau", "Sau do"), loi.lines.map { it.text })
+    }
 }

@@ -174,7 +174,8 @@ fun HomeScreen(
     onChuDeChange: (ChuDe) -> Unit,
     kieuChu: KieuChu,
     onKieuChuChange: (KieuChu) -> Unit,
-    onXemLoi: (com.mittohoa.lyra.sources.Track) -> Unit
+    onXemLoi: (com.mittohoa.lyra.sources.Track) -> Unit,
+    onLuuLoiDaCan: (String) -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -199,6 +200,7 @@ fun HomeScreen(
     // một trang pager không hứa hẹn gì về việc xếp chồng nhiều con. Ở đây thì
     // nó là con của một `Box` thật, và `Box` thì xếp chồng theo đúng thứ tự.
     var cauChiaSe by remember { mutableIntStateOf(-1) }
+    var moCanGio by remember { mutableStateOf(false) }
 
     val pager = rememberPagerState(initialPage = START_PANE, pageCount = { PANES.size })
     val scope = rememberCoroutineScope()
@@ -340,7 +342,8 @@ fun HomeScreen(
                         onEditLyrics = onEditLyrics,
                         onDownloadModel = onDownloadModel,
                         effect = lyricEffect,
-                        onChiaSeCau = { cauChiaSe = it.coerceAtLeast(0) }
+                        onChiaSeCau = { cauChiaSe = it.coerceAtLeast(0) },
+                        onCanGio = { moCanGio = true }
                     )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
@@ -369,6 +372,21 @@ fun HomeScreen(
                 current = pager.currentPage,
                 accent = mucMau,
                 onPick = { scope.launch { pager.animateScrollToPage(it) } }
+            )
+        }
+
+        if (moCanGio && now != null) {
+            CanGioManHinh(
+                cacDong = lyrics.lines,
+                tenBai = now.title,
+                caSi = now.artist,
+                accent = mucMau,
+                dangPhat = now.isPlaying,
+                onLuu = {
+                    onLuuLoiDaCan(it)
+                    moCanGio = false
+                },
+                onDong = { moCanGio = false }
             )
         }
 
