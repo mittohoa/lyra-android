@@ -34,6 +34,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -762,6 +764,12 @@ private fun TunePane(
             )
         }
 
+        Muc(
+            tieuDe = "Khung lời nổi",
+            accent = accent,
+            moSan = true,
+            tomTat = if (overlayOn) "Đang bật" else "Đang tắt"
+        ) {
         if (canDrawOverlay) {
         Text(
             if (overlayOn) "Lời đang nổi trên màn hình" else "Lời nổi đang tắt",
@@ -847,8 +855,45 @@ private fun TunePane(
             onChange = { onLookChange(look.copy(clickThrough = it)) }
         )
 
-        } // het phan chi lien quan toi khung noi
+        Spacer(Modifier.height(26.dp))
+        Slider(
+            label = "Làm mờ nền để tập trung",
+            value = look.dimBackground,
+            range = 0f..0.85f,
+            display = if (look.dimBackground < 0.01f) "Tắt"
+                      else "${(look.dimBackground * 100).roundToInt()}%",
+            accent = accent,
+            onChange = { onLookChange(look.copy(dimBackground = it)) }
+        )
+        Text(
+            "Phủ một lớp tối lên cả màn hình, dưới khung lời. Chạm vẫn xuyên qua " +
+                "bình thường nên app bên dưới dùng được như thường.\n\n" +
+                "Vài app ngân hàng từ chối hoạt động khi có lớp phủ màn hình — đó là " +
+                "cách họ tự bảo vệ, không sửa được từ phía Lyra. Gặp thì kéo về Tắt.",
+            color = Color.White.copy(alpha = 0.45f),
+            fontSize = 12.5.sp,
+            lineHeight = 19.sp
+        )
 
+        Spacer(Modifier.height(26.dp))
+        Toggle(
+            label = "Thanh điều khiển dưới khung nổi",
+            hint = "Nút phát và thanh sóng làm timeline, nằm dưới cùng nên không đè lời. " +
+                "Chạy được cả với nhạc phát ở app khác.",
+            checked = look.showControls,
+            accent = accent,
+            onChange = { onLookChange(look.copy(showControls = it)) }
+        )
+        } // het phan chi lien quan toi khung noi
+        }
+
+        }
+        Muc(
+            tieuDe = "Dịch lời",
+            accent = accent,
+            tomTat = if (translateSettings.enabled) "Bật · đọc tiếng " +
+                languageName(translateSettings.readingLanguage) else "Tắt"
+        ) {
         Spacer(Modifier.height(30.dp))
         Text(
             "Dịch lời",
@@ -912,16 +957,13 @@ private fun TunePane(
             )
         }
 
-        Spacer(Modifier.height(26.dp))
-        Toggle(
-            label = "Thanh điều khiển dưới khung nổi",
-            hint = "Nút phát và thanh sóng làm timeline, nằm dưới cùng nên không đè lời. " +
-                "Chạy được cả với nhạc phát ở app khác.",
-            checked = look.showControls,
-            accent = accent,
-            onChange = { onLookChange(look.copy(showControls = it)) }
-        )
 
+        }
+        Muc(
+            tieuDe = "Hiệu ứng chữ",
+            accent = accent,
+            tomTat = lyricEffect.nhan + " · cho cả trang Lời lẫn khung nổi"
+        ) {
         Spacer(Modifier.height(30.dp))
         Text(
             "Hiệu ứng chữ ở trang Lời",
@@ -976,6 +1018,12 @@ private fun TunePane(
             lineHeight = 19.sp
         )
 
+        }
+        Muc(
+            tieuDe = "Ô bật nhanh và tắt nhanh",
+            accent = accent,
+            tomTat = "Cách bật tắt khung nổi mà không mở Lyra"
+        ) {
         // Tat nhanh va o Cai dat nhanh deu la cach bat/tat KHUNG NOI,
         // nen chung di theo quyen ve de.
         if (canDrawOverlay) {
@@ -1025,6 +1073,67 @@ private fun TunePane(
 }
 
 /** Thanh truot mot dong: ten ben trai, gia tri ben phai, thanh ben duoi. */
+/**
+ * Mot muc gap duoc o trang Chinh.
+ *
+ * Trang nay dai dan theo tung tinh nang - toi luc co ca hinh thuc khung noi,
+ * lam mo nen, thanh dieu khien, dich, hieu ung chu va o Cai dat nhanh thi mot
+ * cuon phang bat nguoi dung luot qua het moi thu de toi cai ho can.
+ *
+ * Gap lai thi ca trang thanh vai dong tieu de - nhin mot cai la biet co nhung
+ * gi, va mo dung cai minh can. `moSan` cho muc dau vi do la thu nguoi ta vao
+ * day de chinh nhieu nhat.
+ */
+@Composable
+private fun Muc(
+    tieuDe: String,
+    accent: Color,
+    moSan: Boolean = false,
+    /** Mot dong ngan ta trang thai hien tai, doc duoc khi dang gap. */
+    tomTat: String? = null,
+    noiDung: @Composable () -> Unit
+) {
+    var mo by remember { mutableStateOf(moSan) }
+    val xoay by animateFloatAsState(if (mo) 90f else 0f, tween(200), label = "xoay")
+
+    Column(Modifier.padding(bottom = 8.dp)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .clickable { mo = !mo }
+                .padding(vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "▸",
+                color = accent,
+                fontSize = 15.sp,
+                modifier = Modifier.graphicsLayer { rotationZ = xoay }
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    tieuDe,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (!mo && tomTat != null) {
+                    Text(
+                        tomTat,
+                        color = Color.White.copy(alpha = 0.45f),
+                        fontSize = 12.5.sp
+                    )
+                }
+            }
+        }
+        if (mo) {
+            Column(Modifier.padding(start = 4.dp, bottom = 10.dp)) { noiDung() }
+        }
+    }
+}
+
 @Composable
 private fun Slider(
     label: String,

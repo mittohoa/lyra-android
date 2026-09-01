@@ -13,6 +13,7 @@ import android.util.Log
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
 import kotlin.math.abs
@@ -54,6 +55,15 @@ class OverlayHost {
         }
 
     /** Noi luu hinh thuc; gan khi mo, de con ghi lai vi tri sau moi lan keo. */
+    /**
+     * Lop phu lam mo ca man hinh, nam DUOI khung loi.
+     *
+     * Mot cua so rieng chu khong phai mot phan cua khung loi: khung loi chi
+     * cao vai dong va co the bi keo di bat cu dau, con lop nay phai phu kin
+     * man hinh va dung yen.
+     */
+    private var scrim: View? = null
+
     private var prefs: OverlayPrefs? = null
 
     /** Cham vao mot cau tren khung: dung de can lai loi theo cau dang nghe. */
@@ -86,6 +96,7 @@ class OverlayHost {
         val look = store.read()
 
         val wm = context.getSystemService(WindowManager::class.java) ?: return
+        applyScrim(context, look.dimBackground)
         val overlay = OverlayView(context).apply {
             applyLook(look)
             effect = this@OverlayHost.effect
@@ -107,7 +118,44 @@ class OverlayHost {
         attachDrag(overlay)
     }
 
+    /**
+     * Dung hoac go lop phu mo nen.
+     *
+     * FLAG_NOT_TOUCHABLE la BAT BUOC, khong phai tuy chon. Mot cua so phu kin
+     * man hinh ma an cham thi nguoi dung bi nhot: khong bam duoc gi trong app
+     * nhac, ke ca nut tat chinh lop nay.
+     */
+    private fun applyScrim(context: Context, muc: Float) {
+        val wm = context.getSystemService(WindowManager::class.java) ?: return
+        if (muc <= 0.01f) {
+            scrim?.let { runCatching { wm.removeViewImmediate(it) } }
+            scrim = null
+            return
+        }
+        val mau = ((muc.coerceIn(0f, 0.92f)) * 255).toInt() shl 24
+        scrim?.let { it.setBackgroundColor(mau); return }
+
+        val v = View(context).apply { setBackgroundColor(mau) }
+        val lp = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT
+        )
+        runCatching { wm.addView(v, lp) }.onSuccess { scrim = v }
+    }
+
     fun hide() {
+        scrim?.let { s ->
+            runCatching {
+                s.context.getSystemService(WindowManager::class.java)?.removeViewImmediate(s)
+            }
+        }
+        scrim = null
         val wm = windowManager
         val v = view
         if (wm != null && v != null) {
@@ -125,6 +173,7 @@ class OverlayHost {
 
     /** Ap hinh thuc moi ngay lap tuc, va ghi lai de lan sau mo van vay. */
     fun applyLook(context: Context, look: OverlayLook) {
+        if (isShowing) applyScrim(context.applicationContext, look.dimBackground)
         val store = prefs ?: OverlayPrefs(context.applicationContext).also { prefs = it }
         // Giu nguyen vi tri dang co - no thuoc ve lan keo tha, khong thuoc bang chinh
         val current = store.read()
