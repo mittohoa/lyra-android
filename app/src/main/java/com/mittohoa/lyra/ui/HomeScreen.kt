@@ -995,7 +995,6 @@ private fun TunePane(
         } // het phan chi lien quan toi khung noi
         }
 
-        }
         Muc(
             tieuDe = "Dịch lời",
             accent = accent,
@@ -1218,6 +1217,7 @@ private fun TunePane(
         )
         Spacer(Modifier.height(20.dp))
         }
+    }
     }
 }
 
