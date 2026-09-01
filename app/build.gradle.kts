@@ -188,6 +188,7 @@ dependencies {
 
     implementation(libs.mlkit.translate)
     implementation(libs.mlkit.language.id)
+    implementation(libs.mlkit.text.recognition)
     implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)

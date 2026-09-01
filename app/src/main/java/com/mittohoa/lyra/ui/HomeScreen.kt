@@ -398,6 +398,7 @@ fun HomeScreen(
                 caSi = now.artist,
                 accent = mucMau,
                 kieuChu = kieuChu,
+                bia = artwork ?: now.artwork,
                 onDong = { cauChiaSe = -1 }
             )
         }

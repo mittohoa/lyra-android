@@ -1,5 +1,12 @@
 package com.mittohoa.lyra.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.mittohoa.lyra.lyrics.DocChuTuAnh
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -54,6 +61,39 @@ fun LyricEditor(
 ) {
     var text by remember { mutableStateOf(initial) }
 
+    val ngucanh = LocalContext.current
+    val pham = rememberCoroutineScope()
+    var dangDoc by remember { mutableStateOf(false) }
+    var baoDoc by remember { mutableStateOf<String?>(null) }
+
+    // Bộ chọn ảnh của hệ thống — KHÔNG xin quyền đọc ảnh.
+    //
+    // `PickVisualMedia` trả về đúng một tấm người dùng chỉ, và app chỉ được
+    // đọc tấm đó. Xin quyền đọc cả thư viện chỉ để nhận một tấm ảnh là xin
+    // thừa, và là thứ người dùng có lý khi từ chối.
+    val chonAnh = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        dangDoc = true
+        pham.launch {
+            val doc = DocChuTuAnh.doc(ngucanh, uri)
+            dangDoc = false
+            // Noi that so dong them vao, va noi that rang no co the con rac.
+            // OCR tren mot anh chup ca man hinh se doc luon ca ten nut va dong
+            // ho; giau chuyen do di thi nguoi dung phat hien ra o buoc can gio,
+            // luc da mat cong hon nhieu.
+            baoDoc = if (doc == null) "Không đọc được chữ nào từ ảnh đó"
+                else "Đã thêm ${doc.lines().size} dòng — xoá bớt dòng thừa nếu " +
+                    "ảnh chụp cả giao diện."
+            if (doc != null) {
+                // NỐI vào chứ không thay: lời dài thường phải chụp mấy tấm, và
+                // tấm thứ hai mà xoá mất tấm thứ nhất thì không ai dùng nổi.
+                text = if (text.isBlank()) doc else text.trimEnd() + "\n" + doc
+            }
+        }
+    }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -102,12 +142,18 @@ fun LyricEditor(
             )
             if (text.isEmpty()) {
                 Text(
-                    "[00:12.34]Câu đầu tiên\n[00:18.00]Câu thứ hai\n…",
+                    "Dán lời vào đây, hoặc bấm “Từ ảnh” để đọc chữ ra khỏi một " +
+                        "ảnh chụp.\n\n[00:12.34]Câu đầu tiên\n[00:18.00]Câu thứ hai\n…",
                     color = mau.chuRatMo,
                     fontSize = 15.sp,
                     lineHeight = 23.sp
                 )
             }
+        }
+
+        baoDoc?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, color = mau.chuMo, fontSize = 13.sp, lineHeight = 19.sp)
         }
 
         Spacer(Modifier.height(14.dp))
@@ -118,6 +164,11 @@ fun LyricEditor(
                 .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            Pillbtn(
+                if (dangDoc) "Đang đọc…" else "Từ ảnh",
+                mau.nenChim,
+                Modifier.weight(1.1f)
+            ) { if (!dangDoc) chonAnh.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
             Pillbtn("Huỷ", mau.nenChim, Modifier.weight(1f), onCancel)
             if (initial.isNotEmpty()) {
                 // Xoa loi tu nhap thi app quay lai tra tu ba nguon nhu binh thuong

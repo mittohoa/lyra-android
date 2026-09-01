@@ -2,6 +2,9 @@ package com.mittohoa.lyra.ui
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import com.mittohoa.lyra.share.MauThe
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,6 +63,7 @@ fun TheLoiManHinh(
     caSi: String,
     accent: Color,
     kieuChu: KieuChu,
+    bia: android.graphics.Bitmap?,
     onDong: () -> Unit
 ) {
     val context = LocalContext.current
@@ -71,6 +76,11 @@ fun TheLoiManHinh(
     }
     if (dungDuoc.isEmpty()) { onDong(); return }
 
+    // Mẫu nào cần ảnh bìa mà bài này không có bìa thì đừng bày ra - một mục
+    // chọn xong không đổi gì là một mục hỏng.
+    val cacMau = remember(bia) { MauThe.entries.filter { bia != null || !it.canBia } }
+    var mauThe by remember { mutableStateOf(MauThe.GIAY) }
+
     var viTri by remember {
         val gan = dungDuoc.indexOfFirst { it >= dongDau }
         mutableIntStateOf(if (gan >= 0) gan else dungDuoc.lastIndex)
@@ -79,7 +89,7 @@ fun TheLoiManHinh(
 
     // Vẽ trên luồng nền: một tấm 1080×1350 kèm bố cục chữ là việc của CPU, làm
     // trên luồng chính thì mỗi lần bấm ‹ › là một cú khựng.
-    val anh by produceState<Bitmap?>(null, cauHat, bangMau.laGiay, kieuChu, accent) {
+    val anh by produceState<Bitmap?>(null, cauHat, bangMau.laGiay, kieuChu, accent, mauThe) {
         value = withContext(Dispatchers.Default) {
             TheLoi.ve(
                 context = context,
@@ -88,7 +98,9 @@ fun TheLoiManHinh(
                 caSi = caSi,
                 mauNhan = accent.toArgb(),
                 laGiay = bangMau.laGiay,
-                kieuChu = kieuChu
+                kieuChu = kieuChu,
+                mau = mauThe,
+                bia = bia
             )
         }
     }
@@ -143,8 +155,36 @@ fun TheLoiManHinh(
             }
         }
 
+        // Hàng mẫu. Cuộn ngang chứ không xuống dòng: sáu mục xếp thành hai hàng
+        // thì phần xem trước bị đẩy lên và mất chỗ.
         Row(
-            Modifier.fillMaxWidth().padding(top = 14.dp),
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(top = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            for (m in cacMau) {
+                val chon = m == mauThe
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(if (chon) accent else mau.nenChim)
+                        .clickable { mauThe = m }
+                        .padding(horizontal = 14.dp, vertical = 9.dp)
+                ) {
+                    Text(
+                        m.nhan,
+                        color = if (chon) Color.White else mau.chuMo,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        Row(
+            Modifier.fillMaxWidth().padding(top = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {

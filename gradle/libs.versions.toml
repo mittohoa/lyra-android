@@ -12,6 +12,7 @@ serialization = "1.7.3"
 coroutines = "1.9.0"
 mlkitTranslate = "17.0.3"
 mlkitLanguageId = "17.0.6"
+mlkitTextRecognition = "19.0.1"
 junit = "4.13.2"
 androidxJunit = "1.3.0"
 espresso = "3.7.0"
@@ -48,6 +49,18 @@ media3-session = { group = "androidx.media3", name = "media3-session", version.r
 # gui loi bai hat ra ngoai, va chay duoc khi mat mang.
 mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkitTranslate" }
 mlkit-language-id = { group = "com.google.mlkit", name = "language-id", version.ref = "mlkitLanguageId" }
+
+# Doc chu tu anh. Ban TAI QUA PLAY SERVICES chu khong nhung san mo hinh.
+#
+# Ban nhung san do that: +12 MB cho APK arm64 va +40 MB cho ban universal -
+# tang 60% dung luong cho mot tinh nang phan lon nguoi dung chay mot lan hoac
+# khong bao gio. Ban universal la ban danh cho may cu, tuc dung nhom may chat
+# bo nho nhat.
+#
+# Doi lai: may phai co Play Services, va lan dau dung phai tai mo hinh mot lan.
+# Chap nhan duoc - phan dich cua app cung tai goi ngon ngu khi chay, nen day
+# khong phai mot kieu moi voi nguoi dung.
+mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkitTextRecognition" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 
