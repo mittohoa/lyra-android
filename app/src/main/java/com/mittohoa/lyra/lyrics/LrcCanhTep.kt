@@ -46,8 +46,13 @@ object LrcCanhTep {
     /** Nguon rieng cho phu de: nguoi dung can biet no la .srt chu khong phai .lrc. */
     const val NGUON_PHU_DE = "phụ đề cạnh video"
 
-    /** Loi hay phu de nay co phai vua doc len tu mot tep nam canh khong. */
-    fun laTepCanh(from: String) = from == NGUON || from == NGUON_PHU_DE
+    /**
+     * Loi nay co phai vua doc len tu chinh tep nhac khong - ke ca tep nam canh
+     * lan the nam trong. Dung de biet co nen moi nguoi dung ghi ra .lrc khong:
+     * ghi lai dung cai vua doc ra la mot nut bam xong khong doi gi.
+     */
+    fun laTepCanh(from: String) =
+        from == NGUON || from == NGUON_PHU_DE || from == LoiTrongTep.NGUON
 
     /**
      * Tìm lời cho tệp phương tiện đang phát, theo `uri` của nó.
@@ -57,7 +62,10 @@ object LrcCanhTep {
      */
     fun doc(context: Context, uri: String): Lyrics? {
         val duong = duongDan(context, uri) ?: return null
-        return docCanh(duong)
+        // Tep nam CANH di truoc the nam TRONG: nguoi dung tu dat tep .lrc do o
+        // day, con the trong tep la thu di kem san tu luc tai ve. Cai nguoi ta
+        // tu tay lam thi dang tin hon.
+        return docCanh(duong) ?: LoiTrongTep.doc(duong)
     }
 
     /**
