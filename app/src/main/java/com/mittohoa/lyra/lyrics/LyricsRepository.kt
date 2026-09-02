@@ -86,7 +86,7 @@ class LyricsRepository(
         // tin gan bang loi tu go: no la lua chon cua ho, con ban tra mang chi
         // la phong doan cua may.
         lrcCanhTep?.invoke()?.let { raw ->
-            _lyrics.value = dress(parseLrc(raw, from = "tệp cạnh nhạc"), now)
+            _lyrics.value = dress(parseLrc(raw, from = LrcCanhTep.NGUON), now)
             _loading.value = false
             return
         }

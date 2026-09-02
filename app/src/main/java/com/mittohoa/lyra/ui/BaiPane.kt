@@ -30,6 +30,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalContext
+import com.mittohoa.lyra.lyrics.LrcCanhTep
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.animation.core.animateFloatAsState
@@ -734,6 +736,12 @@ private fun MatLoi(
     // Mốc đang ngờ thì KHÔNG tô sáng và KHÔNG tự cuộn. Tô sáng nhầm một dòng
     // suốt cả bài còn tệ hơn là không tô gì.
     val trustTiming = lyrics.synced && !lyrics.timingSuspect
+
+    // Trang thai cua dai "ghi ra tep": cau bao gan nhat, va co dang cho xac
+    // nhan ghi de hay khong. Doi bai thi quen het - mot cau bao ve bai truoc
+    // nam lai o bai sau la sai.
+    var baoGhi by remember(lyrics.from, lyrics.lines.size) { mutableStateOf<String?>(null) }
+    var choDeLen by remember(lyrics.from, lyrics.lines.size) { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val translated = (translation as? TranslationState.Done)?.lines ?: emptyList()
 
@@ -860,6 +868,48 @@ private fun MatLoi(
             )
         }
 
+        // Ghi lời ra tệp .lrc nằm cạnh tệp nhạc.
+        //
+        // Chỉ mời khi đang phát nhạc TRONG MÁY: nhạc từ Zing hay từ app khác
+        // thì không có tệp nào trên đĩa để mà ghi cạnh.
+        //
+        // Và chỉ mời khi lời KHÔNG PHẢI vừa đọc lên từ chính tệp đó — ghi lại
+        // đúng cái mình vừa đọc ra là một nút bấm xong không đổi gì.
+        if (Lyra.laNhacTrongMay() && lyrics.lines.isNotEmpty() &&
+            lyrics.from != LrcCanhTep.NGUON
+        ) {
+            val nhac = LocalContext.current
+            Notice(
+                accent = accent,
+                text = baoGhi ?: "Ghi lời này ra tệp .lrc nằm cạnh bài nhạc — " +
+                    "trình phát khác cũng đọc được, và gỡ app đi vẫn còn.",
+                action = if (choDeLen) "Ghi đè" else "Ghi ra tệp",
+                onAction = {
+                    when (val kq = Lyra.ghiLoiRaTepCanh(nhac, deLen = choDeLen)) {
+                        is LrcCanhTep.KetQuaGhi.Xong -> {
+                            choDeLen = false
+                            baoGhi = "Đã ghi ra " + tenTep(kq.duong) + "."
+                        }
+                        is LrcCanhTep.KetQuaGhi.DaCoTep -> {
+                            // Không tự đè: tệp nằm sẵn ở đó là công của ai đó,
+                            // có thể là công của chính người dùng gõ trên máy
+                            // tính. Hỏi một câu rẻ hơn làm mất nó nhiều.
+                            choDeLen = true
+                            baoGhi = "Đã có sẵn " + tenTep(kq.duong) + ". Ghi đè lên?"
+                        }
+                        is LrcCanhTep.KetQuaGhi.Hong -> {
+                            choDeLen = false
+                            baoGhi = "Không ghi được: " + kq.lyDo + "."
+                        }
+                        LrcCanhTep.KetQuaGhi.KhongPhaiTepTrongMay -> {
+                            choDeLen = false
+                            baoGhi = "Bài này không phải tệp trong máy nên không có chỗ để ghi cạnh."
+                        }
+                    }
+                }
+            )
+        }
+
         if (baoKhongTua) {
             Notice(
                 accent = accent,
@@ -905,3 +955,6 @@ private fun MatLoi(
         }
     }
 }
+
+/** Chi lay ten tep de cau bao khong dai loang ngoang ca duong dan. */
+private fun tenTep(duong: String) = duong.substringAfterLast('/')

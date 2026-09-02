@@ -1189,6 +1189,36 @@ object Lyra {
         return LrcCanhTep.doc(ctx, bai.uri)
     }
 
+    /**
+     * Bai dang phat co phai tep trong may khong.
+     *
+     * Chi khi do moi co cho ma ghi tep .lrc nam canh - nhac phat tu Zing hay
+     * tu app khac thi khong co tep nao tren dia ca. Bay ra mot loi moi khong
+     * bam duoc con te hon la khong bay.
+     */
+    fun laNhacTrongMay(): Boolean =
+        Playback.currentTrack?.uri?.startsWith("lyra://may/") == true
+
+    /**
+     * Ghi loi dang hien ra tep .lrc nam canh tep nhac.
+     *
+     * Ghi dung chuoi ma man hinh soan loi dang cho sua: co moc thi ra ban co
+     * moc, chua co thi ra chu tron. Nguoi dung thay gi thi tep mang cai do.
+     */
+    fun ghiLoiRaTepCanh(context: Context, deLen: Boolean = false): LrcCanhTep.KetQuaGhi {
+        val bai = Playback.currentTrack
+            ?: return LrcCanhTep.KetQuaGhi.KhongPhaiTepTrongMay
+        val now = _now.value
+        return LrcCanhTep.ghi(
+            context = context,
+            uri = bai.uri,
+            loi = lyricsRepo.manualDraft(),
+            tenBai = now?.title ?: bai.title,
+            caSi = now?.artist ?: bai.artist,
+            deLen = deLen
+        )
+    }
+
     /** Chuoi de mo ra sua - loi da nhap, hoac loi dang co de sua lai. */
     fun manualDraft(): String = lyricsRepo.manualDraft()
 

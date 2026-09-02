@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
+import com.mittohoa.lyra.BuildConfig
 import java.io.File
 
 /**
@@ -34,6 +35,13 @@ import java.io.File
  * chuyện thường thì không được phép làm phiền ai.
  */
 object LrcCanhTep {
+
+    /**
+     * Ten nguon ghi tren dai bao, va cung la dau de biet loi dang hien VUA doc
+     * len tu tep nao do. Mot hang chu khong go tay o tung noi: lech mot chu thi
+     * Lyra moi nguoi ghi lai dung cai no vua doc ra, ma khong ai thay sai o dau.
+     */
+    const val NGUON = "tệp cạnh nhạc"
 
     /**
      * Tìm lời cho tệp phương tiện đang phát, theo `uri` của nó.
@@ -120,6 +128,91 @@ object LrcCanhTep {
         }
         return null
     }
+
+
+    // ---- Ghi ra ----
+
+    /** Kết quả một lần ghi, để màn hình nói đúng chuyện đã xảy ra. */
+    sealed interface KetQuaGhi {
+        data class Xong(val duong: String) : KetQuaGhi
+        /** Đã có tệp sẵn ở đó — hỏi lại rồi mới đè. */
+        data class DaCoTep(val duong: String) : KetQuaGhi
+        /** Bài đang phát không phải tệp trong máy, không có chỗ nào để ghi cạnh. */
+        data object KhongPhaiTepTrongMay : KetQuaGhi
+        data class Hong(val lyDo: String) : KetQuaGhi
+    }
+
+    /**
+     * Ghi lời ra tệp .lrc nằm cạnh tệp nhạc.
+     *
+     * Đo trên Pixel 6 Pro / Android 17, app chỉ có `READ_MEDIA_AUDIO`:
+     *
+     *     tạo tệp .lrc MỚI, ghi thẳng      được, ở mọi thư mục thử
+     *     nhờ MediaStore tạo hộ trong Music/  bị từ chối
+     *     ghi đè tệp .lrc DO APP KHÁC TẠO  bị chặn, FileNotFoundException
+     *
+     * Dòng cuối là luật của Android từ bản 11: một app chỉ sửa được tệp do
+     * chính nó tạo. Nên tệp Lyra tự ghi ra thì lần sau sửa lại được, còn tệp
+     * người dùng chép từ máy tính sang thì không — và chỗ đó phải nói thật chứ
+     * không được im lặng coi như xong.
+     *
+     * KHÔNG TỰ ĐÈ tệp có sẵn dù có quyền: một tệp .lrc nằm sẵn ở đó là công của
+     * ai đó, có thể là công của chính người dùng gõ trên máy tính. Hỏi lại một
+     * câu rẻ hơn nhiều so với làm mất nó.
+     */
+    fun ghi(
+        context: Context,
+        uri: String,
+        loi: String,
+        tenBai: String,
+        caSi: String,
+        deLen: Boolean = false
+    ): KetQuaGhi {
+        if (loi.isBlank()) return KetQuaGhi.Hong("chưa có lời nào để ghi")
+        val duongNhac = duongDan(context, uri) ?: return KetQuaGhi.KhongPhaiTepTrongMay
+        val dich = File(duongNhac.substringBeforeLast('.') + ".lrc")
+        if (dich.exists() && !deLen) return KetQuaGhi.DaCoTep(dich.path)
+
+        return try {
+            dich.writeText(dungNoiDung(loi, tenBai, caSi))
+            Log.i(TAG, "da ghi loi ra " + dich.path)
+            KetQuaGhi.Xong(dich.path)
+        } catch (e: Exception) {
+            Log.i(TAG, "khong ghi duoc " + dich.path, e)
+            KetQuaGhi.Hong(
+                if (dich.exists())
+                    "Android không cho ghi đè tệp do app khác tạo ra"
+                else
+                    (e.message ?: "lỗi không rõ")
+            )
+        }
+    }
+
+    /**
+     * Thân tệp .lrc: mấy thẻ mô tả rồi tới lời.
+     *
+     * Thẻ `[ti:]` và `[ar:]` là chuẩn .lrc có từ lâu, trình phát nào cũng đọc —
+     * và nhờ nó mà tệp tách khỏi bài nhạc vẫn còn biết mình là bài gì. `[re:]`
+     * ghi tên thứ đã tạo ra tệp, cũng là chuẩn cũ; đây là chỗ tên Lyra nằm lại
+     * trong một tệp người dùng đem đi đâu cũng được.
+     *
+     * Bộ đọc của Lyra bỏ qua mọi dòng dạng `[chữ:...]` nên ghi ra rồi đọc lại
+     * không sinh thêm câu hát ma nào.
+     */
+    // `internal` chu khong `private`: day la thu duy nhat trong lop nay kiem
+    // duoc bang may ma khong can dien thoai, va no cung la thu de sai nhat -
+    // mot the dat sai cho lam ca tep .lrc hong ma ghi ra van "thanh cong".
+    internal fun dungNoiDung(loi: String, tenBai: String, caSi: String): String =
+        buildString {
+            if (tenBai.isNotBlank()) append("[ti:").append(don(tenBai)).append("]\n")
+            if (caSi.isNotBlank()) append("[ar:").append(don(caSi)).append("]\n")
+            append("[re:Lyra by #mittoHOA]\n")
+            append("[ve:").append(BuildConfig.VERSION_NAME).append("]\n")
+            append(loi.trimEnd('\n')).append('\n')
+        }
+
+    /** Dấu `]` trong tên bài sẽ cắt cụt thẻ, nên bỏ đi. */
+    private fun don(s: String) = s.replace(']', ')').replace('\n', ' ').trim()
 
     /** Khop voi `MusicSource.LOCAL.key`. */
     private const val NGUON_TRONG_MAY = "may"
