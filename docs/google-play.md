@@ -128,7 +128,7 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.10 — sửa chỗ ghi lời ra tệp .lrc.
+Bản 0.3.11 — sửa chỗ ghi lời ra tệp .lrc.
 
 • Android chỉ cho ghi .lrc vào Music, Movies, Download và Documents; bài nằm chỗ khác thì AURA mời bạn chọn chỗ mà lưu, thay vì báo "Permission denied" rồi thôi
 • Tệp lưu ra giữ đúng đuôi .lrc, không còn bị thêm .txt
@@ -138,7 +138,7 @@ Bản 0.3.10 — sửa chỗ ghi lời ra tệp .lrc.
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.10 — fixes for writing lyrics out to a .lrc file.
+Version 0.3.11 — fixes for writing lyrics out to a .lrc file.
 
 • Android only allows .lrc in Music, Movies, Download and Documents; for songs elsewhere AURA offers to save where you choose instead of just reporting "Permission denied"
 • Saved files keep the .lrc name; no more .txt tacked on the end
