@@ -249,6 +249,19 @@ class LyricsRepository(
         Log.i(TAG, "Da luu loi tu nhap cho '${now.title}'")
     }
 
+    /**
+     * Tra lai loi cho bai dang phat, bo qua ket qua da tra truoc do.
+     *
+     * Dung sau khi khoi phuc tu ban sao luu: bai dang mo tren man hinh co the
+     * vua duoc them loi tu nhap, ma `onNowPlaying` thi thay khoa khong doi nen
+     * khong lam gi ca. Khong co ham nay thi nguoi dung phai doi sang bai khac
+     * roi quay lai moi thay - va se tuong la khoi phuc hong.
+     */
+    fun lamMoi() {
+        resolvedKey = null
+        onNowPlaying(current)
+    }
+
     /** Chuoi tho de mo ra sua; rong neu chua tung nhap. */
     fun manualDraft(): String {
         val now = current ?: return ""

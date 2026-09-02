@@ -1111,6 +1111,14 @@ internal fun TunePane(
 
         }
         Muc(
+            tieuDe = "Lời tự nhập",
+            accent = accent,
+            tomTat = "Sao lưu và khôi phục lời bạn tự gõ hoặc tự căn giờ"
+        ) {
+            SaoLuuLoiMuc(accent)
+        }
+
+        Muc(
             tieuDe = "Ô bật nhanh và tắt nhanh",
             accent = accent,
             tomTat = "Cách bật tắt khung nổi mà không mở Lyra"

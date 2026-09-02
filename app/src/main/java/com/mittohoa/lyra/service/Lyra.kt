@@ -8,6 +8,7 @@ import com.mittohoa.lyra.data.LyricCache
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.LyricEffectPrefs
 import com.mittohoa.lyra.data.ManualLyricStore
+import com.mittohoa.lyra.data.SaoLuuLoi
 import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.data.Playlist
 import com.mittohoa.lyra.data.PlaylistStore
@@ -1156,6 +1157,43 @@ object Lyra {
 
     /** Chuoi de mo ra sua - loi da nhap, hoac loi dang co de sua lai. */
     fun manualDraft(): String = lyricsRepo.manualDraft()
+
+    // ---- Sao luu loi tu nhap ----
+
+    /** So bai dang giu loi tu nhap; 0 khi chua dung toi bao gio. */
+    fun demLoiTuNhap(context: Context): Int = khoLoi(context).demBai()
+
+    /** Toan bo loi tu nhap, da xep sang dang tep sao luu. */
+    fun xuatLoiTuNhap(context: Context): String =
+        SaoLuuLoi.xuat(khoLoi(context).tatCa())
+
+    /**
+     * Doc mot tep sao luu vao kho.
+     *
+     * Khong ghi de bai da co: xem `ManualLyricStore.dat`. Sau khi doc xong thi
+     * bao lai kho loi tra lai bai dang phat - bai dang mo co the vua co loi.
+     */
+    fun nhapLoiTuNhap(context: Context, raw: String): SaoLuuLoi.KetQua {
+        val cac = SaoLuuLoi.nhap(raw)
+        if (cac.isEmpty()) return SaoLuuLoi.KetQua(0, 0, 1)
+
+        val kho = khoLoi(context)
+        var them = 0
+        var daCo = 0
+        for (b in cac) if (kho.dat(b)) them++ else daCo++
+        if (them > 0) lyricsRepo.lamMoi()
+        return SaoLuuLoi.KetQua(them, daCo, 0)
+    }
+
+    /**
+     * Kho loi tu nhap, mo duoc ca khi dich vu chua chay.
+     *
+     * Trang Chinh vao duoc truoc khi nguoi dung phat bai nao, ma `refresh` chi
+     * chay khi man hinh chinh mo len - nen khong the dua vao `manual` da duoc
+     * dung san. Kho nay chi la mot thu muc, dung them mot cai khong ton gi.
+     */
+    private fun khoLoi(context: Context): ManualLyricStore =
+        manual ?: ManualLyricStore(context.applicationContext).also { manual = it }
 
     private fun prefs(context: Context): OverlayPrefs =
         overlayPrefs ?: OverlayPrefs(context.applicationContext).also { overlayPrefs = it }
