@@ -128,36 +128,32 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.2.0 — Lyra đổi mặt.
+Bản 0.3.4 — chia sẻ câu hát cho ra dáng, và thôi gõ lời bằng tay.
 
-• Nền giấy ngà chữ mực, lật được sang nền mực chữ ngà (Chỉnh › Mặt giấy)
-• Hai bộ chữ mới, hoặc giữ phông máy (Chỉnh › Bộ chữ)
-• Khung lời nổi chọn được màu chữ và màu nền
+• Thẻ lời có sáu mẫu: Trang giấy, Bìa mờ, Bìa trên, Chữ lớn, Khối màu, Kẻ dòng
+• Ảnh bìa bài hát dùng làm nền thẻ được
+• Nhập lời từ ảnh chụp: chọn một tấm ảnh, Lyra đọc chữ ra, chỉ việc dọn vài dòng thừa
 
-Sửa lỗi:
-• Bốn mục cài đặt bị che mất — dịch lời, hiệu ứng chữ, ô bật nhanh giờ mới bấm được
-• Ô tìm mời tìm nguồn nhạc bản này không có, thay vì mời cấp quyền đọc nhạc trong máy
-• Bìa album sai khi bài phát ở app khác
-
-Nhờ thử: mở Chỉnh, cuộn hết trang — phải đủ năm mục.
+Nhờ thử: mở trang Bài của một bài có lời, bấm nút ↗ rồi đổi qua cả sáu mẫu.
+Và: Bài › Tự nhập › Từ ảnh — chụp màn hình lời ở app khác rồi thử đọc.
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.2.0 — Lyra gets a face of its own.
+Version 0.3.4 — lyric cards worth sharing, and no more typing lyrics out.
 
-• Ivory paper with ink text, or flip to ink (Tune › Surface)
-• Two new typefaces, or keep your system font (Tune › Typeface)
-• Pick text and background colour for the floating window
+• Six card layouts: Paper, Blurred cover, Cover on top, Big type, Colour block, Ruled lines
+• Album art can back the card
+• Import lyrics from a photo: pick an image, Lyra reads the text out, you tidy a few stray lines
 
-Fixes:
-• Four hidden settings sections are back: translation, effects, quick tile
-• Search offered sources this build does not ship, not library access
-• Wrong cover art for music playing in another app
-
-Please check: open Tune, scroll down — five sections.
+Please check: open Song for a track with lyrics, tap ↗, try all six layouts.
+Then: Song › Add lyrics › From image — screenshot lyrics in another app and read them in.
 ```
+
+Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
+Nếu bản 0.3.3 chưa từng lên Console thì thêm một gạch đầu dòng nữa: **công cụ
+căn giờ cho lời chữ trơn** — người test nhảy cóc từ 0.2.0 sẽ không biết nó có.
 
 ### Bản tiếng Anh của thông tin cửa hàng
 
