@@ -73,6 +73,7 @@ import com.mittohoa.lyra.lyrics.LyricLine
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.media.NowPlaying
+import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.sources.Track
 import com.mittohoa.lyra.translate.READING_LANGUAGES
@@ -200,6 +201,10 @@ fun HomeScreen(
     // một trang pager không hứa hẹn gì về việc xếp chồng nhiều con. Ở đây thì
     // nó là con của một `Box` thật, và `Box` thì xếp chồng theo đúng thứ tự.
     var cauChiaSe by remember { mutableIntStateOf(-1) }
+
+    // Video toan man hinh. Giu o day chu khong trong BaiPane: no phai phu len
+    // CA man hinh, ma o trong trang thi no chi phu duoc mot trang cua bo vuot.
+    var videoToanManHinh by remember { mutableStateOf(false) }
     var moCanGio by remember { mutableStateOf(false) }
 
     val pager = rememberPagerState(initialPage = START_PANE, pageCount = { PANES.size })
@@ -343,6 +348,8 @@ fun HomeScreen(
                         onDownloadModel = onDownloadModel,
                         effect = lyricEffect,
                         onChiaSeCau = { cauChiaSe = it.coerceAtLeast(0) },
+                        onToanManHinh = { videoToanManHinh = true },
+                        toanManHinh = videoToanManHinh,
                         onCanGio = { moCanGio = true }
                     )
                     else -> TunePane(
@@ -388,6 +395,40 @@ fun HomeScreen(
                 },
                 onDong = { moCanGio = false }
             )
+        }
+
+        // Video toan man hinh. Chi mo khi bai dang phat DUNG la video: bam nut
+        // roi doi bai sang mot ban nhac thi day tu dong lai, khong de mot man
+        // hinh den phu len ca app.
+        val baiDangPhat = queue.getOrNull(queueIndex)
+
+        // Video het roi sang mot bai nhac thi dong lop phu lai.
+        //
+        // Lam bang `LaunchedEffect` chu khong bang mot phep gan ngay trong luc
+        // dung giao dien: ghi vao trang thai giua chung mot lan dung la thu
+        // Compose khong hua se chay - thu lan dau viet the, va lop phu nam lai
+        // tren mot bai nhac khong co hinh.
+        LaunchedEffect(baiDangPhat?.kind) {
+            if (videoToanManHinh && baiDangPhat?.kind != MediaKind.VIDEO) {
+                videoToanManHinh = false
+            }
+        }
+
+        if (videoToanManHinh) {
+            if (baiDangPhat?.kind == MediaKind.VIDEO) {
+                ToanManHinh(
+                    tiLe = baiDangPhat.tiLe,
+                    accent = mucMau,
+                    dangPhat = now?.isPlaying == true,
+                    viTri = position,
+                    doDai = now?.duration ?: 0L,
+                    onPhatDung = onPlayPause,
+                    onTruoc = onPrevious,
+                    onSau = onNext,
+                    onTua = onSeek,
+                    onDong = { videoToanManHinh = false }
+                )
+            }
         }
 
         if (cauChiaSe >= 0 && now != null) {

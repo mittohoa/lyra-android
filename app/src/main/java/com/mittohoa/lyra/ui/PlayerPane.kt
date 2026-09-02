@@ -254,7 +254,7 @@ internal fun Transport(
 }
 
 @Composable
-private fun PlayButton(accent: Color, playing: Boolean, onClick: () -> Unit) {
+internal fun PlayButton(accent: Color, playing: Boolean, onClick: () -> Unit) {
     // Nut phong nhe khi bam - phan hoi duy nhat cho mot thao tac ma ket qua cua
     // no (tieng nhac) den sau vai tram mili-giay
     val scale by animateFloatAsState(if (playing) 1f else 0.94f, tween(220), label = "play")
@@ -284,7 +284,7 @@ private fun PlayButton(accent: Color, playing: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Ghost(label: String, active: Boolean, accent: Color, onClick: () -> Unit) {
+internal fun Ghost(label: String, active: Boolean, accent: Color, onClick: () -> Unit) {
     Box(
         Modifier
             .size(48.dp)

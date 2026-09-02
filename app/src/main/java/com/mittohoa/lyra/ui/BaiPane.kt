@@ -122,7 +122,19 @@ fun BaiPane(
     effect: LyricEffect,
     /** Mở màn hình thẻ lời ở câu này. -1 nghĩa là chưa có câu nào đang hát. */
     onChiaSeCau: (Int) -> Unit,
-    onCanGio: () -> Unit
+    onCanGio: () -> Unit,
+    /** Mở video ra toàn màn hình. Chỉ có nghĩa khi bài đang phát là video. */
+    onToanManHinh: () -> Unit,
+    /**
+     * Video đang xem toàn màn hình hay chưa.
+     *
+     * Ô hình nhỏ trong trang phải BIẾN MẤT trong lúc đó, không phải vì nó bị
+     * che — mà vì bộ giải mã chỉ vẽ vào MỘT bề mặt. Để cả hai cùng sống thì ô
+     * mở sau giành mất bề mặt, và lúc thoát ra ô nhỏ nằm lại một màu đen mà
+     * không lỗi nào báo. Bỏ hẳn ô nhỏ đi thì lúc quay về nó dựng lại từ đầu và
+     * tự xin bề mặt.
+     */
+    toanManHinh: Boolean
 ) {
     val ngucanh = androidx.compose.ui.platform.LocalContext.current
     var naming by remember { mutableStateOf(false) }
@@ -253,7 +265,9 @@ fun BaiPane(
                         onSkipInQueue = onSkipInQueue,
                         onRemoveFromQueue = onRemoveFromQueue,
                         onDoiCho = { tu, den -> Lyra.doiChoTrongHangDoi(ngucanh, tu, den) },
-                        onLuuHangDoi = { naming = true }
+                        onLuuHangDoi = { naming = true },
+                        onToanManHinh = onToanManHinh,
+                        toanManHinh = toanManHinh
                     )
                 } else {
                     MatLoi(
@@ -565,7 +579,9 @@ private fun MatBia(
     onSkipInQueue: (Int) -> Unit,
     onRemoveFromQueue: (Int) -> Unit,
     onDoiCho: (Int, Int) -> Unit,
-    onLuuHangDoi: () -> Unit
+    onLuuHangDoi: () -> Unit,
+    onToanManHinh: () -> Unit,
+    toanManHinh: Boolean
 ) {
     // Kéo thả sắp lại hàng đợi.
     //
@@ -585,7 +601,7 @@ private fun MatBia(
             // trang rieng cho video se cat doi app lam hai nua ma khong duoc gi:
             // cho de anh bia von da la mot o hinh vuong dat giua trang.
             val baiNay = queue.getOrNull(queueIndex)
-            val laVideo = baiNay?.kind == MediaKind.VIDEO
+            val laVideo = baiNay?.kind == MediaKind.VIDEO && !toanManHinh
 
             Stage(
                 accent = accent,
@@ -593,7 +609,22 @@ private fun MatBia(
                 tiLe = if (laVideo) baiNay?.tiLe else null
             ) {
                 if (laVideo) {
-                    ManHinhVideo()
+                    ManHinhVideo(dangPhat = now.isPlaying)
+                    // Nút mở toàn màn hình, góc dưới phải của chính ô hình.
+                    // Không đặt ở dải nút chung bên dưới: nó chỉ có nghĩa khi
+                    // đang có hình, mà ô hình thì là chỗ mắt đang nhìn.
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(10.dp)
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .clickable(onClick = onToanManHinh),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("⛶", color = Color.White, fontSize = 17.sp)
+                    }
                 } else if (bia != null) {
                     Image(
                         bitmap = bia.asImageBitmap(),

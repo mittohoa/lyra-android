@@ -381,7 +381,13 @@ private fun rememberPlaybackPosition(): State<Long> {
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (isActive) {
-                position.longValue = Lyra.watcher.livePosition()
+                // `Lyra.livePosition()` chu KHONG phai `Lyra.watcher.livePosition()`.
+                // Bo theo doi ban tin media co loc bo phien cua CHINH Lyra ra -
+                // nen khi Lyra tu phat, no tra ve vi tri cua mot bai khac hoac
+                // mot so cu ket lai. Do tren may: phien that chay toi 222 giay
+                // ma man hinh dung yen o 0:00. Lop boc o `Lyra` hoi bo giai ma
+                // cua chinh minh truoc, roi moi hoi ban tin.
+                position.longValue = Lyra.livePosition()
                 delay(200)
             }
         }
