@@ -185,7 +185,7 @@ fun HomeScreen(
     // composable nghia la lam tren luong chinh giua luc dang dung giao dien -
     // dung mot nhip ngay khi doi bai, va do la luc nguoi dung dang nhin nhat.
     val target by produceState(FALLBACK, now?.key, artwork) {
-        // `artwork` la anh Lyra tu tai ve cho bai chinh no phat; `now.artwork` la
+        // `artwork` la anh AURA tu tai ve cho bai chinh no phat; `now.artwork` la
         // anh app khac gui kem ban tin media. Uu tien cai dau vi no ro net hon -
         // ban tin media thuong chi kem mot anh nho.
         val art = artwork ?: now?.artwork
@@ -222,7 +222,7 @@ fun HomeScreen(
         // LE MUC.
         //
         // Mot dai mau chay doc suot mep trai, co mat o CA BON trang. Day la dau
-        // hieu rieng cua Lyra, va no khong phai trang tri: mau lay tu anh bia
+        // hieu rieng cua AURA, va no khong phai trang tri: mau lay tu anh bia
         // bai dang phat, nen ca app doi mau theo bai - mot dau hieu ngoai le
         // cua trang giay noi rang ben trong dang co nhac.
         //
@@ -244,7 +244,7 @@ fun HomeScreen(
 
         // KHONG co thanh tieu de.
         //
-        // Truoc day o day co mot dau trang: dau hieu Lyra, chu "LYRA", va ten
+        // Truoc day o day co mot dau trang: dau hieu AURA, chu "LYRA", va ten
         // trang dang mo. No doc dep nhung no khong noi gi moi - vien thuoc duoi
         // day da noi dang o trang nao, va trang Bai da co dai ngu canh noi dang
         // nghe bai gi. Ba dong cung mot tin.
@@ -920,7 +920,7 @@ internal fun TunePane(
             "Phủ một lớp tối lên cả màn hình, dưới khung lời. Chạm vẫn xuyên qua " +
                 "bình thường nên app bên dưới dùng được như thường.\n\n" +
                 "Vài app ngân hàng từ chối hoạt động khi có lớp phủ màn hình — đó là " +
-                "cách họ tự bảo vệ, không sửa được từ phía Lyra. Gặp thì kéo về Tắt.",
+                "cách họ tự bảo vệ, không sửa được từ phía AURA. Gặp thì kéo về Tắt.",
             color = mau.chuRatMo,
             fontSize = 13.5.sp,
             lineHeight = 20.sp
@@ -1042,8 +1042,8 @@ internal fun TunePane(
             }
             Spacer(Modifier.height(10.dp))
             Text(
-                "Áp cho cả app lẫn khung lời nổi. Hai bộ chữ của Lyra nằm sẵn " +
-                    "trong app nên không cần mạng; chọn “Phông máy” thì Lyra dùng " +
+                "Áp cho cả app lẫn khung lời nổi. Hai bộ chữ của AURA nằm sẵn " +
+                    "trong app nên không cần mạng; chọn “Phông máy” thì AURA dùng " +
                     "đúng bộ chữ hệ thống, như mọi app khác.",
                 color = mau.chuRatMo,
                 fontSize = 13.5.sp,
@@ -1085,7 +1085,7 @@ internal fun TunePane(
             Text(
                 "Chỉ đổi màn hình trong app. Khung lời nổi có bộ màu riêng ở " +
                     "mục trên, vì nó nằm đè lên app khác chứ không nằm trên giấy " +
-                    "của Lyra.",
+                    "của AURA.",
                 color = mau.chuRatMo,
                 fontSize = 13.5.sp,
                 lineHeight = 20.sp
@@ -1162,7 +1162,7 @@ internal fun TunePane(
         Muc(
             tieuDe = "Ô bật nhanh và tắt nhanh",
             accent = accent,
-            tomTat = "Cách bật tắt khung nổi mà không mở Lyra"
+            tomTat = "Cách bật tắt khung nổi mà không mở AURA"
         ) {
         // Tat nhanh va o Cai dat nhanh deu la cach bat/tat KHUNG NOI,
         // nen chung di theo quyen ve de.
@@ -1199,7 +1199,7 @@ internal fun TunePane(
         }
         Text(
             if (canAddTile)
-                "Ô đó bật tắt được ngay trong lúc đang nghe nhạc, không cần mở Lyra."
+                "Ô đó bật tắt được ngay trong lúc đang nghe nhạc, không cần mở AURA."
             else
                 "Hoặc kéo ô Lời nổi vào bảng Cài đặt nhanh (vuốt thanh thông báo " +
                     "xuống, sửa các ô) để bật tắt ngay khi đang nghe nhạc.",
@@ -1486,12 +1486,12 @@ private fun Big(label: String, accent: Color, filled: Boolean, onClick: () -> Un
 
 /** Ten goi -> ten app doc duoc. Khong biet thi tra ve chinh ten goi. */
 internal fun appLabel(packageName: String): String = when {
-    // Bai do chinh Lyra phat mang mot ten goi gia, xem `Lyra.OWN`
-    packageName == "lyra" -> "Lyra"
-    // Mot ban Lyra KHAC tren cung may - ban cai tu Play va ban dung tay chay
+    // Bai do chinh AURA phat mang mot ten goi gia, xem `AURA.OWN`
+    packageName == "lyra" -> "AURA"
+    // Mot ban AURA KHAC tren cung may - ban cai tu Play va ban dung tay chay
     // canh nhau. Khong bat thi nhanh cuoi cat ten goi ra thanh "lyra_player",
     // va mot cai ten may moc nhu vay lo ngay ra rang cho nay chi doan bua.
-    packageName.startsWith("com.mittohoa.lyra") -> "Lyra"
+    packageName.startsWith("com.mittohoa.lyra") -> "AURA"
     packageName.contains("spotify") -> "Spotify"
     packageName.contains("youtube.music") -> "YouTube Music"
     packageName.contains("youtube") -> "YouTube"

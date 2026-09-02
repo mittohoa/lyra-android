@@ -13,7 +13,7 @@ import java.io.File
  *
  * Ai để nhạc trong máy lâu năm thì gần như chắc chắn có sẵn một mớ `.lrc` nằm
  * cạnh từng tệp — đó là cách cả thế giới lưu lời bài hát suốt hai chục năm nay,
- * và mọi trình phát trên máy tính đều đọc kiểu đó. Không đọc thì Lyra bắt người
+ * và mọi trình phát trên máy tính đều đọc kiểu đó. Không đọc thì AURA bắt người
  * ta gõ lại thứ họ đã có sẵn trên máy, hoặc tệ hơn, đi tra mạng để lấy về đúng
  * cái đang nằm trong cùng thư mục.
  *
@@ -39,7 +39,7 @@ object LrcCanhTep {
     /**
      * Ten nguon ghi tren dai bao, va cung la dau de biet loi dang hien VUA doc
      * len tu tep nao do. Mot hang chu khong go tay o tung noi: lech mot chu thi
-     * Lyra moi nguoi ghi lai dung cai no vua doc ra, ma khong ai thay sai o dau.
+     * AURA moi nguoi ghi lai dung cai no vua doc ra, ma khong ai thay sai o dau.
      */
     const val NGUON = "tệp cạnh nhạc"
 
@@ -64,14 +64,14 @@ object LrcCanhTep {
      * Đường dẫn thật của một tệp phương tiện, hoặc `null` khi hỏi không ra.
      *
      * Hỏi bảng `Files` chứ không hỏi riêng bảng `Audio`: bảng này phủ cả nhạc
-     * lẫn video, nên khi Lyra phát được video thì chỗ này không phải sửa lại.
+     * lẫn video, nên khi AURA phát được video thì chỗ này không phải sửa lại.
      */
     private fun duongDan(context: Context, uri: String): String? = try {
         val u = Uri.parse(uri)
         when {
             u.scheme == "file" -> u.path
 
-            // Hang doi cua Lyra mang dia chi rieng `lyra://<nguon>/<ma>` chu
+            // Hang doi cua AURA mang dia chi rieng `lyra://<nguon>/<ma>` chu
             // khong mang duong that - xem `StreamResolver`. Voi nguon "may"
             // thi <ma> chinh la ma MediaStore.
             u.scheme == "lyra" && u.host == NGUON_TRONG_MAY ->
@@ -89,7 +89,7 @@ object LrcCanhTep {
 
     /**
      * Hoi bang `Files` chu khong hoi rieng bang `Audio`: bang nay phu ca nhac
-     * lan video, nen khi Lyra phat duoc video thi cho nay khong phai sua lai.
+     * lan video, nen khi AURA phat duoc video thi cho nay khong phai sua lai.
      */
     private fun hoiDuong(context: Context, id: Long): String? =
         context.contentResolver.query(
@@ -173,7 +173,7 @@ object LrcCanhTep {
      *     ghi đè tệp .lrc DO APP KHÁC TẠO  bị chặn, FileNotFoundException
      *
      * Dòng cuối là luật của Android từ bản 11: một app chỉ sửa được tệp do
-     * chính nó tạo. Nên tệp Lyra tự ghi ra thì lần sau sửa lại được, còn tệp
+     * chính nó tạo. Nên tệp AURA tự ghi ra thì lần sau sửa lại được, còn tệp
      * người dùng chép từ máy tính sang thì không — và chỗ đó phải nói thật chứ
      * không được im lặng coi như xong.
      *
@@ -214,10 +214,10 @@ object LrcCanhTep {
      *
      * Thẻ `[ti:]` và `[ar:]` là chuẩn .lrc có từ lâu, trình phát nào cũng đọc —
      * và nhờ nó mà tệp tách khỏi bài nhạc vẫn còn biết mình là bài gì. `[re:]`
-     * ghi tên thứ đã tạo ra tệp, cũng là chuẩn cũ; đây là chỗ tên Lyra nằm lại
+     * ghi tên thứ đã tạo ra tệp, cũng là chuẩn cũ; đây là chỗ tên AURA nằm lại
      * trong một tệp người dùng đem đi đâu cũng được.
      *
-     * Bộ đọc của Lyra bỏ qua mọi dòng dạng `[chữ:...]` nên ghi ra rồi đọc lại
+     * Bộ đọc của AURA bỏ qua mọi dòng dạng `[chữ:...]` nên ghi ra rồi đọc lại
      * không sinh thêm câu hát ma nào.
      */
     // `internal` chu khong `private`: day la thu duy nhat trong lop nay kiem
@@ -227,7 +227,7 @@ object LrcCanhTep {
         buildString {
             if (tenBai.isNotBlank()) append("[ti:").append(don(tenBai)).append("]\n")
             if (caSi.isNotBlank()) append("[ar:").append(don(caSi)).append("]\n")
-            append("[re:Lyra by #mittoHOA]\n")
+            append("[re:AURA by #mittoHOA]\n")
             append("[ve:").append(BuildConfig.VERSION_NAME).append("]\n")
             append(loi.trimEnd('\n')).append('\n')
         }
@@ -238,5 +238,5 @@ object LrcCanhTep {
     /** Khop voi `MusicSource.LOCAL.key`. */
     private const val NGUON_TRONG_MAY = "may"
 
-    private const val TAG = "LyraLrcCanhTep"
+    private const val TAG = "AuraLrcCanhTep"
 }

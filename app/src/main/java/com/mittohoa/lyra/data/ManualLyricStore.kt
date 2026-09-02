@@ -29,7 +29,7 @@ class ManualLyricStore(context: Context) {
      *
      * Ten tep la bam SHA-1 cua "nghe si|ten bai", ma bam thi khong lan nguoc
      * duoc. Khong co bang nay thi ban sao luu ra chi la mot dong loi khong ten:
-     * nguoi dung mo ra khong biet bai nao la bai nao, va Lyra cung khong the
+     * nguoi dung mo ra khong biet bai nao la bai nao, va AURA cung khong the
      * tinh lai khoa neu cach bam doi o ban sau.
      *
      * De rieng mot tep chu khong nhet vao dau tung tep loi: noi dung tep loi la
@@ -110,7 +110,7 @@ class ManualLyricStore(context: Context) {
      * Dat lai mot ban ghi khi khoi phuc.
      *
      * Co ten thi TINH LAI khoa tu ten chu khong dung khoa trong tep: cach bam
-     * co the doi giua hai ban Lyra, va tinh lai thi ban sao luu cu van dung cho
+     * co the doi giua hai ban AURA, va tinh lai thi ban sao luu cu van dung cho
      * ban moi. Khong co ten thi danh dung lai khoa cu - van hon la vut di.
      *
      * Tra ve `false` khi bai do da co san: KHONG ghi de. Nguoi khoi phuc len mot
@@ -176,7 +176,7 @@ class ManualLyricStore(context: Context) {
     private fun don(s: String) = s.replace('\t', ' ').replace('\n', ' ').trim()
 
     private companion object {
-        const val TAG = "LyraManual"
+        const val TAG = "AuraManual"
 
         /** Bang ten, khong phai loi bai nao - moi cho duyet thu muc phai bo qua. */
         const val TEN_BANG = "ten.tsv"

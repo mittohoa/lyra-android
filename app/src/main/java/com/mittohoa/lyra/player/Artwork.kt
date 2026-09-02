@@ -160,7 +160,7 @@ object Artwork {
         )
     }
 
-    private const val TAG = "LyraBia"
+    private const val TAG = "AuraBia"
     private const val MAX_ENTRIES = 8
 
     /** Be rong dich, tinh bang diem anh. Du de ve to va du nho de do mau nhanh. */

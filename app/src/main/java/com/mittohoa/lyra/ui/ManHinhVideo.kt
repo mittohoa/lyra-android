@@ -17,7 +17,7 @@ import com.mittohoa.lyra.player.Playback
  * `SurfaceView` chứ không `TextureView`: bộ giải mã vẽ thẳng vào một lớp riêng
  * của hệ thống, không phải đi qua lớp vẽ của app — nhẹ pin hơn hẳn và không
  * rớt hình khi màn hình bận. Cái giá là nó không xoay, không làm mờ, không hoà
- * trộn được với thứ vẽ đè lên; Lyra không cần thứ nào trong số đó.
+ * trộn được với thứ vẽ đè lên; AURA không cần thứ nào trong số đó.
  *
  * Gắn và bỏ theo vòng đời của ô: bộ giải mã giữ tham chiếu tới bề mặt vẽ, nên
  * quên bỏ ra thì nó vẽ vào một bề mặt đã chết — màn hình đen, và không có lỗi

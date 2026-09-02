@@ -99,5 +99,5 @@ object DocChuTuAnh {
 
     private val DONG_HO = Regex("""\d{1,2}:\d{2}(\s.{0,3})?""")
 
-    private const val TAG = "LyraDocAnh"
+    private const val TAG = "AuraDocAnh"
 }

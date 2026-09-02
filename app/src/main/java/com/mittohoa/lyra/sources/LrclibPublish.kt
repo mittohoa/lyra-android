@@ -15,7 +15,7 @@ import kotlin.coroutines.coroutineContext
 /**
  * Góp một bản lời ngược lại cho LRCLIB.
  *
- * Lyra **lấy** lời từ LRCLIB, và trên bản Play thì đó là nguồn duy nhất. Lấy mà
+ * AURA **lấy** lời từ LRCLIB, và trên bản Play thì đó là nguồn duy nhất. Lấy mà
  * không trả thì cái kho chung ấy không lớn lên — mà chính nó quyết định bản
  * Play có ích tới đâu. Phần tự nhập lời trong app đã tạo ra đúng định dạng
  * LRCLIB cần, nên đường trả về ngắn hơn nhiều so với vẻ ngoài.
@@ -175,5 +175,5 @@ object LrclibPublish {
         "[%02d:%02d.%02d]%s".format(phut, giay, phanTram, d.text)
     }
 
-    private const val TAG = "LyraGopLoi"
+    private const val TAG = "AuraGopLoi"
 }

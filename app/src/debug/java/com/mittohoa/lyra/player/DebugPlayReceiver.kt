@@ -41,6 +41,6 @@ class DebugPlayReceiver : BroadcastReceiver() {
     }
 
     private companion object {
-        const val TAG = "LyraPhatThu"
+        const val TAG = "AuraPhatThu"
     }
 }

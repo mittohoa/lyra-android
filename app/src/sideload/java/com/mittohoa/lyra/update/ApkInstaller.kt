@@ -143,5 +143,5 @@ object ApkInstaller {
         }
     }
 
-    private const val TAG = "LyraCapNhat"
+    private const val TAG = "AuraCapNhat"
 }

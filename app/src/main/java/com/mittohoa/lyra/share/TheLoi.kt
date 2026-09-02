@@ -36,7 +36,7 @@ object TheLoi {
     const val CAO = 1350
 
     /** Dòng ở góc dưới. Giữ nguyên trên cả sáu mẫu. */
-    private const val THUONG_HIEU = "Lyra by #mittoHOA"
+    private const val THUONG_HIEU = "AURA by #mittoHOA"
 
     private const val LE = 16f
     private const val TRAI = 104f

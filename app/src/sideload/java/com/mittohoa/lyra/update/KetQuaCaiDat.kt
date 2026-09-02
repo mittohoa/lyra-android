@@ -53,7 +53,7 @@ class KetQuaCaiDat : BroadcastReceiver() {
     private fun viTiengViet(goc: String?): String = when {
         goc == null -> "Hệ thống từ chối cài bản mới"
         goc.contains("Self update is blocked") ->
-            "Android không cho Lyra tự cài đè bản này. Tải APK trên trang phát " +
+            "Android không cho AURA tự cài đè bản này. Tải APK trên trang phát " +
                 "hành rồi cài tay một lần là xong."
         goc.contains("INSTALL_FAILED_VERSION_DOWNGRADE") ->
             "Bản trên máy đã mới hơn bản vừa tải"
@@ -67,6 +67,6 @@ class KetQuaCaiDat : BroadcastReceiver() {
     }
 
     private companion object {
-        const val TAG = "LyraCapNhat"
+        const val TAG = "AuraCapNhat"
     }
 }

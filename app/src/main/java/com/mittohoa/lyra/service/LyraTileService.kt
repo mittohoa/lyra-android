@@ -14,7 +14,7 @@ import com.mittohoa.lyra.R
  *   - Voi toi duoc ngay ca khi dang o trong app khac - dung luc can nhat,
  *     vi ca app nay sinh ra la de dung TRONG LUC nghe nhac o app khac.
  *
- * `TileService` chi song trong luc o duoc hien; moi trang thai nam o `Lyra`.
+ * `TileService` chi song trong luc o duoc hien; moi trang thai nam o `AURA`.
  */
 class LyraTileService : TileService() {
 

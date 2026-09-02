@@ -68,7 +68,7 @@ object LocalLibrary {
     /**
      * Video trong may.
      *
-     * Lyra la trinh phat, khong phai trinh xem phim - nhung ranh gioi nhac va
+     * AURA la trinh phat, khong phai trinh xem phim - nhung ranh gioi nhac va
      * video di ngay qua giua thu nguoi ta nghe: mot MV tai ve, mot ban thu buoi
      * dien, mot bai hat quay tay. Bo video ra ngoai thi dung nhung thu do bi
      * mac ket ngoai app.
@@ -227,5 +227,5 @@ object LocalLibrary {
     private fun albumArtUri(albumId: Long): String? =
         if (albumId <= 0) null else "content://media/external/audio/albumart/$albumId"
 
-    private const val TAG = "LyraThuVien"
+    private const val TAG = "AuraThuVien"
 }

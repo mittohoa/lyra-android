@@ -13,7 +13,7 @@ package com.mittohoa.lyra.share
  * chẳng để làm gì.
  */
 enum class MauThe(val nhan: String, val moTa: String) {
-    GIAY("Trang giấy", "Nền giấy, lề mực màu bìa — dáng mặc định của Lyra"),
+    GIAY("Trang giấy", "Nền giấy, lề mực màu bìa — dáng mặc định của AURA"),
     BIA_MO("Bìa mờ", "Ảnh bìa nhoè phủ kín, chữ nổi lên trên"),
     BIA_TREN("Bìa trên", "Ảnh bìa vuông ở trên, lời ở dưới như một trang sách"),
     CHU_LON("Chữ lớn", "Bỏ hết trang trí, chỉ còn câu hát thật to"),

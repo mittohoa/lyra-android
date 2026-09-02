@@ -119,6 +119,6 @@ class PlaylistStore(context: Context) {
     fun byId(id: String): Playlist? = _playlists.value.firstOrNull { it.id == id }
 
     private companion object {
-        const val TAG = "LyraDanhSach"
+        const val TAG = "AuraDanhSach"
     }
 }

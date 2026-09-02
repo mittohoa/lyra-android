@@ -86,7 +86,7 @@ class LyricsRepository(
         // tep loi vai KB thi khong ai thay; nhung tu khi them phan doc tep nam
         // canh, moi lan doi bai con keo theo mot cau hoi MediaStore - la mot
         // vong goi sang tien trinh khac. Do tren may: "Skipped 131 frames", va
-        // co lan he thong bao han "Lyra khong phan hoi".
+        // co lan he thong bao han "AURA khong phan hoi".
         //
         // Day het xuong luong nen. Cai gia la mot nhip hinh trong truoc khi loi
         // hien ra o nhung bai da nho san - truoc kia hien ngay tuc thi. Mot nhip
@@ -326,7 +326,7 @@ class LyricsRepository(
     }
 
     private companion object {
-        const val TAG = "LyraLyrics"
+        const val TAG = "AuraLyrics"
 
         /** Do dai lech qua nguong nay thi coi la khac ban thu (mili-giay). */
         const val SUSPECT_GAP_MS = 15_000L

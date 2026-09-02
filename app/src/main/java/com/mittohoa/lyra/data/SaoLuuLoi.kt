@@ -49,7 +49,7 @@ object SaoLuuLoi {
     /**
      * Doc mot tep sao luu.
      *
-     * Tra ve danh sach rong khi tep khong phai cua Lyra. Doc duoc bao nhieu thi
+     * Tra ve danh sach rong khi tep khong phai cua AURA. Doc duoc bao nhieu thi
      * lay bay nhieu: mot khoi hong o giua khong duoc phep lam mat nhung khoi
      * con lai - nguoi dung dang o dung luc can nhat.
      */

@@ -40,14 +40,14 @@ class MediaSessionWatcher {
     private var component: ComponentName? = null
 
     /**
-     * Goi cua chinh Lyra, de con bo qua phien cua minh.
+     * Goi cua chinh AURA, de con bo qua phien cua minh.
      *
      * Bat buoc phai bo, va day la mot vong lap that chu khong phai de phong xa:
-     * Lyra ghi CAU DANG HAT vao phan mo ta phien cua no de hien tren the man
+     * AURA ghi CAU DANG HAT vao phan mo ta phien cua no de hien tren the man
      * hinh khoa. Doc lai chinh phien do thi cau hat tro thanh "ten bai moi", va
      * app di tra loi cho mot cau hat - roi ket qua lai ghi de len, vong tiep.
      *
-     * Bai Lyra tu phat khong can doc qua day: `Lyra` biet chinh xac ten bai,
+     * Bai AURA tu phat khong can doc qua day: `AURA` biet chinh xac ten bai,
      * nghe si va vi tri tu bo may phat cua no.
      */
     private var ownPackage: String = ""
@@ -179,6 +179,6 @@ class MediaSessionWatcher {
     }
 
     private companion object {
-        const val TAG = "LyraWatcher"
+        const val TAG = "AuraWatcher"
     }
 }

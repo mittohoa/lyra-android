@@ -171,6 +171,6 @@ class TranslationRepository(
     }
 
     private companion object {
-        const val TAG = "LyraDich"
+        const val TAG = "AuraDich"
     }
 }

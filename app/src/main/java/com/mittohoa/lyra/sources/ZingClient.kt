@@ -19,7 +19,7 @@ import kotlin.math.abs
  * deu thanh "khong tim thay loi", khong bao gio lam sap app.
  *
  * Chuyen tu `src/main/sources/zing.ts` cua ban Windows: duong LOI, va tu khi
- * Lyra tu phat nhac thi ca duong TIM BAI va LAY LINK PHAT.
+ * AURA tu phat nhac thi ca duong TIM BAI va LAY LINK PHAT.
  */
 object ZingClient {
 

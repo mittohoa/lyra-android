@@ -32,8 +32,20 @@ object UpdateChecker {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    /** Tên file dạng `Lyra-0.1.2-android-arm64.apk`. */
-    private val TEN_FILE = Regex("""Lyra-(\d+\.\d+\.\d+)-android-arm64\.apk""")
+    /**
+     * Tên file dạng `AURA-0.1.2-android-arm64.apk`, và nhận cả tên cũ `Lyra-…`.
+     *
+     * PHẢI NHẬN CẢ HAI, ít nhất tới khi không còn ai chạy bản trước lúc đổi tên.
+     * Mọi bản phát hành từ trước đều mang tên `Lyra-…`, và bản app đang nằm trên
+     * máy người dùng cũng dò đúng chữ đó. Đổi hẳn sang `AURA-` thì:
+     *
+     *     bản cũ trên máy    dò "Lyra-"  ->  không thấy bản mới tên AURA-
+     *     bản mới trên máy   dò "AURA-"  ->  không thấy các bản đã phát hành
+     *
+     * Cả hai chiều đều đứt, mà đứt IM LẶNG: màn hình chỉ báo "đang là bản mới
+     * nhất". Nhận cả hai thì không ai mắc kẹt.
+     */
+    private val TEN_FILE = Regex("""(?:AURA|Lyra)-(\d+\.\d+\.\d+)-android-arm64\.apk""")
 
     @Serializable
     private data class Asset(val name: String = "", val browser_download_url: String = "")
@@ -89,5 +101,5 @@ object UpdateChecker {
         return false
     }
 
-    private const val TAG = "LyraCapNhat"
+    private const val TAG = "AuraCapNhat"
 }

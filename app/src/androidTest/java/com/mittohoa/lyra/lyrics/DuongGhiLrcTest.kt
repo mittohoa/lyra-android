@@ -45,7 +45,7 @@ class DuongGhiLrcTest {
         val gt = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, "lyra-ghi-thu.lrc")
             put(MediaStore.MediaColumns.MIME_TYPE, "text/plain")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/Lyra")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/AURA")
         }
         bao.append("tạo trong Music/Lyra: ").append(
             runCatching {

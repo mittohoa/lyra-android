@@ -64,7 +64,7 @@ class OverlayView(context: Context) : View(context) {
      *
      * Khung nổi và trang Lời hiện cùng một thứ, nên chúng phải cùng dáng chữ.
      * Khung này sống ngoài cây Compose nên không tự đọc được lựa chọn đó —
-     * `Lyra` đẩy sang, xem `Lyra.datKieuChu`.
+     * `AURA` đẩy sang, xem `AURA.datKieuChu`.
      */
     var chuRieng: Typeface? = null
         set(value) {
@@ -481,7 +481,7 @@ class OverlayView(context: Context) : View(context) {
      *
      * Day la duong sua lech NGAY TAI CHO phat hien ra no: dang xem YouTube,
      * thay loi chay lech, cham vao cau minh dang nghe la xong - khong phai
-     * thoat app nhac ra, mo Lyra, roi tim toi trang Loi.
+     * thoat app nhac ra, mo AURA, roi tim toi trang Loi.
      */
     fun lineIndexAt(y: Float): Int {
         for ((band, index) in drawnBands) if (y in band) return index

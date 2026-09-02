@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Dau hieu Lyra, ban Android.
+ * Dau hieu AURA, ban Android.
  *
  * Hinh hoc dong bo voi `resources/icon.svg` cua ban Windows va
  * `res/drawable/ic_launcher.xml` - sua mot cho thi sua ca ba. Toa do goc trong

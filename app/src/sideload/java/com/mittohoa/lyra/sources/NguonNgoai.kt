@@ -82,5 +82,5 @@ object NguonNgoai {
         null
     }
 
-    private const val TAG = "LyraNguon"
+    private const val TAG = "AuraNguon"
 }

@@ -105,7 +105,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             // Mat giay: giay sang, muc toi, hay theo may. Giu o day chu khong
-            // day qua `Lyra` - no khong lien quan gi toi nhac, va no chi song
+            // day qua `AURA` - no khong lien quan gi toi nhac, va no chi song
             // trong mot man hinh duy nhat.
             var chuDe by remember { mutableStateOf(ChuDePrefs(this).doc()) }
             var kieuChu by remember { mutableStateOf(ChuDePrefs(this).docKieuChu()) }
@@ -148,11 +148,11 @@ class MainActivity : ComponentActivity() {
             val capNhat by Lyra.capNhat.collectAsStateWithLifecycle()
 
             // Cai dat nho, chi mot man hinh dung - giu ngay tai day thay vi
-            // day them mot dong chay qua `Lyra`.
+            // day them mot dong chay qua `AURA`.
             LaunchedEffect(Unit) { Lyra.napHieuUng(applicationContext) }
             val lyricEffect by Lyra.hieuUng.collectAsStateWithLifecycle()
 
-            // Hoi mot lan moi lan mo app; `Lyra` tu chan cac lan goi thua
+            // Hoi mot lan moi lan mo app; `AURA` tu chan cac lan goi thua
             LaunchedEffect(Unit) { Lyra.kiemBanMoi(BuildConfig.VERSION_NAME) }
             var openedPlaylistId by remember { mutableStateOf<String?>(null) }
             // Doc lai tu danh sach that moi lan no doi: doi ten hay xoa mot bai
@@ -315,7 +315,7 @@ class MainActivity : ComponentActivity() {
         readPermissions()
         // Mo kho truoc, KHONG dieu kien: bo nho dem, loi tu nhap, do lech va
         // danh sach phat deu khong dinh gi toi quyen doc thong bao. Truoc day
-        // ca cum nay nam sau cai `if` ben duoi, nen ai dung Lyra nhu mot trinh
+        // ca cum nay nam sau cai `if` ben duoi, nen ai dung AURA nhu mot trinh
         // phat thuan tuy thi loi tu go vao la roi mat khong ai bao.
         Lyra.chuanBi(this)
         // Nguoi dung vua bat quyen xong quay lai - doc lai ngay, khong bat doi
@@ -381,11 +381,11 @@ private fun rememberPlaybackPosition(): State<Long> {
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (isActive) {
-                // `Lyra.livePosition()` chu KHONG phai `Lyra.watcher.livePosition()`.
-                // Bo theo doi ban tin media co loc bo phien cua CHINH Lyra ra -
-                // nen khi Lyra tu phat, no tra ve vi tri cua mot bai khac hoac
+                // `AURA.livePosition()` chu KHONG phai `AURA.watcher.livePosition()`.
+                // Bo theo doi ban tin media co loc bo phien cua CHINH AURA ra -
+                // nen khi AURA tu phat, no tra ve vi tri cua mot bai khac hoac
                 // mot so cu ket lai. Do tren may: phien that chay toi 222 giay
-                // ma man hinh dung yen o 0:00. Lop boc o `Lyra` hoi bo giai ma
+                // ma man hinh dung yen o 0:00. Lop boc o `AURA` hoi bo giai ma
                 // cua chinh minh truoc, roi moi hoi ban tin.
                 position.longValue = Lyra.livePosition()
                 delay(200)

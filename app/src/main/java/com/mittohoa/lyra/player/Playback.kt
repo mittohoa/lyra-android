@@ -53,7 +53,7 @@ object Playback {
         set(value) { _queue.value = value }
 
     /**
-     * Bai Lyra dang phat, NGUYEN BAN.
+     * Bai AURA dang phat, NGUYEN BAN.
      *
      * Doc o day chu khong doc `player.mediaMetadata`: phan mo ta cua phien da
      * bi ta thay bang cau dang hat de hien tren the man hinh khoa. Day moi la
@@ -193,7 +193,7 @@ object Playback {
      * Đổi tốc độ phát. Chỉ áp được cho bộ phát CỦA LYRA.
      *
      * `MediaController` của hệ thống — thứ dùng để bấm nút cho nhạc ở app khác —
-     * không có đường nào đổi tốc độ. Nên tính năng này chỉ hiện khi Lyra là bên
+     * không có đường nào đổi tốc độ. Nên tính năng này chỉ hiện khi AURA là bên
      * đang phát; bày một thanh trượt không làm gì cho nhạc ở Spotify thì tệ hơn
      * là không bày.
      */
@@ -227,7 +227,7 @@ object Playback {
     }
 
     /**
-     * Vi tri phat hien tai, hoac -1 khi Lyra khong phai la ben dang phat.
+     * Vi tri phat hien tai, hoac -1 khi AURA khong phai la ben dang phat.
      *
      * -1 chu khong phai 0: 0 la mot vi tri hop le, va tra 0 khi khong biet thi
      * ben goi khong the phan biet duoc "dang o dau bai" voi "khong biet".
@@ -333,5 +333,5 @@ object Playback {
         )
         .build()
 
-    private const val TAG = "LyraPhat"
+    private const val TAG = "AuraPhat"
 }

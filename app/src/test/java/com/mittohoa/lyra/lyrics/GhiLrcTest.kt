@@ -6,11 +6,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Kiem than tep .lrc mà Lyra ghi ra.
+ * Kiem than tep .lrc mà AURA ghi ra.
  *
  * Cho de sai nhat cua ca tinh nang: mot the dat sai thi tep hong ma lan ghi van
  * bao "thanh cong", va nguoi dung chi phat hien khi mo bang trinh phat khac -
- * hoac khi chinh Lyra doc lai ra mot bai loi day rac.
+ * hoac khi chinh AURA doc lai ra mot bai loi day rac.
  */
 class GhiLrcTest {
 
@@ -19,11 +19,11 @@ class GhiLrcTest {
     @Test fun `mang du the mo ta`() {
         val ra = LrcCanhTep.dungNoiDung(loi, "Nàng Thơ", "Hoàng Dũng")
         assertTrue(ra.startsWith("[ti:Nàng Thơ]\n[ar:Hoàng Dũng]\n"))
-        assertTrue("phải ghi rõ thương hiệu", ra.contains("[re:Lyra by #mittoHOA]"))
+        assertTrue("phải ghi rõ thương hiệu", ra.contains("[re:AURA by #mittoHOA]"))
     }
 
     @Test fun `ghi ra roi doc lai ra dung tung dong`() {
-        // Vong tron quan trong nhat: cai Lyra ghi ra thi chinh Lyra phai doc
+        // Vong tron quan trong nhat: cai AURA ghi ra thi chinh AURA phai doc
         // lai duoc, va khong duoc de the mo ta lot vao thanh cau hat.
         val doc = parseLrc(LrcCanhTep.dungNoiDung(loi, "Nàng Thơ", "Hoàng Dũng"))
         assertEquals(2, doc.lines.size)

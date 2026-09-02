@@ -23,7 +23,7 @@
 
     <!--
       Doc nhac co san trong may. Tu Android 13 tach rieng theo loai: xin dung
-      quyen NHAC chu khong phai quyen doc ca bo nho - Lyra khong co viec gi voi
+      quyen NHAC chu khong phai quyen doc ca bo nho - AURA khong co viec gi voi
       anh, video hay tai lieu cua nguoi dung.
     -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
@@ -42,7 +42,7 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Lyra">
+        android:theme="@style/Theme.AURA">
 
         <activity
             android:name=".ui.MainActivity"
@@ -63,7 +63,7 @@
           nen ma khong phai hien thong bao thuong truc.
         -->
         <service
-            android:name=".service.LyraNotificationListener"
+            android:name=".service.AuraNotificationListener"
             android:exported="false"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
@@ -73,14 +73,14 @@
         </service>
 
         <!--
-          Bo may phat cua chinh Lyra.
+          Bo may phat cua chinh AURA.
 
           `exported=true` la BAT BUOC voi MediaSessionService: he thong, Android
           Auto va cac o dieu khien ngoai deu noi vao tu tien trinh khac. Doi lai
           phai loc quyen o phia trong session neu ve sau co lenh nhay cam.
         -->
         <service
-            android:name=".player.LyraPlaybackService"
+            android:name=".player.AuraPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
@@ -94,7 +94,7 @@
           khong cho app tu them, va dung ra la vay.
         -->
         <service
-            android:name=".service.LyraTileService"
+            android:name=".service.AuraTileService"
             android:exported="true"
             android:icon="@drawable/ic_tile"
             android:label="@string/tile_label"

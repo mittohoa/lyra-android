@@ -6,11 +6,11 @@ import android.content.Context
  * Hiệu ứng chữ ở trang Lời.
  *
  * **Mọi hiệu ứng ở đây chỉ dùng thứ đã biết chắc**, và điều đó giới hạn hẳn
- * những gì làm được. LRCLIB — nguồn lời chính của Lyra — chỉ cho mốc theo
+ * những gì làm được. LRCLIB — nguồn lời chính của AURA — chỉ cho mốc theo
  * *dòng*: `[00:24.62] Take my hand`. Không có mốc theo từ (`<00:24.62>` chèn
  * giữa các chữ), đã kiểm trên chính API của họ.
  *
- * Nên Lyra biết đúng hai thứ: **dòng nào đang hát**, và **câu đó đã chạy được
+ * Nên AURA biết đúng hai thứ: **dòng nào đang hát**, và **câu đó đã chạy được
  * bao nhiêu phần** — suy ra từ mốc dòng này tới mốc dòng sau. Không biết đang
  * hát tới chữ nào.
  *

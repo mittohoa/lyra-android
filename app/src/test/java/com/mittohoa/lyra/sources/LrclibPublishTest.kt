@@ -56,7 +56,7 @@ class LrclibPublishTest {
     /** Đúng bài toán LRCLIB đặt ra, ở mức dễ để chạy nhanh. */
     @Test
     fun `giai duoc mot thu thach de`() {
-        val prefix = "LyraTest"
+        val prefix = "AuraTest"
         val dich = LrclibPublish.hex("0FFF" + "00".repeat(30))
         val bam = MessageDigest.getInstance("SHA-256")
         var n = 0L

@@ -4,7 +4,7 @@ package com.mittohoa.lyra.lyrics
  * Đọc phụ đề `.srt`.
  *
  * Video trong máy hay đi kèm một tệp `.srt` cùng tên — đó là cách phụ đề được
- * lưu từ hai chục năm nay, và mọi trình xem phim đều đọc nó. Với Lyra thì phụ
+ * lưu từ hai chục năm nay, và mọi trình xem phim đều đọc nó. Với AURA thì phụ
  * đề đi thẳng vào đúng bộ máy đang chạy lời bài hát: tô sáng câu đang nói, chạm
  * để nhảy tới, khung nổi, lặp đoạn A–B đều dùng lại được không phải viết mới.
  *
@@ -56,7 +56,7 @@ fun parseSrt(content: String): Lyrics {
 
         // Gom các dòng chữ tới khi gặp dòng trống. Một câu thoại hai dòng được
         // nối lại bằng khoảng trắng: xuống dòng trong .srt là để vừa bề ngang
-        // màn hình chứ không mang nghĩa gì, mà chỗ hiện của Lyra thì tự xuống
+        // màn hình chứ không mang nghĩa gì, mà chỗ hiện của AURA thì tự xuống
         // dòng theo bề ngang của nó.
         val chu = StringBuilder()
         i++

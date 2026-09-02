@@ -84,10 +84,10 @@ import kotlin.math.absoluteValue
  *
  * Khác cả ba ở chỗ **lời là mặt mặc định**. Zing bắt vuốt, YouTube Music bắt
  * bấm một chip, NCT chỉ cho hai câu — cả ba coi lời là mặt phụ phải đi tìm, vì
- * cả ba là app nhạc. Lyra thì lời chính là thứ nó làm ra.
+ * cả ba là app nhạc. AURA thì lời chính là thứ nó làm ra.
  *
  * Đổi mặt bằng HAI CHIP chứ không bằng vuốt ngang, dù Zing vuốt. Điều hướng
- * của Lyra đã là một pager ngang rồi; lồng thêm một pager ngang nữa thì mặt
+ * của AURA đã là một pager ngang rồi; lồng thêm một pager ngang nữa thì mặt
  * trong nuốt hết cú vuốt và không ai sang được trang Tìm hay Chỉnh.
  */
 @Composable
@@ -159,17 +159,17 @@ fun BaiPane(
         }
     }
 
-    // Hỏi quyền khi VÀ CHỈ KHI trang này thật sự trống. Lyra không cần quyền
+    // Hỏi quyền khi VÀ CHỈ KHI trang này thật sự trống. AURA không cần quyền
     // nào để biết bài của chính nó đang phát, nên chặn cả trang khi thiếu quyền
     // là tự cắt mất bộ phát và phần lời của chính mình.
     if (!hasNotificationAccess && now == null) {
         Box(Modifier.fillMaxSize().padding(horizontal = 26.dp), Alignment.Center) {
             Ask(
-                title = "Cho Lyra đọc lời cho app nhạc khác",
-                body = "Bật quyền đọc thông báo thì Lyra hiện lời cho nhạc phát ở Spotify, " +
-                    "Zing, YouTube Music… Lyra không đọc nội dung thông báo — chỉ đọc tên bài " +
+                title = "Cho AURA đọc lời cho app nhạc khác",
+                body = "Bật quyền đọc thông báo thì AURA hiện lời cho nhạc phát ở Spotify, " +
+                    "Zing, YouTube Music… AURA không đọc nội dung thông báo — chỉ đọc tên bài " +
                     "và vị trí phát.\n\nKhông bật cũng được: vuốt sang trái để tìm bài " +
-                    "và phát ngay trong Lyra.",
+                    "và phát ngay trong AURA.",
                 action = "Mở Cài đặt để bật",
                 accent = accent,
                 onAction = onOpenNotificationSettings
@@ -192,7 +192,7 @@ fun BaiPane(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Vuốt sang trái để tìm bài, hoặc mở app nhạc khác — Lyra vẫn hiện lời.",
+                    "Vuốt sang trái để tìm bài, hoặc mở app nhạc khác — AURA vẫn hiện lời.",
                     color = mau.chuMo,
                     fontSize = 14.5.sp
                 )
@@ -211,7 +211,7 @@ fun BaiPane(
     // chứ không bày ra rồi để chúng không ăn gì.
     val chiXem = Lyra.laDangXem()
 
-    // Hàng đợi CHỈ tồn tại khi Lyra là bên đang phát. Nhạc ở Spotify thì ta bấm
+    // Hàng đợi CHỈ tồn tại khi AURA là bên đang phát. Nhạc ở Spotify thì ta bấm
     // được nút của họ nhưng không nhìn thấy hàng đợi của họ.
     val hangDoiRieng = queue.isNotEmpty() && queueIndex >= 0
 
@@ -502,9 +502,9 @@ private fun ChipMat(nhan: String, dangChon: Boolean, accent: Color, onClick: () 
  * Dải luyện tập: lặp một đoạn, và đổi tốc độ.
  *
  * Chọn đoạn theo CÂU chứ không kéo hai mốc trên thanh thời gian — đó là chỗ
- * Lyra làm được mà một bộ lặp A–B thường không: nó biết câu nào bắt đầu lúc nào.
+ * AURA làm được mà một bộ lặp A–B thường không: nó biết câu nào bắt đầu lúc nào.
  *
- * Tốc độ chỉ hiện khi Lyra là bên đang phát. `MediaController` của hệ thống
+ * Tốc độ chỉ hiện khi AURA là bên đang phát. `MediaController` của hệ thống
  * không có đường đổi tốc độ cho nhạc ở app khác, và bày một nút không làm gì
  * thì tệ hơn là không bày.
  */
@@ -870,7 +870,7 @@ private fun MatLoi(
 
         // Lời chữ trơn thì mời căn giờ.
         //
-        // Chưa căn thì Lyra chỉ hiện được một khối chữ: không tô sáng câu đang
+        // Chưa căn thì AURA chỉ hiện được một khối chữ: không tô sáng câu đang
         // hát, không khung lời nổi chạy theo, không lặp A–B, không thẻ lời. Gần
         // hết những gì app làm đều đứng trên chỗ có mốc thời gian.
         if (!lyrics.synced && lyrics.lines.isNotEmpty()) {

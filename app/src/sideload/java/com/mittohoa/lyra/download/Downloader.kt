@@ -18,9 +18,9 @@ import okhttp3.Request
  * Tai mot bai ve may.
  *
  * File di vao `Music/Lyra/` cua bo nho chung chu khong vao thu muc rieng cua
- * app. Hai le: nguoi dung tai ve la de SO HUU file - go Lyra ra thi nhac phai
+ * app. Hai le: nguoi dung tai ve la de SO HUU file - go AURA ra thi nhac phai
  * con, va moi trinh phat khac phai thay duoc no. Ngoai ra chinh thu vien trong
- * may cua Lyra doc qua MediaStore, nen bai vua tai tu no xuat hien o do.
+ * may cua AURA doc qua MediaStore, nen bai vua tai tu no xuat hien o do.
  *
  * Khong can quyen ghi: tu Android 10, app duoc phep CHEN file media cua chinh
  * no vao bo suu tap chung ma khong xin gi ca. Quyen ghi chi can khi muon sua
@@ -193,5 +193,5 @@ object Downloader {
         return raw.replace(Regex("[/\\\\:*?\"<>|]"), "_").take(120) + ".mp3"
     }
 
-    private const val TAG = "LyraTai"
+    private const val TAG = "AuraTai"
 }

@@ -4,7 +4,7 @@ import android.net.Uri
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
-/** Nguon nhac Lyra tim va phat duoc. */
+/** Nguon nhac AURA tim va phat duoc. */
 @Serializable
 enum class MusicSource(val key: String, val label: String) {
     /** Nhac co san trong may. Khong can mang, khong co han, khong bi go. */
@@ -87,7 +87,7 @@ object Catalog {
     /**
      * Nhac trong may, doc mot lan roi giu lai.
      *
-     * Gan tu ben ngoai (`Lyra`) chu khong tu doc: lop nay khong giu `Context`,
+     * Gan tu ben ngoai (`AURA`) chu khong tu doc: lop nay khong giu `Context`,
      * va mot doi tuong dung chung ma om `Context` la mot cach ro ket bo nho.
      */
     @Volatile

@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream
  * loai noi dung cho thu muc do.
  *
  * Nhung vao file lai la cach dung hon: loi di theo bai sang MOI trinh phat,
- * khong phai chi rieng Lyra, va khong bao gio lac mat file di kem.
+ * khong phai chi rieng AURA, va khong bao gio lac mat file di kem.
  *
  * Viet tay thay vi keo mot thu vien the nhac: ca app chi can ghi bon khung the,
  * va ID3v2.3 la mot dinh dang dai vai chuc dong. Mot thu vien day du o day la

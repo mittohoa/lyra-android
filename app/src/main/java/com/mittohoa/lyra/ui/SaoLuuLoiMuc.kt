@@ -46,7 +46,7 @@ import java.util.Locale
  * lau hon lan cai dat nay.
  *
  * Dung BO CHON TEP CUA HE THONG chu khong tu ghi vao mot thu muc nao ca: nguoi
- * dung chon cho de, Lyra khong xin them mot quyen nao, va tep nam ngoai vung
+ * dung chon cho de, AURA khong xin them mot quyen nao, va tep nam ngoai vung
  * app - tuc go app di no van con. Mot ban sao luu bi xoa cung luc voi thu no
  * dang sao luu thi khong phai ban sao luu.
  */
@@ -102,7 +102,7 @@ internal fun SaoLuuLoiMuc(accent: Color) {
             val kq = withContext(Dispatchers.IO) { Lyra.nhapLoiTuNhap(context, chu) }
             soBai = withContext(Dispatchers.IO) { Lyra.demLoiTuNhap(context) }
             bao = when {
-                kq.hong > 0 -> "Tệp này không phải bản sao lưu của Lyra."
+                kq.hong > 0 -> "Tệp này không phải bản sao lưu của AURA."
                 kq.them == 0 && kq.daCo > 0 ->
                     "${kq.daCo} bài trong tệp đều đã có sẵn trên máy — giữ nguyên bản đang có."
                 kq.daCo > 0 -> "Thêm ${kq.them} bài. ${kq.daCo} bài đã có sẵn nên giữ nguyên."
@@ -131,7 +131,7 @@ internal fun SaoLuuLoiMuc(accent: Color) {
 
         Spacer(Modifier.height(10.dp))
         Text(
-            "Số lời này nằm trong bộ nhớ riêng của Lyra: gỡ app hoặc đổi máy là " +
+            "Số lời này nằm trong bộ nhớ riêng của AURA: gỡ app hoặc đổi máy là " +
                 "mất hết. Lưu ra một tệp rồi cất đi thì công gõ và công căn giờ " +
                 "còn lại.",
             color = mau.chuRatMo,

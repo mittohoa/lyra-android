@@ -14,9 +14,9 @@ import com.mittohoa.lyra.R
 import com.mittohoa.lyra.data.KieuChu
 
 /*
- * Bộ chữ và bảng màu của Lyra.
+ * Bộ chữ và bảng màu của AURA.
  *
- * Lyra không phát nhạc thay người dùng chọn — nó ĐỌC nhạc đang phát ở chỗ khác
+ * AURA không phát nhạc thay người dùng chọn — nó ĐỌC nhạc đang phát ở chỗ khác
  * và biến nó thành chữ. Thứ nó bán là con chữ, không phải ảnh bìa. Nên nó được
  * dựng như một trang in chứ không như một cái máy phát: nền giấy, chữ mực, một
  * lề màu ở mép trái, và ảnh bìa nằm như một bản in dán vào trang — có viền, có
@@ -33,7 +33,7 @@ import com.mittohoa.lyra.data.KieuChu
  *
  * Sách và báo tách đôi: một bộ có chân cho phần ĐỌC, một bộ không chân cho phần
  * ĐIỀU HƯỚNG. Mắt đọc một đoạn dài bằng bộ có chân đỡ mỏi hơn, còn nhãn nút thì
- * cần gọn và rõ ở cỡ nhỏ. Lyra có đúng hai loại chữ đó — lời bài hát, và mọi
+ * cần gọn và rõ ở cỡ nhỏ. AURA có đúng hai loại chữ đó — lời bài hát, và mọi
  * thứ còn lại — nên tách đôi là tách đúng chỗ.
  *
  * Cả hai đều giấy phép OFL, nhúng thẳng vào APK chứ không tải về khi chạy: một

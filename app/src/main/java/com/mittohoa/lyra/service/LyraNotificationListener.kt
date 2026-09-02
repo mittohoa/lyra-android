@@ -20,7 +20,7 @@ import android.util.Log
  * quyen doc thong bao, va no song dai hon foreground service cua chinh ta.
  *
  * He thong co the giet va dung lai lop nay bat cu luc nao, nen moi trang thai
- * phai nam o `Lyra` (singleton ben ngoai), khong nam trong chinh no.
+ * phai nam o `AURA` (singleton ben ngoai), khong nam trong chinh no.
  */
 class LyraNotificationListener : NotificationListenerService() {
 
@@ -47,7 +47,7 @@ class LyraNotificationListener : NotificationListenerService() {
 
         // He thong vua giet roi dung lai ta. Neu truoc do nguoi dung dang bat
         // khung noi thi phai tu dung lai - ho dang o trong app nhac, khong co
-        // ly do gi de phai quay ve Lyra bat lai bang tay.
+        // ly do gi de phai quay ve AURA bat lai bang tay.
         Lyra.restoreOverlay(this)
 
         if (!daDangKy) {
@@ -69,6 +69,6 @@ class LyraNotificationListener : NotificationListenerService() {
     }
 
     private companion object {
-        const val TAG = "LyraListener"
+        const val TAG = "AuraListener"
     }
 }

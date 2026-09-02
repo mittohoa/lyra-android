@@ -35,7 +35,7 @@ Dạng liền, cho ô không nhận dấu hai chấm:
 0b64c60ab84586a21e647e568f122262cd7428e9702a59507a68980f56b7a7b6
 ```
 
-Chủ thể: `CN=Lyra, OU=Lyra, O=mittohoa, L=Ho Chi Minh, C=VN`
+Chủ thể: `CN=AURA, OU=AURA, O=mittohoa, L=Ho Chi Minh, C=VN`
 
 ### Kênh phát hành
 
@@ -55,7 +55,7 @@ phát APK.
 ### Tên app (tối đa 30 ký tự)
 
 ```
-Lyra — Lời bài hát nổi
+AURA — Lời bài hát nổi
 ```
 
 ### Mô tả ngắn (tối đa 80 ký tự)
@@ -67,22 +67,22 @@ Lời bài hát nổi trên màn hình cho nhạc phát ở mọi app. Kèm trì
 ### Mô tả đầy đủ (tối đa 4000 ký tự)
 
 ```
-Lyra hiện lời bài hát nổi lên trên màn hình, chạy theo đúng nhịp bài đang phát —
+AURA hiện lời bài hát nổi lên trên màn hình, chạy theo đúng nhịp bài đang phát —
 dù bạn đang nghe ở Spotify, YouTube Music, hay bất kỳ app nhạc nào khác. Và khi
-bạn muốn, chính Lyra cũng là một trình nghe nhạc đầy đủ.
+bạn muốn, chính AURA cũng là một trình nghe nhạc đầy đủ.
 
 HAI VAI, MỘT APP
 
-Đồng hành — Nhạc phát ở app khác, Lyra đọc xem đang phát bài gì, tự đi tìm lời,
+Đồng hành — Nhạc phát ở app khác, AURA đọc xem đang phát bài gì, tự đi tìm lời,
 rồi vẽ một khung lời nổi đè lên màn hình. Bạn vừa lướt vừa đọc lời được.
 
-Trình phát — Lyra phát nhạc trong máy bạn, có hàng đợi, trộn bài, lặp, danh sách
-phát. Lúc đó lời khớp tuyệt đối, vì Lyra nắm chính đồng hồ phát.
+Trình phát — AURA phát nhạc trong máy bạn, có hàng đợi, trộn bài, lặp, danh sách
+phát. Lúc đó lời khớp tuyệt đối, vì AURA nắm chính đồng hồ phát.
 
 LỜI KHỚP TỪNG DÒNG
 
 Lời lấy từ LRCLIB, kho lời mở và miễn phí. Lệch nhịp thì chạm vào đúng câu đang
-hát là Lyra tự căn lại cho cả bài — không phải kéo thanh trượt mò mẫm.
+hát là AURA tự căn lại cho cả bài — không phải kéo thanh trượt mò mẫm.
 
 SÁU HIỆU ỨNG CHỮ
 
@@ -103,7 +103,7 @@ mở app cũng đọc được.
 
 Ô BẬT NHANH
 
-Thêm ô Lyra vào bảng Cài đặt nhanh để bật tắt khung lời nổi bằng một chạm.
+Thêm ô AURA vào bảng Cài đặt nhanh để bật tắt khung lời nổi bằng một chạm.
 
 MIỄN PHÍ, KHÔNG TÀI KHOẢN, KHÔNG QUẢNG CÁO
 
@@ -113,12 +113,12 @@ nguồn mở tại github.com/mittohoa/lyra-android.
 VỀ QUYỀN ĐỌC THÔNG BÁO
 
 Android chỉ cho biết app nào đang phát bài gì qua đúng một đường: quyền đọc
-thông báo. Lyra chỉ lấy tên bài, tên ca sĩ và vị trí phát, rồi bỏ hết phần còn
+thông báo. AURA chỉ lấy tên bài, tên ca sĩ và vị trí phát, rồi bỏ hết phần còn
 lại — không đọc nội dung tin nhắn, không gửi gì đi. Không bật quyền này cũng
-dùng được: Lyra vẫn phát nhạc trong máy và hiện lời bình thường, chỉ thiếu phần
+dùng được: AURA vẫn phát nhạc trong máy và hiện lời bình thường, chỉ thiếu phần
 lời cho nhạc ở app khác.
 
-Lyra không lưu trữ và không phân phối nhạc. Lời bài hát thuộc về tác giả và đơn
+AURA không lưu trữ và không phân phối nhạc. Lời bài hát thuộc về tác giả và đơn
 vị nắm bản quyền.
 ```
 
@@ -132,7 +132,7 @@ Bản 0.3.4 — chia sẻ câu hát cho ra dáng, và thôi gõ lời bằng tay
 
 • Thẻ lời có sáu mẫu: Trang giấy, Bìa mờ, Bìa trên, Chữ lớn, Khối màu, Kẻ dòng
 • Ảnh bìa bài hát dùng làm nền thẻ được
-• Nhập lời từ ảnh chụp: chọn một tấm ảnh, Lyra đọc chữ ra, chỉ việc dọn vài dòng thừa
+• Nhập lời từ ảnh chụp: chọn một tấm ảnh, AURA đọc chữ ra, chỉ việc dọn vài dòng thừa
 
 Nhờ thử: mở trang Bài của một bài có lời, bấm nút ↗ rồi đổi qua cả sáu mẫu.
 Và: Bài › Tự nhập › Từ ảnh — chụp màn hình lời ở app khác rồi thử đọc.
@@ -145,7 +145,7 @@ Version 0.3.4 — lyric cards worth sharing, and no more typing lyrics out.
 
 • Six card layouts: Paper, Blurred cover, Cover on top, Big type, Colour block, Ruled lines
 • Album art can back the card
-• Import lyrics from a photo: pick an image, Lyra reads the text out, you tidy a few stray lines
+• Import lyrics from a photo: pick an image, AURA reads the text out, you tidy a few stray lines
 
 Please check: open Song for a track with lyrics, tap ↗, try all six layouts.
 Then: Song › Add lyrics › From image — screenshot lyrics in another app and read them in.
@@ -164,7 +164,7 @@ này là ngôn ngữ thêm; nếu chọn tiếng Anh thì ngược lại. Có c�
 Tên app (≤30):
 
 ```
-Lyra — Floating Lyrics
+AURA — Floating Lyrics
 ```
 
 Mô tả ngắn (≤80):
@@ -176,22 +176,22 @@ Floating lyrics for music in any app. Plus a full music player.
 Mô tả đầy đủ (≤4000):
 
 ```
-Lyra shows song lyrics floating on your screen, in time with whatever is playing —
-Spotify, YouTube Music, or any other music app. And when you want it to, Lyra is a
+AURA shows song lyrics floating on your screen, in time with whatever is playing —
+Spotify, YouTube Music, or any other music app. And when you want it to, AURA is a
 full music player itself.
 
 TWO ROLES, ONE APP
 
-Companion — Music plays in another app; Lyra reads what is playing, finds the
+Companion — Music plays in another app; AURA reads what is playing, finds the
 lyrics, and draws them over your screen. Read along while you scroll.
 
-Player — Lyra plays the music on your phone, with a queue, shuffle, repeat and
-playlists. Here the timing is exact, because Lyra owns the playback clock.
+Player — AURA plays the music on your phone, with a queue, shuffle, repeat and
+playlists. Here the timing is exact, because AURA owns the playback clock.
 
 LINE-BY-LINE SYNC
 
 Lyrics come from LRCLIB, an open and free lyrics library. If the timing drifts,
-tap the line you actually hear and Lyra realigns the whole song — no dragging a
+tap the line you actually hear and AURA realigns the whole song — no dragging a
 slider around.
 
 SIX TEXT EFFECTS
@@ -213,7 +213,7 @@ opening the app.
 
 QUICK SETTINGS TILE
 
-Add a Lyra tile to Quick Settings to toggle the floating lyrics with one tap.
+Add a AURA tile to Quick Settings to toggle the floating lyrics with one tap.
 
 FREE, NO ACCOUNT, NO ADS
 
@@ -223,12 +223,12 @@ github.com/mittohoa/lyra-android.
 ABOUT NOTIFICATION ACCESS
 
 Android exposes what is playing in other apps through exactly one door:
-notification access. Lyra reads only the song title, artist and playback position,
+notification access. AURA reads only the song title, artist and playback position,
 and discards everything else — it does not read message contents and sends nothing
-anywhere. You can decline: Lyra still plays your own music and shows lyrics for it,
+anywhere. You can decline: AURA still plays your own music and shows lyrics for it,
 you only lose lyrics for other apps.
 
-Lyra does not host or distribute music. Lyrics belong to their authors and rights
+AURA does not host or distribute music. Lyrics belong to their authors and rights
 holders.
 ```
 
@@ -238,12 +238,12 @@ Console cho dán một đoạn hướng dẫn kèm lời mời. Người test c�
 không vướng Play Protect, nhưng vẫn cần biết phải bật quyền gì.
 
 ```
-Cảm ơn bạn thử Lyra.
+Cảm ơn bạn thử AURA.
 
 Cài xong, mở app rồi làm hai bước:
 
-1. Bật quyền đọc thông báo khi app hỏi — không có nó thì Lyra không biết app khác
-   đang phát bài gì. Lyra chỉ đọc tên bài và vị trí phát, không đọc nội dung
+1. Bật quyền đọc thông báo khi app hỏi — không có nó thì AURA không biết app khác
+   đang phát bài gì. AURA chỉ đọc tên bài và vị trí phát, không đọc nội dung
    thông báo nào.
 2. Bật "hiển thị trên ứng dụng khác" để dựng khung lời nổi.
 
@@ -293,15 +293,15 @@ khai thừa.
 | Bắt buộc hay tuỳ chọn | **Tuỳ chọn** — chỉ xảy ra khi người dùng bật dịch |
 | Mục đích | **Chức năng của ứng dụng** |
 | Mã hoá khi truyền | Có |
-| Người dùng yêu cầu xoá được không | Không áp dụng — Lyra không giữ dữ liệu ở đâu |
+| Người dùng yêu cầu xoá được không | Không áp dụng — AURA không giữ dữ liệu ở đâu |
 
 Giải thích khi Console hỏi thêm:
 
 ```
-Lyra dùng ML Kit Translation của Google để dịch lời ngay trên máy. Lần đầu người
+AURA dùng ML Kit Translation của Google để dịch lời ngay trên máy. Lần đầu người
 dùng bật dịch cho một ngôn ngữ, ML Kit tải bộ máy dịch từ máy chủ Google; trong
 quá trình đó thư viện tạo và gửi đi một Firebase Installation ID. Đây là hành vi
-của thư viện Google, không phải của Lyra. Người dùng không bật tính năng dịch
+của thư viện Google, không phải của AURA. Người dùng không bật tính năng dịch
 thì không có bước này.
 ```
 
@@ -310,7 +310,7 @@ thì không có bước này.
 - **Tên bài và tên ca sĩ gửi tới LRCLIB** — không thuộc loại dữ liệu nào trong
   danh sách của Google, không kèm định danh, không gắn với người dùng. Muốn chắc
   thì khai thêm *Hoạt động trong ứng dụng → Nội dung khác*, nhưng không bắt buộc.
-- **Nội dung thông báo** — Lyra đọc nhưng không gửi đi và không lưu lại. Google
+- **Nội dung thông báo** — AURA đọc nhưng không gửi đi và không lưu lại. Google
   hỏi về dữ liệu *thu thập*, tức có rời khỏi máy; cái này không rời.
 - **File nhạc trong máy** — không rời khỏi máy.
 - Không tài khoản, không vị trí, không danh bạ, không ảnh, không quảng cáo,
@@ -325,13 +325,13 @@ Chuẩn bị sẵn, vì đây là phần hay bị hỏi nhất với app dùng
 `BIND_NOTIFICATION_LISTENER_SERVICE`.
 
 ```
-Chức năng chính của Lyra là hiện lời bài hát đồng bộ cho nhạc đang phát, kể cả
+Chức năng chính của AURA là hiện lời bài hát đồng bộ cho nhạc đang phát, kể cả
 nhạc phát ở ứng dụng khác. Để biết ứng dụng nào đang phát bài gì và ở vị trí
 nào, Android chỉ cung cấp đúng một đường: MediaSessionManager.getActiveSessions,
 và API này chỉ cho phép gọi khi ứng dụng là một NotificationListenerService đã
 được người dùng bật. Không có API thay thế cho ứng dụng thường.
 
-Lyra chỉ đọc siêu dữ liệu của phiên phát nhạc: tên bài, tên nghệ sĩ, độ dài và
+AURA chỉ đọc siêu dữ liệu của phiên phát nhạc: tên bài, tên nghệ sĩ, độ dài và
 vị trí phát. Toàn bộ phần còn lại của thông báo bị bỏ qua ngay tại chỗ, không
 được lưu và không được truyền đi. Không có nội dung thông báo nào rời khỏi thiết
 bị.
@@ -341,7 +341,7 @@ một trình phát nhạc đầy đủ có lời đồng bộ và dịch; chỉ 
 nhạc phát ở ứng dụng khác. Ứng dụng nói rõ điều đó ngay tại màn hình xin quyền.
 
 Mã nguồn công khai: github.com/mittohoa/lyra-android
-Nơi dùng API: media/MediaSessionWatcher.kt, service/LyraNotificationListener.kt
+Nơi dùng API: media/MediaSessionWatcher.kt, service/AURANotificationListener.kt
 ```
 
 ---
@@ -379,7 +379,7 @@ Console hỏi có phần nào của app cần đăng nhập mới xem được k
 
 > **Toàn bộ chức năng đều dùng được mà không cần thông tin đăng nhập đặc biệt.**
 
-Đúng: Lyra không có tài khoản, không có màn hình đăng nhập, không khoá tính năng
+Đúng: AURA không có tài khoản, không có màn hình đăng nhập, không khoá tính năng
 nào sau đăng ký. Người duyệt mở app là dùng được ngay.
 
 ### Đối tượng mục tiêu và nội dung
@@ -391,7 +391,7 @@ nào sau đăng ký. Người duyệt mở app là dùng được ngay.
 | Có quảng cáo hiển thị cho trẻ em không | Không có quảng cáo |
 
 Không chọn nhóm dưới 13 là có chủ đích: chọn vào là app rơi vào chương trình
-*Designed for Families*, kéo theo một bộ yêu cầu riêng nặng hơn hẳn, mà Lyra
+*Designed for Families*, kéo theo một bộ yêu cầu riêng nặng hơn hẳn, mà AURA
 không nhắm tới trẻ em.
 
 ### Ngôn ngữ mặc định
@@ -411,14 +411,14 @@ Nằm ở thư mục hồ sơ (`scratchpad/play/`), không nằm trong kho mã.
 | `bieu-tuong-512.png` | 512×512 | Biểu tượng app |
 | `anh-noi-bat-1024x500.png` | 1024×500 | Ảnh nổi bật |
 | `anh-chup/1-khung-loi-noi.png` | 1080×2340 | Khung lời nổi đè lên YouTube Music |
-| `anh-chup/7-lyra-tu-phat.png` | 1080×2340 | Lyra tự phát: đủ nút bấm, hàng đợi, màu lấy từ bìa |
+| `anh-chup/7-lyra-tu-phat.png` | 1080×2340 | AURA tự phát: đủ nút bấm, hàng đợi, màu lấy từ bìa |
 | `anh-chup/2-trang-loi.png` | 1080×2340 | Trang Lời cho nhạc ở app khác |
-| `anh-chup/8-loi-lyra-phat.png` | 1080×2340 | Trang Lời khi Lyra tự phát |
+| `anh-chup/8-loi-lyra-phat.png` | 1080×2340 | Trang Lời khi AURA tự phát |
 | `anh-chup/5-chinh.png` | 1080×2340 | Trang Chỉnh |
 | `anh-chup/4-tim-bai.png` | 1080×2340 | Trang Tìm — **nên bỏ**, thư viện quá nghèo |
 
 Play cần tối thiểu 2 ảnh điện thoại. Xếp theo thứ tự trên — ảnh khung lời nổi
-đứng đầu vì nó nói ngay app làm gì, và đó là thứ duy nhất phân biệt Lyra với
+đứng đầu vì nó nói ngay app làm gì, và đó là thứ duy nhất phân biệt AURA với
 một trình phát nhạc thường.
 
 Biểu tượng cố ý **vuông đầy khung**, không bo góc sẵn: Play tự bo góc và đổ
@@ -427,7 +427,7 @@ lấp bằng chuyển sắc lấy từ chính hai đầu đường chéo của b
 thấy đường nối.
 
 **Đã bỏ:** ảnh thẻ điều khiển ở màn hình khoá. Chụp ra thì dính ảnh nền cá nhân
-của chủ máy. Tính năng vẫn chạy — `dumpsys media_session` cho thấy Lyra đẩy đúng
+của chủ máy. Tính năng vẫn chạy — `dumpsys media_session` cho thấy AURA đẩy đúng
 câu đang hát lên thẻ (`description=Rền vang non sông sáng ngời`) — chỉ là không
 chụp được một ảnh dùng cho cửa hàng. Muốn có thì phải đổi hình nền máy trước.
 
@@ -442,7 +442,7 @@ Sau khi tải bản gộp lên, Play sẽ nhắc:
 Đây là **cảnh báo, không phải lỗi** — nộp và phát hành bình thường. Nhưng nó
 không im được, và đây là lý do:
 
-Lyra không viết dòng mã máy nào. Bốn thư viện `.so` trong bản nộp đều là nhị
+AURA không viết dòng mã máy nào. Bốn thư viện `.so` trong bản nộp đều là nhị
 phân dựng sẵn của ML Kit và AndroidX:
 
 ```
@@ -456,11 +456,11 @@ và Google không phát hành ký hiệu gỡ lỗi cho những thư viện này
 
 `build.gradle.kts` vẫn đặt `debugSymbolLevel = "SYMBOL_TABLE"`. Hôm nay dòng đó
 không sinh ra gì — kiểm được bằng cách mở bản gộp, trong `BUNDLE-METADATA/`
-không có mục `nativesymbols`. Giữ lại để ngày nào Lyra tự viết mã máy thì ký
+không có mục `nativesymbols`. Giữ lại để ngày nào AURA tự viết mã máy thì ký
 hiệu tự được gói mà không ai phải nhớ ra.
 
 **Hệ quả thật:** app sập bên trong mã của ML Kit thì báo cáo sự cố chỉ có địa
-chỉ số, không đọc ra tên hàm. Sập trong mã Kotlin của Lyra thì vẫn đọc được
+chỉ số, không đọc ra tên hàm. Sập trong mã Kotlin của AURA thì vẫn đọc được
 bình thường, nhờ `proguard.map` mà Play tự nhận từ bản gộp.
 
 ---

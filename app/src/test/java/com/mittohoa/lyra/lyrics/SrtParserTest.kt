@@ -36,7 +36,7 @@ class SrtParserTest {
 
     @Test fun `cau hai dong duoc noi lai`() {
         // Xuong dong trong .srt la de vua be ngang man hinh chu khong mang
-        // nghia; cho hien cua Lyra tu xuong dong theo be ngang cua no.
+        // nghia; cho hien cua AURA tu xuong dong theo be ngang cua no.
         val srt = """
             1
             00:00:01,000 --> 00:00:04,000

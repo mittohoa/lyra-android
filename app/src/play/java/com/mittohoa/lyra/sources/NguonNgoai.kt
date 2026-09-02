@@ -24,8 +24,8 @@ import kotlinx.coroutines.coroutineScope
  *   - `NGUON_LOI` rỗng. Lời vẫn chỉ lấy từ LRCLIB — kho mở, ai cũng đóng góp
  *     được, không phải API nội bộ của ai.
  *
- * Người dùng bản Play chạm vào một kết quả thì Lyra **tra lời** cho bài đó,
- * không phát. Xem `Lyra.xemLoi`.
+ * Người dùng bản Play chạm vào một kết quả thì AURA **tra lời** cho bài đó,
+ * không phát. Xem `AURA.xemLoi`.
  *
  * Điều này đổi một điều so với các bản 0.1.8–0.3.1: file cài đặt của bản Play
  * **có mang** mã gọi API của Zing và NhacCuaTui. Trước đây nó không mang dòng
@@ -77,5 +77,5 @@ object NguonNgoai {
         emptyList()
     }
 
-    private const val TAG = "LyraNguon"
+    private const val TAG = "AuraNguon"
 }

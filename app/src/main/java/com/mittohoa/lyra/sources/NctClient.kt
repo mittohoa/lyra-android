@@ -21,7 +21,7 @@ import kotlin.math.abs
  * Diem rieng cua NCT: ban loi CO MOC THOI GIAN nam trong mot file .lrc **ma hoa
  * RC4**, va khoa giai ma di kem ngay trong chinh ban tin loi (`keyDecryptLyric`).
  *
- * Chuyen tu `src/main/sources/nct.ts`: duong LOI, va tu khi Lyra tu phat nhac
+ * Chuyen tu `src/main/sources/nct.ts`: duong LOI, va tu khi AURA tu phat nhac
  * thi ca duong TIM BAI va LAY LINK PHAT.
  */
 object NctClient {

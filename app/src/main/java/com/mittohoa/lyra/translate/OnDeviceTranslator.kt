@@ -161,7 +161,7 @@ object OnDeviceTranslator {
             code.substringBefore('-')
         )
 
-    private const val TAG = "LyraDich"
+    private const val TAG = "AuraDich"
     private const val UNDETERMINED = "und"
 
     /** Lay ngan nay dong dau de doan ngon ngu - du de chac, du nhanh. */

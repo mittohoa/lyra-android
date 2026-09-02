@@ -47,10 +47,10 @@ import kotlinx.coroutines.delay
  *
  * Đây là mảnh còn thiếu để khép vòng. Lời CHỮ TRƠN thì đầy trên mạng; lời có
  * MỐC THỜI GIAN thì hiếm, nhất là tiếng Việt — hôm nay tìm ra "Sóng Gió" mà
- * LRCLIB không có lời nào. Mà mọi thứ Lyra làm đều đứng trên chỗ có mốc: khung
+ * LRCLIB không có lời nào. Mà mọi thứ AURA làm đều đứng trên chỗ có mốc: khung
  * lời nổi, sáu hiệu ứng, lặp A–B, thẻ lời.
  *
- * Lyra là thứ hiếm hoi có đủ ba mảnh để tự tạo ra chúng — nó đang phát bài, nó
+ * AURA là thứ hiếm hoi có đủ ba mảnh để tự tạo ra chúng — nó đang phát bài, nó
  * có lời, nó có bộ đếm thời gian. Người dùng chỉ phải cung cấp mảnh thứ tư:
  * đôi tai. Căn xong thì góp lên LRCLIB được, và lúc đó là góp đúng thứ đang
  * thiếu chứ không phải thứ vốn đã đầy.

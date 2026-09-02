@@ -16,14 +16,14 @@ import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.ui.MainActivity
 
 /**
- * Bo may phat cua chinh Lyra.
+ * Bo may phat cua chinh AURA.
  *
- * Tu day tro di Lyra khong con chi la ke dung xem app khac phat gi. Doi lai duoc
+ * Tu day tro di AURA khong con chi la ke dung xem app khac phat gi. Doi lai duoc
  * mot thu ma che do dong hanh khong bao gio co: **dong ho phat chinh xac**.
  *
- * Nghe qua app khac, Lyra chi biet vi tri qua cac ban tin `MediaSession`, va co
+ * Nghe qua app khac, AURA chi biet vi tri qua cac ban tin `MediaSession`, va co
  * app de ban tin cu hang tram giay - do la goc cua moi lan loi chay lech. Khi
- * chinh Lyra phat, vi tri la mot phep hoi truc tiep vao bo giai ma: dung tung
+ * chinh AURA phat, vi tri la mot phep hoi truc tiep vao bo giai ma: dung tung
  * mili-giay, khong can can lech, khong can cham de khop.
  *
  * `MediaSessionService` chu khong phai foreground service tu viet: he thong tu
@@ -82,7 +82,7 @@ class LyraPlaybackService : MediaSessionService() {
         Lyra.attachPlayer(player)
     }
 
-    /** Cham vao the media thi mo lai Lyra, khong dung lai tu dau. */
+    /** Cham vao the media thi mo lai AURA, khong dung lai tu dau. */
     private fun openApp(): PendingIntent = PendingIntent.getActivity(
         this,
         0,

@@ -12,7 +12,7 @@
         Mau o day phai KHOP voi `BangMau.Giay` trong `ui/Kieu.kt`; ban toi nam
         o `values-night`.
     -->
-    <style name="Theme.Lyra" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.AURA" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/nen_giay</item>
     </style>
 </resources>

@@ -151,7 +151,7 @@ fun SearchPane(
             // Xin quyen doc nhac phai dung TRUOC ket luan "khong tim thay".
             //
             // Khong co quyen thi kho de tim la RONG, nen ket qua rong khong noi
-            // len dieu gi ve bai hat ca - no chi noi rang Lyra chua duoc phep
+            // len dieu gi ve bai hat ca - no chi noi rang AURA chua duoc phep
             // nhin. Ket luan "khong tim thay" o day la mot cau tra loi sai, va
             // no che mat dung cai nut sua duoc chuyen do. Nang nhat o ban Play,
             // noi ma nhac trong may la kho DUY NHAT.
@@ -159,12 +159,12 @@ fun SearchPane(
                 Ask(
                     title = if (query.isBlank()) "Nhạc trong máy" else "Chưa tìm được",
                     body = if (coOnline) {
-                        "Cho Lyra đọc nhạc đã có sẵn trong máy để phát và tìm cùng " +
-                            "với hai nguồn online. Lyra chỉ xin quyền đọc NHẠC — không " +
+                        "Cho AURA đọc nhạc đã có sẵn trong máy để phát và tìm cùng " +
+                            "với hai nguồn online. AURA chỉ xin quyền đọc NHẠC — không " +
                             "đụng tới ảnh, video hay tài liệu của bạn."
                     } else {
-                        "Bản này tìm trong nhạc đã có sẵn trong máy bạn, và Lyra chưa " +
-                            "được phép đọc. Lyra chỉ xin quyền đọc NHẠC — không đụng tới " +
+                        "Bản này tìm trong nhạc đã có sẵn trong máy bạn, và AURA chưa " +
+                            "được phép đọc. AURA chỉ xin quyền đọc NHẠC — không đụng tới " +
                             "ảnh, video hay tài liệu của bạn."
                     },
                     action = "Cho phép",
@@ -184,7 +184,7 @@ fun SearchPane(
                     when {
                         coOnline -> "Thử tên bài không dấu, hoặc thêm tên ca sĩ."
                         library.isEmpty() ->
-                            "Bản này chỉ tìm trong nhạc có sẵn trong máy, mà Lyra " +
+                            "Bản này chỉ tìm trong nhạc có sẵn trong máy, mà AURA " +
                                 "chưa thấy bài nào ở đây."
                         else ->
                             "Bản này chỉ tìm trong ${library.size} bài có trong máy. " +
@@ -211,7 +211,7 @@ fun SearchPane(
                             "Tìm bài trong Zing MP3 và NhacCuaTui để tra lời. Bản này " +
                                 "không phát nhạc từ hai nguồn đó — nhạc thì phát từ máy bạn."
                         else ->
-                            "Chép nhạc vào máy rồi tìm ở đây — lời bài hát thì Lyra tự tra."
+                            "Chép nhạc vào máy rồi tìm ở đây — lời bài hát thì AURA tự tra."
                     },
                     color = mau.chuRatMo,
                     fontSize = 14.sp
@@ -478,7 +478,7 @@ fun DebouncedSearch(query: String, onSearch: (String) -> Unit) {
  *
  * Goi tat ca la "bai" thi mot thu vien co ba bai hat va sau chuc doan phim
  * quay tay hien ra "63 bai" - con so dung ma y nghia thi sai han, va nguoi
- * dung tuong Lyra vua doc nham cai gi do.
+ * dung tuong AURA vua doc nham cai gi do.
  */
 private fun demThuVien(library: List<Track>): String {
     val video = library.count { it.kind == MediaKind.VIDEO }

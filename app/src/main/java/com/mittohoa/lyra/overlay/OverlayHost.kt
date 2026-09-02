@@ -73,7 +73,7 @@ class OverlayHost {
      * Giu tay tren khung: tat khung noi.
      *
      * Day la duong tat NGAN NHAT co the - ngon tay dang o ngay tren cai can
-     * tat. Cac duong khac deu bat nguoi dung roi cho: mo Lyra ra bam nut, hoac
+     * tat. Cac duong khac deu bat nguoi dung roi cho: mo AURA ra bam nut, hoac
      * vuot thanh thong bao xuong tim o Quick Settings.
      */
     var onDismiss: (() -> Unit)? = null
@@ -366,7 +366,7 @@ class OverlayHost {
          */
         const val HOLD_EXTRA_MS = 250L
 
-        const val TAG = "LyraOverlay"
+        const val TAG = "AuraOverlay"
 
         /** Nhac tay trong khoang nay va khong xe dich thi coi la mot cu cham. */
         const val TAP_MS = 400L

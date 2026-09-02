@@ -130,7 +130,7 @@ class LyricCache(context: Context) {
     }
 
     private companion object {
-        const val TAG = "LyraCache"
+        const val TAG = "AuraCache"
         const val MEMORY_ENTRIES = 24
         const val DISK_ENTRIES = 400
     }

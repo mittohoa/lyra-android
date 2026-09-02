@@ -65,9 +65,9 @@ import kotlinx.coroutines.launch
  */
 object Lyra {
 
-    private const val TAG = "LyraNoi"
+    private const val TAG = "AuraNoi"
 
-    /** Ten goi gia cho bai do chinh Lyra phat - de phan biet voi app khac. */
+    /** Ten goi gia cho bai do chinh AURA phat - de phan biet voi app khac. */
     private const val OWN = "lyra"
 
     /** Ten goi gia cho bai chi XEM LOI, khong phat. */
@@ -79,19 +79,19 @@ object Lyra {
     val watcher = MediaSessionWatcher()
 
     /**
-     * Bo may phat cua CHINH Lyra, khi no dang chay.
+     * Bo may phat cua CHINH AURA, khi no dang chay.
      *
      * Khong dung de biet dang phat bai gi - viec do van la cua `watcher`, va
-     * phien cua Lyra hien ra o do y het moi app khac. Cai duy nhat lay tu day
+     * phien cua AURA hien ra o do y het moi app khac. Cai duy nhat lay tu day
      * la VI TRI PHAT: hoi thang bo giai ma thi dung tung mili-giay, con qua
      * ban tin media thi luon la mot con so suy ra tu lan bao gan nhat.
      */
     private var localPlayer: Player? = null
 
     /**
-     * Bai chinh Lyra dang phat.
+     * Bai chinh AURA dang phat.
      *
-     * Dung mot dong RIENG chu khong di qua `watcher`: phien media cua Lyra da
+     * Dung mot dong RIENG chu khong di qua `watcher`: phien media cua AURA da
      * bi ta thay phan mo ta bang cau dang hat, nen doc lai chinh no la doc lai
      * ket qua cua minh. Duong nay lay thang tu bo may phat - ten bai, nghe si va
      * do dai deu la ban goc tu nguon nhac, khong phai doan tu mot chuoi tho.
@@ -126,9 +126,9 @@ object Lyra {
     private val _now = MutableStateFlow<NowPlaying?>(null)
 
     /**
-     * Bai dang phat, du la Lyra tu phat hay mot app khac phat.
+     * Bai dang phat, du la AURA tu phat hay mot app khac phat.
      *
-     * Lyra dang phat thi Lyra thang: no la ben nguoi dung vua bam nut. Lyra
+     * AURA dang phat thi AURA thang: no la ben nguoi dung vua bam nut. AURA
      * tam dung ma app khac dang phat thi nhuong - nguoi ta chuyen sang nghe cho
      * khac roi, va lyra khong nen bam lay man hinh.
      */
@@ -180,7 +180,7 @@ object Lyra {
     /**
      * Vi tri phat hien tai.
      *
-     * Lyra dang tu phat thi hoi thang bo giai ma cua minh; con lai thi hoi qua
+     * AURA dang tu phat thi hoi thang bo giai ma cua minh; con lai thi hoi qua
      * ban tin media nhu cu. Phai goi tren luong chinh - `Player` chi cho doc o
      * dung luong da dung no.
      */
@@ -198,7 +198,7 @@ object Lyra {
     private val _searching = MutableStateFlow(false)
     val searching: StateFlow<Boolean> = _searching.asStateFlow()
 
-    /** Vi tri bai dang phat trong hang doi; -1 khi Lyra khong phat gi. */
+    /** Vi tri bai dang phat trong hang doi; -1 khi AURA khong phat gi. */
     private val _queueIndex = MutableStateFlow(-1)
     val queueIndex: StateFlow<Int> = _queueIndex.asStateFlow()
 
@@ -211,14 +211,14 @@ object Lyra {
     private val _repeat = MutableStateFlow(0)
     val repeat: StateFlow<Int> = _repeat.asStateFlow()
 
-    /** Ảnh bìa Lyra tự tải về cho bài CHÍNH NÓ phát. */
+    /** Ảnh bìa AURA tự tải về cho bài CHÍNH NÓ phát. */
     private val _artwork = MutableStateFlow<Bitmap?>(null)
 
     /**
-     * Ảnh bìa dùng được cho bài đang phát — null khi bài không phải của Lyra.
+     * Ảnh bìa dùng được cho bài đang phát — null khi bài không phải của AURA.
      *
-     * `_artwork` chỉ được nạp lại khi bộ phát của Lyra đổi bài, nên nó SỐNG DAI
-     * hơn lượt phát của Lyra: nghe một bài trong Lyra rồi chuyển sang Zing thì
+     * `_artwork` chỉ được nạp lại khi bộ phát của AURA đổi bài, nên nó SỐNG DAI
+     * hơn lượt phát của AURA: nghe một bài trong AURA rồi chuyển sang Zing thì
      * ảnh cũ vẫn còn nguyên trong đó. Màn hình Đang phát ưu tiên ảnh này hơn
      * ảnh kèm bản tin media, nên nó hiện bìa của bài TRƯỚC bên cạnh tên bài
      * MỚI — và màu nền của cả app cũng lấy từ đúng cái bìa sai đó.
@@ -243,7 +243,7 @@ object Lyra {
     }
 
     /**
-     * Lyra co phai la ben dang phat khong.
+     * AURA co phai la ben dang phat khong.
      *
      * Quyet dinh moi nut bam di duong nao: bo phat cua chinh minh, hay bo phat
      * cua app khac qua `MediaController`.
@@ -300,7 +300,7 @@ object Lyra {
      * Cai dang xay ra voi viec cap nhat.
      *
      * Phai co mot pha CHO_HE_THONG rieng. Tai xong byte moi la het viec cua
-     * Lyra, chua het viec cua may: he thong con chuan bi, va Play Protect con
+     * AURA, chua het viec cua may: he thong con chuan bi, va Play Protect con
      * chan lai de GUI CA FILE 20 MB LEN GOOGLE QUET - doan lau nhat trong ca
      * chuoi. Van hien "dang tai 100%" suot doan do thi nguoi dung nhin mot thanh
      * day dung im hang chuc giay, roi ket luan dung theo nhung gi ho thay: treo.
@@ -318,7 +318,7 @@ object Lyra {
     /**
      * Hieu ung chu, dung chung cho trang Loi va khung noi.
      *
-     * Giu o `Lyra` chu khong o rieng man hinh: khung noi song ngoai vong doi
+     * Giu o `AURA` chu khong o rieng man hinh: khung noi song ngoai vong doi
      * cua Activity, va no can biet lua chon nay ke ca khi khong ai mo app.
      */
     private val _hieuUng = MutableStateFlow(LyricEffect.SANG_DAN)
@@ -636,7 +636,7 @@ object Lyra {
     /**
      * Ba nut nay di mot trong hai duong.
      *
-     * Lyra dang phat thi bam thang vao bo phat cua minh - chinh xac hon va
+     * AURA dang phat thi bam thang vao bo phat cua minh - chinh xac hon va
      * khong qua trung gian nao. Nhac o app khac thi gui lenh qua
      * `MediaController` cua ho.
      */
@@ -650,9 +650,9 @@ object Lyra {
 
     fun playPause(context: Context) {
         if (tuPhat()) { Playback.playPause(context); return }
-        // Tam dung roi thi `tuPhat` la false, nhung neu Lyra van la ben giu hang
-        // doi thi nut Phat phai danh thuc bo phat cua Lyra chu khong phai app
-        // khac - nguoi dung vua nghe bai cua Lyra, khong doi y giua chung.
+        // Tam dung roi thi `tuPhat` la false, nhung neu AURA van la ben giu hang
+        // doi thi nut Phat phai danh thuc bo phat cua AURA chu khong phai app
+        // khac - nguoi dung vua nghe bai cua AURA, khong doi y giua chung.
         if (_queueIndex.value >= 0 && watcher.now.value?.isPlaying != true) {
             Playback.playPause(context); return
         }
@@ -721,7 +721,7 @@ object Lyra {
 
             // Man hinh tat thi KHONG ve khung noi: no dang vo hinh, va ve mot
             // cua so khong ai nhin la dot pin thang. Truoc day khong co dieu
-            // kien nay - bat khung roi khoa may la Lyra ve lai 10 lan moi giay
+            // kien nay - bat khung roi khoa may la AURA ve lai 10 lan moi giay
             // suot dem.
             //
             // The media thi van cap nhat: no hien tren man hinh khoa, va do
@@ -735,13 +735,13 @@ object Lyra {
             appContext?.let { ngoDoanLap(it, position) }
 
             // Chay tiep chung nao con viec de lam. Truoc day nhip chi song theo
-            // khung noi; gio Lyra tu phat duoc, va luc do the media van can duoc
+            // khung noi; gio AURA tu phat duoc, va luc do the media van can duoc
             // cap nhat du khung noi dang tat.
             //
             // Man hinh tat thi CHAM lai chu khong dung han: cau dang hat van
             // phai dung tren the media o man hinh khoa. Mot giay mot lan la du -
             // khong ai doc nhanh hon the.
-            // Dang lap mot doan thi nhip phai chay du khung noi tat va du Lyra
+            // Dang lap mot doan thi nhip phai chay du khung noi tat va du AURA
             // khong phai ben phat: cai quyet dinh la vi tri da toi cuoi doan
             // chua, va cau hoi do chi tra loi duoc bang cach hoi lien tuc.
             if (overlay.isShowing || localPlayer?.isPlaying == true || _doanLap.value != null) {
@@ -753,7 +753,7 @@ object Lyra {
     /**
      * Bao cho nhip biet man hinh vua tat hay vua bat.
      *
-     * Goi tu `LyraNotificationListener` - dich vu do song lau hon moi Activity,
+     * Goi tu `AuraNotificationListener` - dich vu do song lau hon moi Activity,
      * va la cho duy nhat con song khi nguoi dung da roi app.
      */
     fun manHinhDoi(sang: Boolean) {
@@ -764,7 +764,7 @@ object Lyra {
         if (sang) startTick()
     }
 
-    /** Doc lai bai dang phat tu bo may phat cua chinh Lyra. */
+    /** Doc lai bai dang phat tu bo may phat cua chinh AURA. */
     private fun refreshLocalNow() {
         val player = localPlayer
         val track = Playback.currentTrack
@@ -814,7 +814,7 @@ object Lyra {
     }
 
     /**
-     * Dua cau dang hat len the media cua chinh Lyra.
+     * Dua cau dang hat len the media cua chinh AURA.
      *
      * Chi lam khi CHINH LYRA dang phat. Nhac o app khac thi the media la cua ho,
      * ta khong ghi vao duoc - va do la dung: khong app nao duoc phep sua the cua
@@ -923,7 +923,7 @@ object Lyra {
      * Mo cac kho tren dia. GOI DUOC MOI LUC, khong doi quyen nao.
      *
      * Truoc day phan nay nam trong `refresh`, ma `refresh` chi chay khi nguoi
-     * dung DA CAP QUYEN DOC THONG BAO. Ai chi nghe nhac trong may - dung Lyra
+     * dung DA CAP QUYEN DOC THONG BAO. Ai chi nghe nhac trong may - dung AURA
      * nhu mot trinh phat, khong cho no doc thong bao app khac - thi khong bao
      * gio chay toi day, va mat sach:
      *
@@ -1046,7 +1046,7 @@ object Lyra {
      * Chọn đoạn theo DÒNG, không theo thời gian.
      *
      * Đây là chỗ tính năng này khác mọi bộ lặp A–B khác: người ta chọn "từ câu
-     * này tới câu kia" chứ không kéo hai cái mốc trên một thanh thời gian. Lyra
+     * này tới câu kia" chứ không kéo hai cái mốc trên một thanh thời gian. AURA
      * biết câu nào bắt đầu lúc nào, nên nó dịch giúp.
      *
      * Nhận hai dòng theo thứ tự nào cũng được — bấm nhầm thứ tự là chuyện thường.
@@ -1066,7 +1066,7 @@ object Lyra {
             seekTo(context, (it.time - loi.offset).coerceAtLeast(0L))
         }
 
-        // Nhịp có thể đang ngủ (khung nổi tắt, Lyra không phát). Đánh thức nó,
+        // Nhịp có thể đang ngủ (khung nổi tắt, AURA không phát). Đánh thức nó,
         // không thì đoạn vừa chọn không bao giờ được kiểm.
         startTick()
     }
@@ -1080,7 +1080,7 @@ object Lyra {
         Playback.datTocDo(context, giaTri)
     }
 
-    /** Lyra có phải là bên đang phát không — tốc độ chỉ đổi được khi đúng. */
+    /** AURA có phải là bên đang phát không — tốc độ chỉ đổi được khi đúng. */
     fun laLyraPhat(): Boolean = _now.value?.packageName == OWN
 
     /**
@@ -1181,7 +1181,7 @@ object Lyra {
     /**
      * Loi nam canh tep dang phat, hoac null.
      *
-     * CHI cho thu Lyra tu phat: bai phat o app khac thi Lyra khong biet no doc
+     * CHI cho thu AURA tu phat: bai phat o app khac thi AURA khong biet no doc
      * tep nao, ma cung khong co quyen hoi.
      */
     private suspend fun loiCanhTep(): Lyrics? {
