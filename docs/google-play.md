@@ -128,7 +128,7 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.5 — đổi tên thành AURA, và phát được video.
+Bản 0.3.6 — đổi tên thành AURA, và phát được video.
 
 • Tên app đổi từ Lyra thành AURA. Vẫn là app cũ, dữ liệu và lời đã lưu giữ nguyên.
 • Phát video trong máy; nút ⛶ mở toàn màn hình, tự xoay theo video
@@ -142,7 +142,7 @@ Sửa: thanh tua đứng yên khi AURA tự phát nhạc; app đứng hình khi 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.5 — renamed to AURA, and it plays video now.
+Version 0.3.6 — renamed to AURA, and it plays video now.
 
 • Renamed from Lyra to AURA. Same app, your saved lyrics and settings stay.
 • Plays video from your device; ⛶ opens fullscreen and rotates to fit the video
