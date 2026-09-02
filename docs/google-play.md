@@ -128,7 +128,7 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.6 — đổi tên thành AURA, và phát được video.
+Bản 0.3.7 — đổi tên thành AURA, và phát được video.
 
 • Tên app đổi từ Lyra thành AURA. Vẫn là app cũ, dữ liệu và lời đã lưu giữ nguyên.
 • Phát video trong máy; nút ⛶ mở toàn màn hình, tự xoay theo video
@@ -136,13 +136,13 @@ Bản 0.3.6 — đổi tên thành AURA, và phát được video.
 • Ghi lời đang xem ra tệp .lrc cạnh bài nhạc
 • Sao lưu lời tự nhập ra tệp: Chỉnh › Lời tự nhập
 
-Sửa: thanh tua đứng yên khi AURA tự phát nhạc; app đứng hình khi mở bài.
+Sửa: khung lời nổi che chính giao diện AURA; thanh tua đứng yên khi AURA tự phát.
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.6 — renamed to AURA, and it plays video now.
+Version 0.3.7 — renamed to AURA, and it plays video now.
 
 • Renamed from Lyra to AURA. Same app, your saved lyrics and settings stay.
 • Plays video from your device; ⛶ opens fullscreen and rotates to fit the video
@@ -150,7 +150,7 @@ Version 0.3.6 — renamed to AURA, and it plays video now.
 • Writes the lyrics you are viewing to a .lrc next to the song
 • Backs up your hand-typed lyrics to a file: Tune › Your own lyrics
 
-Fixes: the seek bar froze while AURA itself was playing; the app could hang.
+Fixes: the floating window covered AURA itself; the seek bar froze while playing.
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
