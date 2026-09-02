@@ -63,7 +63,7 @@
           nen ma khong phai hien thong bao thuong truc.
         -->
         <service
-            android:name=".service.AuraNotificationListener"
+            android:name=".service.LyraNotificationListener"
             android:exported="false"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
@@ -80,7 +80,7 @@
           phai loc quyen o phia trong session neu ve sau co lenh nhay cam.
         -->
         <service
-            android:name=".player.AuraPlaybackService"
+            android:name=".player.LyraPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
@@ -94,7 +94,7 @@
           khong cho app tu them, va dung ra la vay.
         -->
         <service
-            android:name=".service.AuraTileService"
+            android:name=".service.LyraTileService"
             android:exported="true"
             android:icon="@drawable/ic_tile"
             android:label="@string/tile_label"
