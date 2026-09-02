@@ -128,29 +128,21 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.8 — đổi tên thành AURA, và phát được video.
+Bản 0.3.9 — sửa chỗ ghi lời ra tệp .lrc.
 
-• Tên app đổi từ Lyra thành AURA. Vẫn là app cũ, dữ liệu và lời đã lưu giữ nguyên.
-• Phát video trong máy; nút ⛶ mở toàn màn hình, tự xoay theo video
-• Đọc lời nhúng sẵn trong thẻ tệp nhạc, và tệp .lrc / phụ đề .srt nằm cạnh
-• Ghi lời đang xem ra tệp .lrc cạnh bài nhạc
-• Sao lưu lời tự nhập ra tệp: Chỉnh › Lời tự nhập
-
-Sửa: khung lời nổi che chính giao diện AURA; thanh tua đứng yên khi AURA tự phát.
+• Android chặn ghi cạnh bài nhạc (thẻ nhớ ngoài, thư mục riêng của app khác) thì AURA mời bạn chọn chỗ khác mà lưu, thay vì báo "Permission denied" rồi thôi
+• Tệp lưu ra giữ đúng đuôi .lrc, không còn bị thêm .txt
+• Lời đọc từ thẻ trong tệp nhạc vẫn mời ghi ra .lrc — bản 0.3.8 lỡ giấu mất nút này
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.8 — renamed to AURA, and it plays video now.
+Version 0.3.9 — fixes for writing lyrics out to a .lrc file.
 
-• Renamed from Lyra to AURA. Same app; your lyrics and settings stay.
-• Plays video from your device; ⛶ opens fullscreen and rotates to fit the video
-• Reads lyrics from the file's own tags, and .lrc / .srt files beside it
-• Writes the lyrics you are viewing to a .lrc next to the song
-• Backs up your hand-typed lyrics to a file: Tune › Your own lyrics
-
-Fixes: the floating window covered AURA itself; the seek bar froze while playing.
+• When Android blocks writing next to the song (SD card, another app's folder), AURA offers to save somewhere else instead of just reporting "Permission denied"
+• Saved files keep the .lrc name; no more .txt tacked on the end
+• Lyrics read from the file's own tags still offer the write button — 0.3.8 hid it by mistake
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
