@@ -4,6 +4,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -786,6 +788,30 @@ private fun MatLoi(
     // nam lai o bai sau la sai.
     var baoGhi by remember(lyrics.from, lyrics.lines.size) { mutableStateOf<String?>(null) }
     var choDeLen by remember(lyrics.from, lyrics.lines.size) { mutableStateOf(false) }
+
+    // Khi Android chặn không cho ghi cạnh tệp nhạc, giữ lại nội dung ở đây để
+    // còn lưu sang chỗ khác qua bộ chọn tệp. Rỗng nghĩa là chưa bị chặn.
+    var choLuuKhac by remember(lyrics.from, lyrics.lines.size) {
+        mutableStateOf<Pair<String, String>?>(null)
+    }
+    val nguCanhLuu = LocalContext.current
+    val luuChoKhac = rememberLauncherForActivityResult(
+        // KHÔNG khai "text/plain": bộ chọn tệp sẽ tự thêm đuôi .txt vào tên, ra
+        // một tệp "bài hát.lrc.txt" mà không trình phát nào nhận là lời bài hát.
+        // Đo trên máy thật một lần rồi mới thấy.
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val than = choLuuKhac?.second
+        if (uri == null || than == null) return@rememberLauncherForActivityResult
+        baoGhi = try {
+            nguCanhLuu.contentResolver.openOutputStream(uri)?.use { it.write(than.toByteArray()) }
+                ?: error("không mở được tệp")
+            choLuuKhac = null
+            "Đã lưu lời ra tệp bạn chọn."
+        } catch (e: Exception) {
+            "Không lưu được: " + (e.message ?: "lỗi không rõ") + "."
+        }
+    }
     val listState = rememberLazyListState()
     val translated = (translation as? TranslationState.Done)?.lines ?: emptyList()
 
@@ -927,8 +953,17 @@ private fun MatLoi(
                 accent = accent,
                 text = baoGhi ?: "Ghi lời này ra tệp .lrc nằm cạnh bài nhạc — " +
                     "trình phát khác cũng đọc được, và gỡ app đi vẫn còn.",
-                action = if (choDeLen) "Ghi đè" else "Ghi ra tệp",
+                action = when {
+                    choLuuKhac != null -> "Chọn chỗ lưu"
+                    choDeLen -> "Ghi đè"
+                    else -> "Ghi ra tệp"
+                },
                 onAction = {
+                    val cho = choLuuKhac
+                    if (cho != null) {
+                        luuChoKhac.launch(cho.first)
+                        return@Notice
+                    }
                     when (val kq = Lyra.ghiLoiRaTepCanh(nhac, deLen = choDeLen)) {
                         is LrcCanhTep.KetQuaGhi.Xong -> {
                             choDeLen = false
@@ -940,6 +975,18 @@ private fun MatLoi(
                             // tính. Hỏi một câu rẻ hơn làm mất nó nhiều.
                             choDeLen = true
                             baoGhi = "Đã có sẵn " + tenTep(kq.duong) + ". Ghi đè lên?"
+                        }
+                        is LrcCanhTep.KetQuaGhi.BiChan -> {
+                            // Không bỏ người dùng cụt đường. Android chặn ghi
+                            // vào một số chỗ — thẻ nhớ ngoài, thư mục riêng của
+                            // app khác — và đó là luật của hệ thống chứ không
+                            // phải thiếu quyền nào xin được. Nên mời họ chọn
+                            // một chỗ khác, việc đó thì luôn làm được.
+                            choDeLen = false
+                            choLuuKhac = kq.tenGoiY to kq.noiDung
+                            baoGhi = "Android không cho ghi vào thư mục của bài " +
+                                "này — thẻ nhớ ngoài và thư mục riêng của app khác " +
+                                "đều bị chặn. Chọn chỗ khác để lưu?"
                         }
                         is LrcCanhTep.KetQuaGhi.Hong -> {
                             choDeLen = false

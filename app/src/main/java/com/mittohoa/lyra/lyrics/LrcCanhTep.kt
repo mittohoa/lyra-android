@@ -173,6 +173,14 @@ object LrcCanhTep {
         data class DaCoTep(val duong: String) : KetQuaGhi
         /** Bài đang phát không phải tệp trong máy, không có chỗ nào để ghi cạnh. */
         data object KhongPhaiTepTrongMay : KetQuaGhi
+
+        /**
+         * Android không cho ghi vào chỗ đó. Kèm theo TÊN GỢI Ý và NỘI DUNG, để
+         * màn hình còn mời người dùng chọn chỗ khác mà lưu — chứ không bỏ họ
+         * đứng một mình trước một dòng báo lỗi.
+         */
+        data class BiChan(val tenGoiY: String, val noiDung: String) : KetQuaGhi
+
         data class Hong(val lyDo: String) : KetQuaGhi
     }
 
@@ -207,18 +215,18 @@ object LrcCanhTep {
         val dich = File(duongNhac.substringBeforeLast('.') + ".lrc")
         if (dich.exists() && !deLen) return KetQuaGhi.DaCoTep(dich.path)
 
+        val than = dungNoiDung(loi, tenBai, caSi)
         return try {
-            dich.writeText(dungNoiDung(loi, tenBai, caSi))
+            dich.writeText(than)
             Log.i(TAG, "da ghi loi ra " + dich.path)
             KetQuaGhi.Xong(dich.path)
         } catch (e: Exception) {
+            // KHÔNG đoán nguyên nhân qua `dich.exists()`: khi bị chặn thì chính
+            // `exists()` cũng trả về false dù tệp có thật, và màn hình sẽ nói
+            // sai. Cứ báo là bị chặn rồi mời một chỗ khác — đúng hay sai nguyên
+            // nhân thì lối thoát vẫn thế.
             Log.i(TAG, "khong ghi duoc " + dich.path, e)
-            KetQuaGhi.Hong(
-                if (dich.exists())
-                    "Android không cho ghi đè tệp do app khác tạo ra"
-                else
-                    (e.message ?: "lỗi không rõ")
-            )
+            KetQuaGhi.BiChan(dich.name, than)
         }
     }
 
