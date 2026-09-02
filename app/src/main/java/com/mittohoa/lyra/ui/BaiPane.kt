@@ -977,16 +977,26 @@ private fun MatLoi(
                             baoGhi = "Đã có sẵn " + tenTep(kq.duong) + ". Ghi đè lên?"
                         }
                         is LrcCanhTep.KetQuaGhi.BiChan -> {
-                            // Không bỏ người dùng cụt đường. Android chặn ghi
-                            // vào một số chỗ — thẻ nhớ ngoài, thư mục riêng của
-                            // app khác — và đó là luật của hệ thống chứ không
-                            // phải thiếu quyền nào xin được. Nên mời họ chọn
-                            // một chỗ khác, việc đó thì luôn làm được.
+                            // Không bỏ người dùng cụt đường. Đây là luật của hệ
+                            // thống chứ không phải thiếu quyền nào xin được, nên
+                            // mời họ chọn chỗ khác — việc đó thì luôn làm được.
+                            //
+                            // ĐO ĐƯỢC trên Pixel 6 Pro / Android 17: tạo .lrc
+                            // trong Music, Download, Documents, Movies (kể cả
+                            // thư mục con) đều ĐƯỢC; trong DCIM, DCIM/Camera và
+                            // Pictures thì EPERM — hai chỗ đó chỉ nhận ảnh và
+                            // video, không nhận loại tệp nào khác. Video quay
+                            // bằng máy ảnh nằm ở DCIM/Camera, nên bấm ghi lời
+                            // cho một video như thế là chắc chắn hỏng.
+                            //
+                            // Câu báo chỉ nêu trường hợp ĐO ĐƯỢC, không kể lể
+                            // mấy nguyên nhân chưa kiểm: đổ cho thẻ nhớ trong
+                            // khi máy người ta không có khe thẻ là nói sai.
                             choDeLen = false
                             choLuuKhac = kq.tenGoiY to kq.noiDung
-                            baoGhi = "Android không cho ghi vào thư mục của bài " +
-                                "này — thẻ nhớ ngoài và thư mục riêng của app khác " +
-                                "đều bị chặn. Chọn chỗ khác để lưu?"
+                            baoGhi = "Android không cho ghi tệp .lrc vào thư mục " +
+                                "của bài này — thư mục ảnh như DCIM chỉ nhận ảnh " +
+                                "và video. Chọn chỗ khác để lưu?"
                         }
                         is LrcCanhTep.KetQuaGhi.Hong -> {
                             choDeLen = false
