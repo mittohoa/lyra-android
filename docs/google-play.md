@@ -128,11 +128,11 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.7 — đổi tên thành AURA, và phát được video.
+Bản 0.3.8 — đổi tên thành AURA, và phát được video.
 
 • Tên app đổi từ Lyra thành AURA. Vẫn là app cũ, dữ liệu và lời đã lưu giữ nguyên.
 • Phát video trong máy; nút ⛶ mở toàn màn hình, tự xoay theo video
-• Đọc lời .lrc và phụ đề .srt nằm cạnh tệp nhạc hoặc video
+• Đọc lời nhúng sẵn trong thẻ tệp nhạc, và tệp .lrc / phụ đề .srt nằm cạnh
 • Ghi lời đang xem ra tệp .lrc cạnh bài nhạc
 • Sao lưu lời tự nhập ra tệp: Chỉnh › Lời tự nhập
 
@@ -142,11 +142,11 @@ Sửa: khung lời nổi che chính giao diện AURA; thanh tua đứng yên khi
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.7 — renamed to AURA, and it plays video now.
+Version 0.3.8 — renamed to AURA, and it plays video now.
 
-• Renamed from Lyra to AURA. Same app, your saved lyrics and settings stay.
+• Renamed from Lyra to AURA. Same app; your lyrics and settings stay.
 • Plays video from your device; ⛶ opens fullscreen and rotates to fit the video
-• Reads .lrc lyrics and .srt subtitles next to the music or video file
+• Reads lyrics from the file's own tags, and .lrc / .srt files beside it
 • Writes the lyrics you are viewing to a .lrc next to the song
 • Backs up your hand-typed lyrics to a file: Tune › Your own lyrics
 
