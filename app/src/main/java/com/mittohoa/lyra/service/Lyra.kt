@@ -24,6 +24,7 @@ import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.R
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
+import com.mittohoa.lyra.lyrics.LrcCanhTep
 import com.mittohoa.lyra.lyrics.LyricsRepository
 import com.mittohoa.lyra.media.MediaSessionWatcher
 import com.mittohoa.lyra.media.NowPlaying
@@ -113,7 +114,8 @@ object Lyra {
 
     private val lyricsRepo: LyricsRepository
         get() = lyricsRepoOrNull
-            ?: LyricsRepository(scope, cache, offsets, manual).also { lyricsRepoOrNull = it }
+            ?: LyricsRepository(scope, cache, offsets, manual, ::loiCanhTep)
+                .also { lyricsRepoOrNull = it }
 
     private val translationRepo: TranslationRepository
         get() = translationRepoOrNull
@@ -910,6 +912,29 @@ object Lyra {
      * thay ket qua luon, khong phai doi.
      */
     fun refresh(context: Context) {
+        chuanBi(context)
+        wire()
+        watcher.start(context.applicationContext, LyraNotificationListener::class.java)
+        loadLibrary(context)
+    }
+
+    /**
+     * Mo cac kho tren dia. GOI DUOC MOI LUC, khong doi quyen nao.
+     *
+     * Truoc day phan nay nam trong `refresh`, ma `refresh` chi chay khi nguoi
+     * dung DA CAP QUYEN DOC THONG BAO. Ai chi nghe nhac trong may - dung Lyra
+     * nhu mot trinh phat, khong cho no doc thong bao app khac - thi khong bao
+     * gio chay toi day, va mat sach:
+     *
+     *     bo nho dem loi   khong nho gi, lan nao cung goi mang lai
+     *     LOI TU NHAP      `manual` con null nen luu vao la ROI MAT, im lang
+     *     do lech nhip     khong nho
+     *     danh sach phat   khong doc, khong luu
+     *
+     * Ba thu do khong lien quan gi toi quyen doc thong bao ca. Quyen do chi de
+     * BIET app khac dang phat bai nao - nen chi phan `watcher` moi phai doi no.
+     */
+    fun chuanBi(context: Context) {
         appContext = context.applicationContext
         if (cache == null) cache = LyricCache(context.applicationContext)
         if (offsets == null) offsets = OffsetStore(context.applicationContext)
@@ -921,9 +946,6 @@ object Lyra {
                 scope.launch { it.playlists.collect { list -> _playlists.value = list } }
             }
         }
-        wire()
-        watcher.start(context.applicationContext, LyraNotificationListener::class.java)
-        loadLibrary(context)
     }
 
     /**
@@ -1153,6 +1175,18 @@ object Lyra {
         gopJob?.cancel()
         gopJob = null
         _gop.value = null
+    }
+
+    /**
+     * Loi nam canh tep dang phat, hoac null.
+     *
+     * CHI cho thu Lyra tu phat: bai phat o app khac thi Lyra khong biet no doc
+     * tep nao, ma cung khong co quyen hoi.
+     */
+    private fun loiCanhTep(): String? {
+        val ctx = appContext ?: return null
+        val bai = Playback.currentTrack ?: return null
+        return LrcCanhTep.doc(ctx, bai.uri)
     }
 
     /** Chuoi de mo ra sua - loi da nhap, hoac loi dang co de sua lai. */

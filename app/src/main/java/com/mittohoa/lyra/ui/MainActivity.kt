@@ -300,6 +300,11 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         readPermissions()
+        // Mo kho truoc, KHONG dieu kien: bo nho dem, loi tu nhap, do lech va
+        // danh sach phat deu khong dinh gi toi quyen doc thong bao. Truoc day
+        // ca cum nay nam sau cai `if` ben duoi, nen ai dung Lyra nhu mot trinh
+        // phat thuan tuy thi loi tu go vao la roi mat khong ai bao.
+        Lyra.chuanBi(this)
         // Nguoi dung vua bat quyen xong quay lai - doc lai ngay, khong bat doi
         if (hasNotificationAccess) Lyra.refresh(this)
     }

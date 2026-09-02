@@ -153,6 +153,16 @@ android {
         jvmTarget = "17"
     }
 
+    testOptions {
+        unitTests {
+            // `android.util.Log` khong ton tai trong ban chay tren may tinh, va
+            // mac dinh moi loi goi toi no NEM ngay. Ma mot ham dang chay tot
+            // tren dien thoai thi khong nen truot bai kiem chi vi no co ghi mot
+            // dong nhat ky. Bat co nay thi cac ham do tra ve gia tri rong.
+            isReturnDefaultValues = true
+        }
+    }
+
     buildFeatures {
         compose = true
         // De doc duoc so phien ban luc chay, phuc vu kiem ban moi

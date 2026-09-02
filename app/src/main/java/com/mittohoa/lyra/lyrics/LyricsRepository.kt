@@ -35,7 +35,15 @@ class LyricsRepository(
     private val scope: CoroutineScope,
     private val cache: LyricCache?,
     private val offsets: OffsetStore?,
-    private val manual: ManualLyricStore?
+    private val manual: ManualLyricStore?,
+    /**
+     * Doc loi nam canh tep nhac dang phat, hoac null khi khong co.
+     *
+     * Truyen vao mot ham chu khong phai mot doi tuong: chi ben ngoai moi biet
+     * bai dang phat co phai nhac trong may khong, va tep nao. Kho loi khong can
+     * biet chuyen do.
+     */
+    private val lrcCanhTep: (() -> String?)? = null
 ) {
 
     /** Bai dang phat, giu lai de con nho do lech theo dung bai. */
@@ -69,6 +77,16 @@ class LyricsRepository(
         // cong go thi khong the de mot lan tra mang ghi de len.
         manual?.get(now.artist, now.title)?.let { raw ->
             _lyrics.value = dress(parseLrc(raw, from = "tự nhập"), now)
+            _loading.value = false
+            return
+        }
+
+        // Loi nam CANH TEP NHAC dung ngay sau loi tu nhap, tren ca bo nho dem
+        // lan moi nguon mang. Nguoi dung TU DE tep .lrc do o day, nen no dang
+        // tin gan bang loi tu go: no la lua chon cua ho, con ban tra mang chi
+        // la phong doan cua may.
+        lrcCanhTep?.invoke()?.let { raw ->
+            _lyrics.value = dress(parseLrc(raw, from = "tệp cạnh nhạc"), now)
             _loading.value = false
             return
         }
