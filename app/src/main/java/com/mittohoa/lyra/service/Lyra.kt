@@ -994,6 +994,18 @@ object Lyra {
             val dai = _now.value?.duration ?: 0L
             if (dai > 0L) seekTo(app, (dai * tiLe).toLong())
         }
+        // Bat khung trong luc dang o TRONG app thi chua ve ra voi.
+        //
+        // Ve ra ngay thi no de len chinh trang nguoi dung vua bam nut, va chan
+        // luon cu cham tiep theo. Ghi nho la da bat, roi ra khoi app moi hien -
+        // trang Chinh noi ro dieu do bang chu, khong de nguoi dung tuong hong.
+        if (dangTrongApp) {
+            anTamThoi = true
+            prefs(context).setEnabled(true)
+            _overlayOn.value = true
+            return
+        }
+
         overlay.show(context.applicationContext)
 
         // Do trang thai hien tai vao khung VUA DUNG XONG.
@@ -1021,9 +1033,44 @@ object Lyra {
         _overlayOn.value = overlay.isShowing
     }
 
+    /**
+     * Nguoi dung dang o TRONG app hay da ra ngoai.
+     *
+     * Khung loi noi sinh ra de nam tren app KHAC. Khi chinh AURA dang mo thi no
+     * vua thua - loi da hien to o giua trang Bai roi - vua CHAN THAO TAC: khung
+     * chiem mot dai ngang o phia tren, dung cho hang ket qua tim dau tien, va
+     * moi cu cham vao do roi vao khung chu khong toi danh sach. Bai khong phat,
+     * va khong co dau hieu nao noi tai sao.
+     *
+     * An TAM THOI, khong dung `hideOverlay`: ham do coi nhu nguoi dung tat han
+     * va ghi vao cai dat. O day thi cai dat khong doi, `overlayOn` van bao dang
+     * bat, va ra khoi app la khung tro lai ngay.
+     */
+    fun oTrongApp(context: Context, trong: Boolean) {
+        dangTrongApp = trong
+        if (trong) {
+            if (overlay.isShowing) {
+                handler.removeCallbacks(tick)
+                overlay.hide()
+                anTamThoi = true
+            }
+        } else if (anTamThoi) {
+            anTamThoi = false
+            showOverlay(context)
+        }
+    }
+
+    /** Dang an vi nguoi dung o trong app, chu khong phai vi ho tat di. */
+    private var anTamThoi = false
+
+    /** Man hinh cua chinh AURA dang o truoc mat nguoi dung hay khong. */
+    private var dangTrongApp = false
+
     fun hideOverlay() {
         handler.removeCallbacks(tick)
         overlay.hide()
+        // Nguoi dung tu tat thi khong con gi de "hien lai" khi ho ra khoi app.
+        anTamThoi = false
         overlayPrefs?.setEnabled(false)
         _overlayOn.value = false
     }
@@ -1284,7 +1331,13 @@ object Lyra {
     }
 
     fun toggleOverlay(context: Context): Boolean {
-        if (overlay.isShowing) hideOverlay() else showOverlay(context)
-        return overlay.isShowing
+        // Hoi TRANG THAI NGUOI DUNG DA DAT, khong hoi "cua so co dang ve khong".
+        //
+        // Tu khi khung tu an luc nguoi dung o trong app, hai thu do khac nhau:
+        // dung o trang Chinh thi cua so KHONG BAO GIO dang ve, nen cach hoi cu
+        // luon hieu la "dang tat" va bam nut "Tat loi noi" lai di bat len. Nut
+        // tro thanh bam bao nhieu lan cung khong tat duoc.
+        if (_overlayOn.value) hideOverlay() else showOverlay(context)
+        return _overlayOn.value
     }
 }

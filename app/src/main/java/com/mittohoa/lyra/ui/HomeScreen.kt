@@ -809,10 +809,15 @@ internal fun TunePane(
             tomTat = if (overlayOn) "Đang bật" else "Đang tắt"
         ) {
         if (canDrawOverlay) {
-        Head(if (overlayOn) "Lời đang nổi trên màn hình" else "Lời nổi đang tắt")
+        Head(if (overlayOn) "Lời nổi đang bật" else "Lời nổi đang tắt")
         Spacer(Modifier.height(8.dp))
         Text(
-            if (overlayOn) "Kéo khung để dời chỗ. Mở app nhạc rồi xem thử."
+            // Noi that rang no KHONG hien ngay bay gio. Truoc day cho nay ghi
+            // "Lời đang nổi trên màn hình" trong khi khung that su dang nam de
+            // len chinh trang nay va chan cu cham - gio khung tu an khi ban o
+            // trong AURA, nen cau chu phai theo cho kip.
+            if (overlayOn) "Khung tự ẩn khi bạn đang ở trong AURA. Mở app nhạc " +
+                "khác là nó hiện lên — kéo để dời chỗ."
             else "Bật lên rồi mở app nhạc — lời sẽ nổi trên màn hình.",
             color = mau.chuMo,
             fontSize = 14.sp

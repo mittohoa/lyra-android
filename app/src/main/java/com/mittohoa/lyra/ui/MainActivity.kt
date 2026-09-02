@@ -320,6 +320,16 @@ class MainActivity : ComponentActivity() {
         Lyra.chuanBi(this)
         // Nguoi dung vua bat quyen xong quay lai - doc lai ngay, khong bat doi
         if (hasNotificationAccess) Lyra.refresh(this)
+        // Dang o trong app thi giau khung loi noi di - xem `Lyra.oTrongApp`.
+        Lyra.oTrongApp(this, true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Ra khoi app thi tra khung noi ve. Dat o `onPause` chu khong `onStop`:
+        // keo bang thong bao xuong hay mo mot hop thoai cua he thong deu chi
+        // `onPause`, va do dung la nhung luc nguoi ta muon thay loi.
+        Lyra.oTrongApp(this, false)
     }
 
     /**
