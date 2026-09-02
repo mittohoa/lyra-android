@@ -43,7 +43,7 @@ class LyricsRepository(
      * bai dang phat co phai nhac trong may khong, va tep nao. Kho loi khong can
      * biet chuyen do.
      */
-    private val lrcCanhTep: (() -> String?)? = null
+    private val lrcCanhTep: (() -> Lyrics?)? = null
 ) {
 
     /** Bai dang phat, giu lai de con nho do lech theo dung bai. */
@@ -85,8 +85,8 @@ class LyricsRepository(
         // lan moi nguon mang. Nguoi dung TU DE tep .lrc do o day, nen no dang
         // tin gan bang loi tu go: no la lua chon cua ho, con ban tra mang chi
         // la phong doan cua may.
-        lrcCanhTep?.invoke()?.let { raw ->
-            _lyrics.value = dress(parseLrc(raw, from = LrcCanhTep.NGUON), now)
+        lrcCanhTep?.invoke()?.let { doc ->
+            _lyrics.value = dress(doc, now)
             _loading.value = false
             return
         }

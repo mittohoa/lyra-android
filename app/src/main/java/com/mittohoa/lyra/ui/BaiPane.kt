@@ -920,7 +920,7 @@ private fun MatLoi(
         // Và chỉ mời khi lời KHÔNG PHẢI vừa đọc lên từ chính tệp đó — ghi lại
         // đúng cái mình vừa đọc ra là một nút bấm xong không đổi gì.
         if (Lyra.laNhacTrongMay() && lyrics.lines.isNotEmpty() &&
-            lyrics.from != LrcCanhTep.NGUON
+            !LrcCanhTep.laTepCanh(lyrics.from)
         ) {
             val nhac = LocalContext.current
             Notice(

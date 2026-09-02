@@ -43,13 +43,19 @@ object LrcCanhTep {
      */
     const val NGUON = "tệp cạnh nhạc"
 
+    /** Nguon rieng cho phu de: nguoi dung can biet no la .srt chu khong phai .lrc. */
+    const val NGUON_PHU_DE = "phụ đề cạnh video"
+
+    /** Loi hay phu de nay co phai vua doc len tu mot tep nam canh khong. */
+    fun laTepCanh(from: String) = from == NGUON || from == NGUON_PHU_DE
+
     /**
      * Tìm lời cho tệp phương tiện đang phát, theo `uri` của nó.
      *
      * Nhận cả `content://media/...` lẫn `file://`. Trả về chuỗi thô đúng như
      * trong tệp — việc đọc thành dòng là của `parseLrc`, chạy lại mỗi lần.
      */
-    fun doc(context: Context, uri: String): String? {
+    fun doc(context: Context, uri: String): Lyrics? {
         val duong = duongDan(context, uri) ?: return null
         return docCanh(duong)
     }
@@ -106,11 +112,15 @@ object LrcCanhTep {
      * thường nên tệp chép từ máy tính sang rất hay mang đuôi viết hoa, còn
      * Android thì phân biệt.
      */
-    fun docCanh(duongNhac: String): String? {
+    fun docCanh(duongNhac: String): Lyrics? {
         val khongDuoi = duongNhac.substringBeforeLast('.')
+        // .lrc truoc .srt: mot tep co ca hai thi ban .lrc gan nhu chac chan la
+        // loi bai hat co nguoi cham vao, con .srt thuong la phu de tai kem.
         for (ten in listOf(
             "$khongDuoi.lrc", "$khongDuoi.LRC",
-            "$duongNhac.lrc", "$duongNhac.LRC"
+            "$duongNhac.lrc", "$duongNhac.LRC",
+            "$khongDuoi.srt", "$khongDuoi.SRT",
+            "$duongNhac.srt", "$duongNhac.SRT"
         )) {
             val chu = try {
                 File(ten).takeIf { it.isFile }?.readText()
@@ -121,10 +131,21 @@ object LrcCanhTep {
                 Log.d(TAG, "khong doc duoc $ten", e)
                 null
             }
-            if (chu != null && chu.isNotBlank()) {
-                Log.i(TAG, "doc duoc loi canh tep: $ten")
-                return chu
+            if (chu.isNullOrBlank()) continue
+
+            val laSrt = ten.endsWith(".srt", ignoreCase = true)
+            val doc =
+                if (laSrt) parseSrt(chu).copy(from = NGUON_PHU_DE)
+                else parseLrc(chu, from = NGUON)
+            if (doc.lines.isEmpty()) {
+                // Tep co chu ma doc ra khong duoc cau nao: dang tep khac han,
+                // hoac hong. Di tiep chu dung nhan mot ban loi rong roi thoi -
+                // nhan roi thi khong con di tim nguon nao khac nua.
+                Log.i(TAG, "tep khong doc ra cau nao, bo qua: $ten")
+                continue
             }
+            Log.i(TAG, "doc duoc " + doc.lines.size + " cau tu $ten")
+            return doc
         }
         return null
     }

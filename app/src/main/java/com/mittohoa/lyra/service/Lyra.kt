@@ -1183,7 +1183,7 @@ object Lyra {
      * CHI cho thu Lyra tu phat: bai phat o app khac thi Lyra khong biet no doc
      * tep nao, ma cung khong co quyen hoi.
      */
-    private fun loiCanhTep(): String? {
+    private fun loiCanhTep(): Lyrics? {
         val ctx = appContext ?: return null
         val bai = Playback.currentTrack ?: return null
         return LrcCanhTep.doc(ctx, bai.uri)

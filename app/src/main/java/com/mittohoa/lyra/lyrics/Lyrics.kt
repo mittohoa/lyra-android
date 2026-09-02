@@ -1,7 +1,20 @@
 package com.mittohoa.lyra.lyrics
 
 /** Mot dong loi, kem moc thoi gian tinh bang mili-giay. */
-data class LyricLine(val time: Long, val text: String)
+data class LyricLine(
+    val time: Long,
+    val text: String,
+    /**
+     * Moc KET THUC, mili-giay. 0 nghia la khong biet - va do la truong hop cua
+     * moi ban loi bai hat.
+     *
+     * Chi phu de `.srt` mang moc nay. Loi bai hat thi cau nay noi cau kia nen
+     * chi can moc bat dau, con phu de thi giua hai cau thoai co the la ca mot
+     * phut im lang: khong biet luc nao cau cu HET thi no nam li tren man hinh
+     * suot phut do.
+     */
+    val ketThuc: Long = 0
+)
 
 /** Loi tim duoc cho mot bai, kem xuat xu de nguoi dung biet no o dau ra. */
 data class Lyrics(
@@ -51,7 +64,12 @@ fun activeLineIndex(lines: List<LyricLine>, position: Long, offset: Long = 0): I
     if (lines.isEmpty()) return -1
     val t = position + offset
     for (i in lines.indices.reversed()) {
-        if (lines[i].time <= t) return i
+        if (lines[i].time <= t) {
+            // Cau da het gio thi khong con la cau dang hien nua. Chi phu de moi
+            // co moc ket thuc, nen loi bai hat khong doi gi.
+            val het = lines[i].ketThuc
+            return if (het > 0 && t >= het) -1 else i
+        }
     }
     return -1
 }
