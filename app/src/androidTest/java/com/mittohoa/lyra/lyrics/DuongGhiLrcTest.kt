@@ -22,16 +22,18 @@ import java.io.File
  *
  * ĐO ĐƯỢC (Pixel 6 Pro, Android 17, có READ_MEDIA_AUDIO + READ_MEDIA_VIDEO):
  *
- *   Music  Download  Documents  Movies  Movies/Zalo     ghi được
- *   DCIM   DCIM/Camera  Pictures                        EPERM
+ *   ghi được : Music  Movies  Movies/Zalo  Download  Documents
+ *   EPERM    : DCIM  DCIM/Camera  Pictures  Recordings  Audiobooks
+ *              Podcasts  Notifications  Alarms
  *
- * Hai thư mục ảnh CHỈ NHẬN ẢNH VÀ VIDEO, không nhận loại tệp nào khác - kể cả
- * khi app có đủ quyền đọc. Đó là nguyên nhân thật của "Permission denied" mà
- * người dùng gặp: video quay bằng máy ảnh nằm ở DCIM/Camera.
+ * CHỈ BỐN THƯ MỤC nhận tệp .lrc. Mọi thư mục phương tiện còn lại đều chặn, kể
+ * cả khi app có đủ quyền đọc - và không phải vì "chỉ nhận ảnh và video":
+ * Recordings, Podcasts, Alarms toàn là thư mục âm thanh mà vẫn chặn.
  *
- * ĐỪNG BỎ DCIM VÀ Pictures RA KHỎI DANH SÁCH ĐO. Lần trước chỉ đo mấy thư mục
- * "chắc là được" nên không thấy gì, rồi đi đổ cho thẻ nhớ ngoài - trong khi
- * máy đo còn chẳng có khe thẻ.
+ * ĐỪNG RÚT NGẮN DANH SÁCH ĐO. Đã sai hai lần vì đoán thay vì đo hết: lần đầu
+ * chỉ đo mấy thư mục "chắc là được" rồi đổ cho thẻ nhớ ngoài (máy đo không có
+ * khe thẻ); lần sau thêm được DCIM nên đổ cho "thư mục ảnh", trong khi
+ * Recordings cũng chặn mà chẳng dính gì đến ảnh.
  */
 class DuongGhiLrcTest {
 
@@ -49,7 +51,13 @@ class DuongGhiLrcTest {
         for (thu in listOf(
             "Music", "Music/Lyra", "Download", "Documents",
             "Movies", "Movies/Zalo", "DCIM", "DCIM/Camera", "Pictures",
+            // Nhac trong may khong chi nam o Music: nguoi dung noi tep am
+            // thanh cua ho la GHI AM, ma ghi am nam o Recordings.
+            "Recordings", "Audiobooks", "Podcasts", "Notifications", "Alarms",
         )) {
+            // Tao thu muc truoc: thieu buoc nay thi thu muc con chua co se bao
+            // ENOENT, doc ra tuong la BI CHAN. Hai chuyen do khac han nhau.
+            File("/storage/emulated/0/$thu").mkdirs()
             val f = File("/storage/emulated/0/$thu/lyra-ghi-thu.lrc")
             bao.append(thu.padEnd(14)).append(
                 runCatching {
@@ -111,8 +119,10 @@ class DuongGhiLrcTest {
             "nhạc" to MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
         )) {
             val daThu = mutableSetOf<String>()
+            var demHang = 0
             ctx.contentResolver.query(kho.second, cot, null, null, null)?.use { con ->
                 while (con.moveToNext()) {
+                    demHang++
                     val duong = con.getString(0) ?: continue
                     val thuMuc = duong.substringBeforeLast('/')
                     // Mỗi thư mục đo một lần là đủ; đo 63 lần chỉ ra 63 dòng giống nhau.
@@ -126,6 +136,16 @@ class DuongGhiLrcTest {
                         }.getOrElse { "chặn: " + it.javaClass.simpleName + ": " + it.message?.take(50) }
                     ).append('\n')
                 }
+            }
+            // IM LẶNG LÀ TỆ NHẤT. Bài kiểm chạy trong một bản cài mới toanh do
+            // trình chạy kiểm dựng lên, và bản đó CHƯA được cấp quyền đọc
+            // phương tiện - MediaStore trả về không hàng nào. Chỉ in ra danh
+            // sách rỗng thì người đọc kết quả tưởng "đo rồi, không có gì",
+            // trong khi thật ra chưa đo được gì cả.
+            if (demHang == 0) {
+                bao.append(kho.first)
+                    .append(": KHÔNG ĐO ĐƯỢC — MediaStore không trả về hàng nào ")
+                    .append("(bản cài của bộ kiểm chưa được cấp quyền đọc phương tiện)\n")
             }
         }
 

@@ -130,7 +130,7 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 ```
 Bản 0.3.10 — sửa chỗ ghi lời ra tệp .lrc.
 
-• Android chặn ghi cạnh bài (thư mục ảnh như DCIM chỉ nhận ảnh và video) thì AURA mời bạn chọn chỗ khác mà lưu, thay vì báo "Permission denied" rồi thôi
+• Android chỉ cho ghi .lrc vào Music, Movies, Download và Documents; bài nằm chỗ khác thì AURA mời bạn chọn chỗ mà lưu, thay vì báo "Permission denied" rồi thôi
 • Tệp lưu ra giữ đúng đuôi .lrc, không còn bị thêm .txt
 • Lời đọc từ thẻ trong tệp nhạc vẫn mời ghi ra .lrc — bản 0.3.8 lỡ giấu mất nút này
 ```
@@ -140,7 +140,7 @@ Bản 0.3.10 — sửa chỗ ghi lời ra tệp .lrc.
 ```
 Version 0.3.10 — fixes for writing lyrics out to a .lrc file.
 
-• When Android blocks writing next to the song (photo folders like DCIM only accept photos and video), AURA offers to save somewhere else instead of just reporting "Permission denied"
+• Android only allows .lrc in Music, Movies, Download and Documents; for songs elsewhere AURA offers to save where you choose instead of just reporting "Permission denied"
 • Saved files keep the .lrc name; no more .txt tacked on the end
 • Lyrics read from the file's own tags still offer the write button — 0.3.8 hid it by mistake
 ```

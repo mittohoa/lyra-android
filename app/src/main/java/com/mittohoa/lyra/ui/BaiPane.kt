@@ -981,22 +981,23 @@ private fun MatLoi(
                             // thống chứ không phải thiếu quyền nào xin được, nên
                             // mời họ chọn chỗ khác — việc đó thì luôn làm được.
                             //
-                            // ĐO ĐƯỢC trên Pixel 6 Pro / Android 17: tạo .lrc
-                            // trong Music, Download, Documents, Movies (kể cả
-                            // thư mục con) đều ĐƯỢC; trong DCIM, DCIM/Camera và
-                            // Pictures thì EPERM — hai chỗ đó chỉ nhận ảnh và
-                            // video, không nhận loại tệp nào khác. Video quay
-                            // bằng máy ảnh nằm ở DCIM/Camera, nên bấm ghi lời
-                            // cho một video như thế là chắc chắn hỏng.
+                            // ĐO ĐƯỢC trên Pixel 6 Pro / Android 17 — chỉ BỐN
+                            // thư mục nhận tệp .lrc:
                             //
-                            // Câu báo chỉ nêu trường hợp ĐO ĐƯỢC, không kể lể
-                            // mấy nguyên nhân chưa kiểm: đổ cho thẻ nhớ trong
-                            // khi máy người ta không có khe thẻ là nói sai.
+                            //   được : Music  Movies  Download  Documents
+                            //   chặn : DCIM  Pictures  Recordings  Audiobooks
+                            //          Podcasts  Notifications  Alarms
+                            //
+                            // Nên câu báo kể ra CHỖ ĐƯỢC PHÉP chứ không đoán
+                            // xem chỗ đang hỏng là loại gì. Đã sai hai lần vì
+                            // đoán: lần đầu đổ cho thẻ nhớ (máy không có khe
+                            // thẻ), lần sau đổ cho thư mục ảnh (trong khi
+                            // Recordings cũng chặn mà chẳng dính gì đến ảnh).
                             choDeLen = false
                             choLuuKhac = kq.tenGoiY to kq.noiDung
-                            baoGhi = "Android không cho ghi tệp .lrc vào thư mục " +
-                                "của bài này — thư mục ảnh như DCIM chỉ nhận ảnh " +
-                                "và video. Chọn chỗ khác để lưu?"
+                            baoGhi = "Android chỉ cho ghi tệp .lrc vào Music, " +
+                                "Movies, Download và Documents — thư mục của bài " +
+                                "này không nằm trong số đó. Chọn chỗ khác để lưu?"
                         }
                         is LrcCanhTep.KetQuaGhi.Hong -> {
                             choDeLen = false
