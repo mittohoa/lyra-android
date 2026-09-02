@@ -128,32 +128,34 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.4 — chia sẻ câu hát cho ra dáng, và thôi gõ lời bằng tay.
+Bản 0.3.5 — đổi tên thành AURA, và phát được video.
 
-• Thẻ lời có sáu mẫu: Trang giấy, Bìa mờ, Bìa trên, Chữ lớn, Khối màu, Kẻ dòng
-• Ảnh bìa bài hát dùng làm nền thẻ được
-• Nhập lời từ ảnh chụp: chọn một tấm ảnh, AURA đọc chữ ra, chỉ việc dọn vài dòng thừa
+• Tên app đổi từ Lyra thành AURA. Vẫn là app cũ, dữ liệu và lời đã lưu giữ nguyên.
+• Phát video trong máy; nút ⛶ mở toàn màn hình, tự xoay theo video
+• Đọc lời .lrc và phụ đề .srt nằm cạnh tệp nhạc hoặc video
+• Ghi lời đang xem ra tệp .lrc cạnh bài nhạc
+• Sao lưu lời tự nhập ra tệp: Chỉnh › Lời tự nhập
 
-Nhờ thử: mở trang Bài của một bài có lời, bấm nút ↗ rồi đổi qua cả sáu mẫu.
-Và: Bài › Tự nhập › Từ ảnh — chụp màn hình lời ở app khác rồi thử đọc.
+Sửa: thanh tua đứng yên khi AURA tự phát nhạc; app đứng hình khi mở bài.
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.4 — lyric cards worth sharing, and no more typing lyrics out.
+Version 0.3.5 — renamed to AURA, and it plays video now.
 
-• Six card layouts: Paper, Blurred cover, Cover on top, Big type, Colour block, Ruled lines
-• Album art can back the card
-• Import lyrics from a photo: pick an image, AURA reads the text out, you tidy a few stray lines
+• Renamed from Lyra to AURA. Same app, your saved lyrics and settings stay.
+• Plays video from your device; ⛶ opens fullscreen and rotates to fit the video
+• Reads .lrc lyrics and .srt subtitles next to the music or video file
+• Writes the lyrics you are viewing to a .lrc next to the song
+• Backs up your hand-typed lyrics to a file: Tune › Your own lyrics
 
-Please check: open Song for a track with lyrics, tap ↗, try all six layouts.
-Then: Song › Add lyrics › From image — screenshot lyrics in another app and read them in.
+Fixes: the seek bar froze while AURA itself was playing; the app could hang.
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
-Nếu bản 0.3.3 chưa từng lên Console thì thêm một gạch đầu dòng nữa: **công cụ
-căn giờ cho lời chữ trơn** — người test nhảy cóc từ 0.2.0 sẽ không biết nó có.
+Đổi tên là thứ người thử NHÌN THẤY NGAY trên màn hình chính, nên để nó ở dòng
+đầu — mở máy thấy một biểu tượng lạ mà không ai báo trước thì tưởng cài nhầm.
 
 ### Bản tiếng Anh của thông tin cửa hàng
 
