@@ -43,6 +43,7 @@ import com.mittohoa.lyra.translate.TranslationRepository
 import com.mittohoa.lyra.translate.TranslationState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import android.graphics.Bitmap
@@ -1183,10 +1184,14 @@ object Lyra {
      * CHI cho thu Lyra tu phat: bai phat o app khac thi Lyra khong biet no doc
      * tep nao, ma cung khong co quyen hoi.
      */
-    private fun loiCanhTep(): Lyrics? {
+    private suspend fun loiCanhTep(): Lyrics? {
         val ctx = appContext ?: return null
-        val bai = Playback.currentTrack ?: return null
-        return LrcCanhTep.doc(ctx, bai.uri)
+        // Hoi bo may phat dang mo tep nao: PHAI o luong chinh. `MediaController`
+        // kiem tra luong va nem `IllegalStateException` neu goi tu cho khac.
+        val uri = Playback.currentTrack?.uri ?: return null
+        // Con doc dia va hoi MediaStore thi dua het xuong luong nen: mot vong
+        // goi sang tien trinh khac tren luong ve la du de rot khung hinh.
+        return withContext(Dispatchers.IO) { LrcCanhTep.doc(ctx, uri) }
     }
 
     /**

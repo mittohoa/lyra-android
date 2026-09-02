@@ -8,6 +8,8 @@ import com.mittohoa.lyra.media.NowPlaying
 import com.mittohoa.lyra.sources.LrclibClient
 import com.mittohoa.lyra.sources.NguonNgoai
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -43,7 +45,7 @@ class LyricsRepository(
      * bai dang phat co phai nhac trong may khong, va tep nao. Kho loi khong can
      * biet chuyen do.
      */
-    private val lrcCanhTep: (() -> Lyrics?)? = null
+    private val lrcCanhTep: (suspend () -> Lyrics?)? = null
 ) {
 
     /** Bai dang phat, giu lai de con nho do lech theo dung bai. */
@@ -73,37 +75,54 @@ class LyricsRepository(
             return
         }
 
-        // Loi TU NHAP di truoc moi thu, ke ca bo nho dem. Nguoi dung da bo
-        // cong go thi khong the de mot lan tra mang ghi de len.
-        manual?.get(now.artist, now.title)?.let { raw ->
-            _lyrics.value = dress(parseLrc(raw, from = "tự nhập"), now)
-            _loading.value = false
-            return
-        }
-
-        // Loi nam CANH TEP NHAC dung ngay sau loi tu nhap, tren ca bo nho dem
-        // lan moi nguon mang. Nguoi dung TU DE tep .lrc do o day, nen no dang
-        // tin gan bang loi tu go: no la lua chon cua ho, con ban tra mang chi
-        // la phong doan cua may.
-        lrcCanhTep?.invoke()?.let { doc ->
-            _lyrics.value = dress(doc, now)
-            _loading.value = false
-            return
-        }
-
-        // Nho san thi tra ve NGAY, khong qua trang thai "dang tim" - nhap nhay
-        // mot khung trong roi moi hien chu la cam giac cham nhat, du that ra
-        // chi ton vai mili-giay
-        cache?.get(now.artist, now.title)?.let {
-            _lyrics.value = dress(it, now)
-            _loading.value = false
-            return
-        }
-
         _lyrics.value = Lyrics.NONE
         _loading.value = true
         Log.i(TAG, "Tim loi: '${now.artist}' - '${now.title}' (${now.duration}ms, ${now.packageName})")
+
+        // BA NGUON GAN DEU DOC DIA, VA KHONG DUOC DOC TREN LUONG VE.
+        //
+        // Truoc day ca ba nam thang trong ham nay - ma ham nay chay tren
+        // `Dispatchers.Main.immediate`, tuc dung luong dang ve man hinh. Voi mot
+        // tep loi vai KB thi khong ai thay; nhung tu khi them phan doc tep nam
+        // canh, moi lan doi bai con keo theo mot cau hoi MediaStore - la mot
+        // vong goi sang tien trinh khac. Do tren may: "Skipped 131 frames", va
+        // co lan he thong bao han "Lyra khong phan hoi".
+        //
+        // Day het xuong luong nen. Cai gia la mot nhip hinh trong truoc khi loi
+        // hien ra o nhung bai da nho san - truoc kia hien ngay tuc thi. Mot nhip
+        // hinh thi khong ai kip thay, con mot lan treo nam giay thi ai cung thay.
         job = scope.launch {
+            // Loi TU NHAP di truoc moi thu, ke ca bo nho dem. Nguoi dung da bo
+            // cong go thi khong the de mot lan tra mang ghi de len.
+            val tuNhap = withContext(Dispatchers.IO) { manual?.get(now.artist, now.title) }
+            if (tuNhap != null) {
+                _lyrics.value = dress(parseLrc(tuNhap, from = "tự nhập"), now)
+                _loading.value = false
+                return@launch
+            }
+
+            // Loi nam CANH TEP NHAC dung ngay sau loi tu nhap, tren ca bo nho
+            // dem lan moi nguon mang. Nguoi dung TU DE tep do o day, nen no dang
+            // tin gan bang loi tu go: no la lua chon cua ho, con ban tra mang
+            // chi la phong doan cua may.
+            // KHONG boc `withContext(IO)` o day: ham nay phai bat dau tren LUONG
+            // CHINH vi no hoi `MediaController` xem dang phat tep nao, ma
+            // `MediaController` nem thang neu bi goi tu luong khac. No tu chuyen
+            // xuong luong nen cho doan doc dia. Boc o day thi sap ngay - da thu.
+            val canh = lrcCanhTep?.invoke()
+            if (canh != null) {
+                _lyrics.value = dress(canh, now)
+                _loading.value = false
+                return@launch
+            }
+
+            val nho = withContext(Dispatchers.IO) { cache?.get(now.artist, now.title) }
+            if (nho != null) {
+                _lyrics.value = dress(nho, now)
+                _loading.value = false
+                return@launch
+            }
+
             val found = resolve(now)
             _lyrics.value = found?.let { dress(it, now) } ?: Lyrics.NONE
             _loading.value = false
