@@ -108,5 +108,5 @@ object LrclibClient {
     }
 
     /** LRCLIB de nghi tu gioi thieu; khong dat thi co the bi tu choi. */
-    private const val UA = "Lyra/0.1.0 (https://github.com/mittohoa/lyra-android)"
+    private const val UA = DANH_TINH
 }

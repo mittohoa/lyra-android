@@ -41,7 +41,7 @@ import kotlin.coroutines.coroutineContext
 object LrclibPublish {
 
     private const val BASE = "https://lrclib.net/api"
-    private const val UA = "Lyra/1.0 (https://github.com/mittohoa/lyra-player)"
+    private const val UA = DANH_TINH
 
     sealed interface KetQua {
         data object Xong : KetQua
