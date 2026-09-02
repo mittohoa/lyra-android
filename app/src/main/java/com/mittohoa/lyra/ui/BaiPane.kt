@@ -58,6 +58,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
+import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.media.NowPlaying
 import com.mittohoa.lyra.sources.MediaKind
@@ -580,8 +581,20 @@ private fun MatBia(
         contentPadding = PaddingValues(start = 26.dp, end = 26.dp, bottom = 24.dp)
     ) {
         item {
-            Stage(accent = accent, kind = MediaKind.AUDIO) {
-                if (bia != null) {
+            // Bai dang phat la video thi chinh o bia tro thanh man hinh. Mot
+            // trang rieng cho video se cat doi app lam hai nua ma khong duoc gi:
+            // cho de anh bia von da la mot o hinh vuong dat giua trang.
+            val baiNay = queue.getOrNull(queueIndex)
+            val laVideo = baiNay?.kind == MediaKind.VIDEO
+
+            Stage(
+                accent = accent,
+                kind = if (laVideo) MediaKind.VIDEO else MediaKind.AUDIO,
+                tiLe = if (laVideo) baiNay?.tiLe else null
+            ) {
+                if (laVideo) {
+                    ManHinhVideo()
+                } else if (bia != null) {
                     Image(
                         bitmap = bia.asImageBitmap(),
                         contentDescription = null,

@@ -59,6 +59,82 @@ object LocalLibrary {
      * con hoi lai co so du lieu he thong theo tung phim thi giat thay ro.
      */
     suspend fun all(context: Context): List<Track> = withContext(Dispatchers.IO) {
+        // Nhac truoc, video sau. Hai quyen rieng nhau tu Android 13, nen nguoi
+        // dung hoan toan co the dong y mot ben va tu choi ben kia - moi ben tu
+        // nuot ngoai le cua minh de ben con lai van ra duoc danh sach.
+        docNhac(context) + docVideo(context)
+    }
+
+    /**
+     * Video trong may.
+     *
+     * Lyra la trinh phat, khong phai trinh xem phim - nhung ranh gioi nhac va
+     * video di ngay qua giua thu nguoi ta nghe: mot MV tai ve, mot ban thu buoi
+     * dien, mot bai hat quay tay. Bo video ra ngoai thi dung nhung thu do bi
+     * mac ket ngoai app.
+     *
+     * KHONG loc theo do dai hay theo thu muc. Loc thi luon co mot ai do co dung
+     * ba phut nhac trong mot tep hai muoi phut, hoac de MV o cho khong ai ngo.
+     */
+    private fun docVideo(context: Context): List<Track> {
+        val ra = ArrayList<Track>(64)
+        try {
+            context.contentResolver.query(
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(
+                    MediaStore.Video.Media._ID,
+                    MediaStore.Video.Media.TITLE,
+                    MediaStore.Video.Media.ARTIST,
+                    MediaStore.Video.Media.DURATION,
+                    MediaStore.Video.Media.WIDTH,
+                    MediaStore.Video.Media.HEIGHT,
+                    MediaStore.Video.Media.ORIENTATION
+                ),
+                null,
+                null,
+                "${MediaStore.Video.Media.TITLE} COLLATE NOCASE ASC"
+            )?.use { c ->
+                val idCol = c.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
+                val titleCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.TITLE)
+                val artistCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.ARTIST)
+                val durationCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
+                val wCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.WIDTH)
+                val hCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.HEIGHT)
+                val xoayCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.ORIENTATION)
+
+                while (c.moveToNext()) {
+                    val id = c.getLong(idCol)
+                    // Tep video hiem khi co the ghi nghe si. De rong con hon dien
+                    // "<unknown>" - man hinh da biet cach an mot dong rong.
+                    val artist = c.getString(artistCol).orEmpty()
+                    ra.add(
+                        Track(
+                            id = id.toString(),
+                            source = MusicSource.LOCAL,
+                            title = c.getString(titleCol).orEmpty(),
+                            artist = if (artist == MediaStore.UNKNOWN_STRING) "" else artist,
+                            // Anh dai dien la MOT KHUNG HINH lay tu chinh video -
+                            // `Artwork` nhan ra dia chi video va rut khung ho.
+                            artworkUrl = videoUri(id),
+                            durationMs = c.getLong(durationCol),
+                            streamUrl = videoUri(id),
+                            kind = MediaKind.VIDEO,
+                            tiLe = tiLeKhungHinh(
+                                c.getInt(wCol), c.getInt(hCol), c.getInt(xoayCol)
+                            )
+                        )
+                    )
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.i(TAG, "Chua co quyen doc video trong may")
+        } catch (e: Exception) {
+            Log.w(TAG, "Khong doc duoc video trong may", e)
+        }
+        return ra
+    }
+
+    private fun docNhac(context: Context): List<Track> {
         val out = ArrayList<Track>(256)
         try {
             context.contentResolver.query(
@@ -98,7 +174,7 @@ object LocalLibrary {
         } catch (e: Exception) {
             Log.w(TAG, "Khong doc duoc thu vien nhac", e)
         }
-        out
+        return out
     }
 
     /**
@@ -119,6 +195,24 @@ object LocalLibrary {
             .take(limit)
             .toList()
     }
+
+    /**
+     * Ti le khung hinh sau khi da tinh goc xoay.
+     *
+     * Dien thoai quay doc van GHI khung 1920x1080 roi kem mot co xoay 90 do -
+     * bo qua co do thi moi video quay bang dien thoai deu bi hieu la nam ngang.
+     */
+    // `internal` de kiem duoc bang may: goc xoay la cho de sai nhat o day, va
+    // sai thi moi video quay bang dien thoai deu nam ngang ma khong ai bao.
+    internal fun tiLeKhungHinh(rong: Int, cao: Int, xoay: Int): Float? {
+        if (rong <= 0 || cao <= 0) return null
+        val dung = xoay == 90 || xoay == 270
+        return if (dung) cao.toFloat() / rong else rong.toFloat() / cao
+    }
+
+    /** Dia chi `content://` cua mot video trong may. */
+    fun videoUri(id: Long): String =
+        ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id).toString()
 
     fun trackUri(id: Long): String =
         ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id).toString()

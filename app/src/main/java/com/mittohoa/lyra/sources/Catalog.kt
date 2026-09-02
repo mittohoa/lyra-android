@@ -46,7 +46,17 @@ data class Track(
      */
     @Transient
     val streamUrl: String? = null,
-    val kind: MediaKind = MediaKind.AUDIO
+    val kind: MediaKind = MediaKind.AUDIO,
+    /**
+     * Ti le khung hinh video: rong chia cao. `null` voi nhac.
+     *
+     * Doc tu MediaStore luc quet thu vien chu KHONG doi bo giai ma bao. Da thu
+     * duong kia: gan `Player.Listener` vao `MediaController` roi cho
+     * `onVideoSizeChanged`, va no khong bao gio duoc goi - video van phat ra
+     * hinh binh thuong nhung ti le thi khong bao gio toi. MediaStore thi biet
+     * san kich thuoc tu luc quet, khong phai cho ai ca.
+     */
+    val tiLe: Float? = null
 ) {
     /**
      * Duong dan gia dung trong hang doi.
@@ -59,7 +69,14 @@ data class Track(
      *
      * Duong that duoc hoi ngay truoc khi phat - xem `StreamResolver`.
      */
-    val playbackUri: String get() = "lyra://${source.key}/$id"
+    val playbackUri: String get() = buildString {
+        append("lyra://").append(source.key).append('/').append(id)
+        // Mang theo LOAI, vi hang doi chi con dia chi nay chu khong con doi
+        // tuong Track. Khong mang thi luc giai ra phai doan, ma doan mac dinh
+        // la nhac - nen mot video xep vao hang doi se duoc tra ve dia chi cua
+        // bang audio, tro vao cho khong co gi, va bam phat khong len tieng.
+        if (kind == MediaKind.VIDEO) append("?loai=video")
+    }
 }
 
 /**
@@ -116,8 +133,10 @@ object Catalog {
     /** Duong phat that cho mot bai, hoac null khi nguon tu choi. */
     suspend fun streamUrl(track: Track): String? = when (track.source) {
         // File trong may: dia chi `content://` dung duoc ngay, khong hoi ai ca
-        MusicSource.LOCAL ->
-            track.streamUrl ?: track.id.toLongOrNull()?.let(LocalLibrary::trackUri)
+        MusicSource.LOCAL -> track.streamUrl ?: track.id.toLongOrNull()?.let {
+            if (track.kind == MediaKind.VIDEO) LocalLibrary.videoUri(it)
+            else LocalLibrary.trackUri(it)
+        }
         // Ban Play tra null o day. Danh sach phat cu mang theo bai Zing/NCT thi
         // bai do bao loi phat - dung han, va tot hon la giu mot nut bam khong
         // bao gio an gi.
@@ -133,7 +152,11 @@ object Catalog {
     suspend fun streamUrl(uri: Uri): String? {
         val source = MusicSource.entries.firstOrNull { it.key == uri.host } ?: return null
         val id = uri.lastPathSegment?.takeIf { it.isNotBlank() } ?: return null
-        return streamUrl(Track(id = id, source = source, title = "", artist = ""))
+        val loai =
+            if (uri.getQueryParameter("loai") == "video") MediaKind.VIDEO else MediaKind.AUDIO
+        return streamUrl(
+            Track(id = id, source = source, title = "", artist = "", kind = loai)
+        )
     }
 
     /** Toi da bao nhieu bai trong may cho mot lan tim. */

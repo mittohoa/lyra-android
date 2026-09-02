@@ -3,6 +3,9 @@ package com.mittohoa.lyra.player
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
+import android.os.Build
+import android.util.Size
 import android.util.Log
 import com.mittohoa.lyra.sources.Http
 import kotlinx.coroutines.CancellationException
@@ -72,9 +75,12 @@ object Artwork {
     private suspend fun loadLocal(context: Context, url: String): Bitmap? =
         withContext(Dispatchers.IO) {
             try {
-                val bytes = context.contentResolver.openInputStream(android.net.Uri.parse(url))
-                    ?.use { it.readBytes() }
-                val bitmap = bytes?.let(::decodeScaled)
+                val uri = android.net.Uri.parse(url)
+                val bitmap =
+                    if (laVideo(url)) khungHinh(context, uri)
+                    else context.contentResolver.openInputStream(uri)
+                        ?.use { it.readBytes() }
+                        ?.let(::decodeScaled)
                 if (bitmap != null) synchronized(cache) { cache[url] = bitmap }
                 bitmap
             } catch (e: CancellationException) {
@@ -84,6 +90,49 @@ object Artwork {
                 null
             }
         }
+
+    /**
+     * Dia chi nay tro toi mot video hay mot tam anh?
+     *
+     * Nhin duong dan chu khong doan: dia chi video cua MediaStore luon nam duoi
+     * `.../video/media/<ma>`. Doan bang cach thu giai ma roi bat truot thi moi
+     * bia album hong cung bi coi la video, va moi video se ton mot lan giai ma
+     * that bai truoc khi di dung duong.
+     */
+    private fun laVideo(url: String) = url.contains("/video/")
+
+    /**
+     * Mot khung hinh lam anh dai dien cho video.
+     *
+     * Tu Android 10 co `loadThumbnail`: he thong da dung san anh thu nho khi
+     * quet thu vien, lay ra gan nhu tuc thi. Doi may cu hon thi phai tu rut mot
+     * khung - cham hon nhieu, nen chi lam khi khong con duong nao.
+     *
+     * Rut khung o giay thu MOT chu khong phai giay khong: rat nhieu video mo
+     * dau bang mot khung den, va mot o den thi khong noi len duoc video nao la
+     * video nao.
+     */
+    private fun khungHinh(context: Context, uri: android.net.Uri): Bitmap? = try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            context.contentResolver.loadThumbnail(uri, Size(512, 512), null)
+        } else {
+            // KHONG dung `use`: `MediaMetadataRetriever` chi thanh
+            // `AutoCloseable` tu Android 10, ma nhanh nay chay tren may CU HON
+            // the. Bien dich thi qua vi bien dich theo SDK moi, con chay tren
+            // may that thi no nem `NoSuchMethodError` - dung tren nhung may
+            // duy nhat can toi nhanh nay.
+            val may = MediaMetadataRetriever()
+            try {
+                may.setDataSource(context, uri)
+                may.getFrameAtTime(1_000_000L)
+            } finally {
+                may.release()
+            }
+        }
+    } catch (e: Exception) {
+        Log.d(TAG, "khong rut duoc khung hinh video", e)
+        null
+    }
 
     /**
      * Doc anh o co vua du dung.

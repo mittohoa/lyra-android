@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mittohoa.lyra.data.Playlist
 import com.mittohoa.lyra.service.Lyra
+import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.sources.MusicSource
 import com.mittohoa.lyra.sources.NguonNgoai
 import com.mittohoa.lyra.sources.Track
@@ -225,7 +226,7 @@ fun SearchPane(
                 // Khong co bai nao thi khong co gi de dat tieu de
                 if (library.isNotEmpty()) item {
                     Text(
-                        "Trong máy · ${library.size} bài",
+                        demThuVien(library),
                         color = mau.chuRatMo,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -364,8 +365,14 @@ private fun TrackRow(
                 Text(
                     // Nói ngay trên hàng rằng chạm vào sẽ ra lời chứ không ra
                     // nhạc. Để người dùng chạm rồi mới ngạc nhiên là tệ hơn.
-                    if (chiXemLoi) "  ·  ${track.source.label}  ·  xem lời"
-                    else "  ·  ${track.source.label}",
+                    buildString {
+                        append("  ·  ").append(track.source.label)
+                        // Noi thang day la video. Mot cai cham vao thu tuong la
+                        // bai hat ma ra man hinh phim la mot bat ngo khong ai
+                        // muon - nhat la khi dang cam tai nghe cho o dong nguoi.
+                        if (track.kind == MediaKind.VIDEO) append("  ·  video")
+                        if (chiXemLoi) append("  ·  xem lời")
+                    },
                     color = mau.chuRatMo,
                     fontSize = 13.sp,
                     maxLines = 1
@@ -463,5 +470,22 @@ fun DebouncedSearch(query: String, onSearch: (String) -> Unit) {
         kotlinx.coroutines.delay(500)
         last = query
         onSearch(query)
+    }
+}
+
+/**
+ * Dong dem duoi o tim: noi rieng nhac va video.
+ *
+ * Goi tat ca la "bai" thi mot thu vien co ba bai hat va sau chuc doan phim
+ * quay tay hien ra "63 bai" - con so dung ma y nghia thi sai han, va nguoi
+ * dung tuong Lyra vua doc nham cai gi do.
+ */
+private fun demThuVien(library: List<Track>): String {
+    val video = library.count { it.kind == MediaKind.VIDEO }
+    val nhac = library.size - video
+    return buildString {
+        append("Trong máy")
+        if (nhac > 0) append(" · ").append(nhac).append(" bài")
+        if (video > 0) append(" · ").append(video).append(" video")
     }
 }

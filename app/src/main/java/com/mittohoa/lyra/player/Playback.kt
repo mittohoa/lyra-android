@@ -7,10 +7,11 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.MediaMetadata
+import android.view.SurfaceView
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import androidx.media3.common.Player
 import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.sources.Track
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -279,6 +280,21 @@ object Playback {
                 Log.w(TAG, "Khong noi duoc vao bo may phat", e)
             }
         }, MoreExecutors.directExecutor())
+    }
+
+    /**
+     * Gan be mat ve cho bo giai ma.
+     *
+     * Goi khi o video hien ra tren man hinh, va `boManHinh` khi no bien di. Bo
+     * giai ma giu tham chieu toi be mat, nen quen bo ra thi no ve vao mot be
+     * mat da chet - man hinh den, va khong co loi nao bao ca.
+     */
+    fun ganManHinh(view: SurfaceView) {
+        controller?.setVideoSurfaceView(view) ?: run { pending = { setVideoSurfaceView(view) } }
+    }
+
+    fun boManHinh(view: SurfaceView) {
+        controller?.clearVideoSurfaceView(view)
     }
 
     private fun Track.toPlayable() = Playable(

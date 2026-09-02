@@ -69,18 +69,31 @@ class MainActivity : ComponentActivity() {
      * quyen NHAC la mot khac biet nguoi dung THAY duoc trong hop thoai - va
      * xin it hon thi ho dong y de hon.
      */
-    private val audioPermission =
+    /**
+     * Ten quyen doc thu vien, khac nhau theo doi may.
+     *
+     * Tu Android 13 xin RIENG nhac va video. Truoc do chi co mot quyen chung
+     * cho ca bo nho, va xin no la xin luon ca anh rieng tu lan tai lieu - nen
+     * o doi may cu thi danh mot quyen, con o doi may moi thi hai quyen hep.
+     */
+    private val quyenThuVien: Array<String> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_AUDIO
+            arrayOf(
+                Manifest.permission.READ_MEDIA_AUDIO,
+                Manifest.permission.READ_MEDIA_VIDEO
+            )
         } else {
-            Manifest.permission.READ_EXTERNAL_STORAGE
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
 
     private val askAudio = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        canReadLibrary = granted
-        if (granted) Lyra.loadLibrary(this)
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { ketQua ->
+        // Nguoi dung co the dong y nhac ma tu choi video, hoac nguoc lai. Chi
+        // can MOT trong hai la da co thu de bay ra - danh sach chi thieu mot
+        // nua chu khong trong tron, va man hinh cu the ma noi.
+        canReadLibrary = ketQua.values.any { it }
+        if (canReadLibrary) Lyra.loadLibrary(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -225,7 +238,7 @@ class MainActivity : ComponentActivity() {
                 onCycleRepeat = { Lyra.cycleRepeat(this) },
                 library = library,
                 canReadLibrary = canReadLibrary,
-                onAskLibrary = { askAudio.launch(audioPermission) },
+                onAskLibrary = { askAudio.launch(quyenThuVien) },
                 onPlayFromLibrary = { Lyra.playFromLibrary(this, it) },
                 playlists = playlists,
                 openedPlaylist = openedPlaylist,
@@ -337,8 +350,10 @@ class MainActivity : ComponentActivity() {
         canDrawOverlay = Settings.canDrawOverlays(this)
 
         val had = canReadLibrary
-        canReadLibrary = ContextCompat.checkSelfPermission(this, audioPermission) ==
-            PackageManager.PERMISSION_GRANTED
+        canReadLibrary = quyenThuVien.any {
+            ContextCompat.checkSelfPermission(this, it) ==
+                PackageManager.PERMISSION_GRANTED
+        }
         // Vua cap quyen o man hinh Cai dat roi quay lai - doc thu vien ngay,
         // khong bat nguoi dung phai bam them mot lan nua
         if (canReadLibrary && !had) Lyra.loadLibrary(this)

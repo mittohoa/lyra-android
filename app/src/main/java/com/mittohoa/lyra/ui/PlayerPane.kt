@@ -74,9 +74,21 @@ import kotlin.math.roundToLong
 internal fun Stage(
     accent: Color,
     kind: MediaKind,
+    /**
+     * Ti le that cua video, neu bo giai ma da noi. Bo trong thi dung ti le mac
+     * dinh theo loai: nhac vuong, video 16:9.
+     */
+    tiLe: Float? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val ratio = if (kind == MediaKind.VIDEO) 16f / 9f else 1f
+    // Ti le that di truoc: dien thoai quay doc ra 9:16, nhet vao khung 16:9 co
+    // san thi hai vien den con rong hon ca phan hinh.
+    //
+    // Chan trong khoang 0,4 - 2,5: mot tep hong khai ti le vo ly co the tra ve
+    // mot khung cao bang ca man hinh hoac mong nhu soi chi, va luc do khong con
+    // cho nao cho lời.
+    val ratio = tiLe?.coerceIn(0.4f, 2.5f)
+        ?: if (kind == MediaKind.VIDEO) 16f / 9f else 1f
 
     Column(Modifier.fillMaxWidth()) {
         Box(
