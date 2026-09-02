@@ -47,12 +47,17 @@ object LrcCanhTep {
     const val NGUON_PHU_DE = "phụ đề cạnh video"
 
     /**
-     * Loi nay co phai vua doc len tu chinh tep nhac khong - ke ca tep nam canh
-     * lan the nam trong. Dung de biet co nen moi nguoi dung ghi ra .lrc khong:
-     * ghi lai dung cai vua doc ra la mot nut bam xong khong doi gi.
+     * Loi nay co phai vua doc len tu mot tep NAM CANH khong.
+     *
+     * Dung de an loi moi ghi ra .lrc: ghi lai dung cai vua doc len tu chinh tep
+     * do la mot nut bam xong khong doi gi.
+     *
+     * KHONG tinh loi doc tu THE TRONG TEP vao day. Nhin thi giong - deu la "loi
+     * da co san trong may" - nhung ghi ra .lrc luc do KHONG thua: the nam trong
+     * tep nhac thi chi app nao chiu doc the moi thay, con tep .lrc nam canh thi
+     * moi trinh phat deu doc duoc. Do la mot lan doi dinh dang that su.
      */
-    fun laTepCanh(from: String) =
-        from == NGUON || from == NGUON_PHU_DE || from == LoiTrongTep.NGUON
+    fun laTepCanh(from: String) = from == NGUON || from == NGUON_PHU_DE
 
     /**
      * Tìm lời cho tệp phương tiện đang phát, theo `uri` của nó.
