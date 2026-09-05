@@ -2,9 +2,12 @@ package com.mittohoa.lyra.download
 
 import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
 import android.os.Build
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
+import com.mittohoa.lyra.data.ThuMucNhac
 import com.mittohoa.lyra.sources.Catalog
 import com.mittohoa.lyra.sources.Http
 import com.mittohoa.lyra.sources.MusicSource
@@ -54,24 +57,9 @@ object Downloader {
             )
 
         val resolver = context.contentResolver
-        val values = ContentValues().apply {
-            put(MediaStore.Audio.Media.DISPLAY_NAME, fileName(track))
-            put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg")
-            put(MediaStore.Audio.Media.TITLE, track.title)
-            put(MediaStore.Audio.Media.ARTIST, track.artist)
-            put(MediaStore.Audio.Media.IS_MUSIC, 1)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Audio.Media.RELATIVE_PATH, "Music/Lyra")
-                put(MediaStore.Audio.Media.IS_PENDING, 1)
-            }
-        }
-
-        val item = try {
-            resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
-        } catch (e: Exception) {
-            Log.w(TAG, "Khong tao duoc file trong Music/Lyra", e)
-            null
-        } ?: return@withContext DownloadResult.Failed("Không tạo được file trong thư mục Nhạc")
+        val cho = chonChoGhi(context, track)
+            ?: return@withContext DownloadResult.Failed("Không tạo được file để lưu bài này")
+        val item = cho.dich
 
         try {
             Http.client.newCall(Request.Builder().url(url).build()).execute().use { res ->
@@ -119,7 +107,10 @@ object Downloader {
                 } ?: throw IllegalStateException("Không mở được file để ghi")
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Chi ban ghi cua MediaStore moi co co `is_pending`. Tai lieu SAF
+            // khong co thu tuong duong - bu lai bang cach xoa tep do o nhanh
+            // bat loi ben duoi.
+            if (cho.quaMediaStore && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 resolver.update(
                     item,
                     ContentValues().apply { put(MediaStore.Audio.Media.IS_PENDING, 0) },
@@ -131,14 +122,115 @@ object Downloader {
             DownloadResult.Done(item.toString())
         } catch (e: CancellationException) {
             // Nguoi dung bo giua chung: don ban ghi treo roi nem tiep
-            runCatching { resolver.delete(item, null, null) }
+            runCatching { xoaTepDo(context, cho) }
             throw e
         } catch (e: Exception) {
-            runCatching { resolver.delete(item, null, null) }
+            runCatching { xoaTepDo(context, cho) }
             Log.w(TAG, "Tai that bai", e)
             DownloadResult.Failed(describe(e))
         }
     }
+
+    /** Cho de ghi tep, kem cach no duoc tao ra - hai duong don dep khac nhau. */
+    private class ChoGhi(val dich: Uri, val quaMediaStore: Boolean)
+
+    /**
+     * Chon cho ghi tep tai ve.
+     *
+     * ƯU TIÊN THƯ MỤC NGƯỜI DÙNG ĐÃ TRỎ VÀO. Từ bản 0.3.13, AURA chỉ đọc trong
+     * mấy thư mục ấy — nên ghi ra `Music/Lyra` như trước là tự tải về một tệp
+     * rồi tự không nhìn thấy nó. Hiện chưa lộ vì phần lớn người dùng trỏ vào
+     * `Music`, mà `Music/Lyra` nằm trong đó; ai trỏ vào một thư mục con thì tải
+     * xong không thấy bài đâu, và không có gì trên màn hình gợi ý tại sao.
+     *
+     * Đặt vào thư mục con `Lyra` chứ không đổ thẳng vào thư mục nhạc của người
+     * ta: nhạc họ tự xếp và nhạc app tải về nên tách ra. Thư mục con vẫn nằm
+     * trong phạm vi quét vì bộ quét đi đệ quy.
+     *
+     * Chưa trỏ thư mục nào thì lùi về `MediaStore` như cũ. Lúc đó thư viện rỗng
+     * nên app cũng không hiện bài vừa tải — nhưng tệp vẫn nằm trong máy và mọi
+     * trình phát khác đọc được, tức người dùng không mất gì.
+     */
+    private fun chonChoGhi(context: Context, track: Track): ChoGhi? {
+        val ten = fileName(track)
+        taoTrongThuMucDaTro(context, ten)?.let { return ChoGhi(it, quaMediaStore = false) }
+        return taoTrongMediaStore(context, track, ten)?.let { ChoGhi(it, quaMediaStore = true) }
+    }
+
+    private fun taoTrongThuMucDaTro(context: Context, ten: String): Uri? {
+        val goc = ThuMucNhac(context).danhSach().firstOrNull() ?: return null
+        return try {
+            val gocDoc = DocumentsContract.buildDocumentUriUsingTree(
+                goc, DocumentsContract.getTreeDocumentId(goc)
+            )
+            val thuMuc = timHoacTaoThuMuc(context, gocDoc) ?: return null
+            DocumentsContract.createDocument(context.contentResolver, thuMuc, "audio/mpeg", ten)
+        } catch (e: Exception) {
+            Log.w(TAG, "Khong tao duoc tep trong thu muc da tro", e)
+            null
+        }
+    }
+
+    /**
+     * Thư mục `Lyra` trong thư mục đã trỏ — tìm trước, không có mới tạo.
+     *
+     * Gọi thẳng `createDocument` mà không tìm trước thì lần tải thứ hai đẻ ra
+     * `Lyra (1)`, lần ba ra `Lyra (2)`: bộ cung cấp tệp gặp tên trùng là tự đổi
+     * tên chứ không báo lỗi, và người dùng có một dãy thư mục gần giống nhau mà
+     * không hiểu từ đâu ra.
+     */
+    private fun timHoacTaoThuMuc(context: Context, cha: Uri): Uri? {
+        val chaId = DocumentsContract.getDocumentId(cha)
+        val con = DocumentsContract.buildChildDocumentsUriUsingTree(cha, chaId)
+        context.contentResolver.query(
+            con,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                DocumentsContract.Document.COLUMN_MIME_TYPE
+            ),
+            null, null, null
+        )?.use { c ->
+            while (c.moveToNext()) {
+                if (c.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR &&
+                    c.getString(1) == THU_MUC_TAI
+                ) {
+                    return DocumentsContract.buildDocumentUriUsingTree(cha, c.getString(0))
+                }
+            }
+        }
+        return DocumentsContract.createDocument(
+            context.contentResolver, cha, DocumentsContract.Document.MIME_TYPE_DIR, THU_MUC_TAI
+        )
+    }
+
+    private fun taoTrongMediaStore(context: Context, track: Track, ten: String): Uri? {
+        val values = ContentValues().apply {
+            put(MediaStore.Audio.Media.DISPLAY_NAME, ten)
+            put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg")
+            put(MediaStore.Audio.Media.TITLE, track.title)
+            put(MediaStore.Audio.Media.ARTIST, track.artist)
+            put(MediaStore.Audio.Media.IS_MUSIC, 1)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Audio.Media.RELATIVE_PATH, "Music/$THU_MUC_TAI")
+                put(MediaStore.Audio.Media.IS_PENDING, 1)
+            }
+        }
+        return try {
+            context.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
+        } catch (e: Exception) {
+            Log.w(TAG, "Khong tao duoc file trong Music/$THU_MUC_TAI", e)
+            null
+        }
+    }
+
+    /** Dọn tệp dở. Hai kiểu địa chỉ, hai phép xoá khác nhau. */
+    private fun xoaTepDo(context: Context, cho: ChoGhi) {
+        if (cho.quaMediaStore) context.contentResolver.delete(cho.dich, null, null)
+        else DocumentsContract.deleteDocument(context.contentResolver, cho.dich)
+    }
+
+    private const val THU_MUC_TAI = "Lyra"
 
     /**
      * Nhay qua the ID3 cua nguon, neu co.
