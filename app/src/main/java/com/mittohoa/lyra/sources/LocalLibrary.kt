@@ -50,9 +50,23 @@ object LocalLibrary {
         MediaStore.Audio.Media.ARTIST,
         MediaStore.Audio.Media.ALBUM,
         MediaStore.Audio.Media.ALBUM_ID,
+        MediaStore.Audio.Media.TRACK,
         MediaStore.Audio.Media.DURATION,
         MediaStore.Audio.Media.DATA
     )
+
+    /**
+     * So thu tu bai, go bo phan so dia.
+     *
+     * `MediaStore.TRACK` nhet CA hai vao mot so nguyen: dia nhan 1000, roi cong
+     * so bai. Dia 1 bai 3 thanh 1003. Dung thang so do de xep thi mot album hai
+     * dia se nhay tu 12 len 1001, va cai nhin ra la mot thu tu vo nghia.
+     *
+     * Bo phan dia chu khong giu lai: gan nhu moi album trong may nguoi dung la
+     * mot dia, va giu them mot truong chi de xu ly ca hiem thi dat hon cai loi
+     * no tranh duoc.
+     */
+    internal fun soThuTuBai(tho: Int): Int = if (tho > 1000) tho % 1000 else tho.coerceAtLeast(0)
 
     /**
      * Ten thu muc chua tep, cat ra tu duong dan day du.
@@ -211,6 +225,7 @@ object LocalLibrary {
                 val tenAlbumCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
                 val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                 val duongCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+                val thuTuCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
 
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idCol)
@@ -228,6 +243,7 @@ object LocalLibrary {
                             // Cung mot cho dien "<unknown>" nhu nghe si
                             album = if (tenAlbum == MediaStore.UNKNOWN_STRING) "" else tenAlbum,
                             thuMuc = tenThuMuc(cursor.getString(duongCol)),
+                            soThuTu = soThuTuBai(cursor.getInt(thuTuCol)),
                             durationMs = cursor.getLong(durationCol),
                             streamUrl = trackUri(id)
                         )

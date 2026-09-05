@@ -10,6 +10,7 @@ import com.mittohoa.lyra.data.ThuMucNhac
 import com.mittohoa.lyra.lyrics.normalizeForCompare
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.CollationKey
 import java.text.Collator
 import java.util.Locale
 
@@ -226,6 +227,12 @@ object ThuVienNgoai {
                     runCatching { DocumentsContract.getDocumentId(uri).substringAfter(':', "") }
                         .getOrDefault("")
                 ),
+                // The ghi so thu tu kieu "3" hoac "3/12" - lay phan truoc dau
+                // gach. Khong tach thi `toIntOrNull` tra null cho MOI tep cua
+                // nhung dia co ghi tong so bai, tuc dung nhung dia duoc ghi the
+                // can than nhat lai la nhung dia mat thu tu.
+                soThuTu = doc.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
+                    ?.substringBefore('/')?.trim()?.toIntOrNull()?.coerceAtLeast(0) ?: 0,
                 // Ảnh đại diện nằm trong CHÍNH tệp, không phải một tệp ảnh
                 // riêng: nhạc thì là bìa trong thẻ, phim thì là một khung hình.
                 // Đánh dấu bằng tiền tố để `Artwork` đi thẳng đường đúng, khỏi
@@ -302,11 +309,24 @@ object ThuVienNgoai {
         // album ma cac tep ghi the khac nhau mot chu - "Touch Of Light" ba bai,
         // "Touch of Light" mot bai - va xep theo chu nguyen ban thi album ay bi
         // cat lam doi, moi nua mot tieu de. Nguoi dung khong the biet vi sao.
+        //
+        // Trong mot nhom thi SO THU TU di truoc ten bai. Mot dia nhac co thu tu
+        // cua no, va thu tu ay la mot phan cua tac pham - xep theo bang chu cai
+        // thi bai mo dau nam giua, bai ket nam dau.
+        //
+        // Tep khong ghi so thu tu bi day xuong CUOI nhom chu khong len dau: mot
+        // album danh so day du kem vai tep le (bonus, ban thu) thi phan danh so
+        // phai lien mach, con may tep le doi o duoi.
         return bai.map {
-            Triple(luat.getCollationKey(it.nhom.lowercase()), luat.getCollationKey(it.title), it)
+            Bo(
+                luat.getCollationKey(it.nhom.lowercase()),
+                if (it.soThuTu > 0) it.soThuTu else Int.MAX_VALUE,
+                luat.getCollationKey(it.title),
+                it
+            )
         }
-            .sortedWith(compareBy({ it.first }, { it.second }))
-            .map { it.third }
+            .sortedWith(compareBy({ it.nhomKhoa }, { it.thuTu }, { it.tenKhoa }))
+            .map { it.bai }
     }
 
     /** Vân tay của một tệp: đổi tệp thì đổi khoá, và thẻ được đọc lại. */
@@ -323,6 +343,21 @@ object ThuVienNgoai {
      */
     private fun android.database.Cursor.getLongAn(cot: Int): Long =
         if (cot < 0 || isNull(cot)) 0L else getLong(cot)
+
+    /**
+     * Ba khoá xếp của một bài, dựng sẵn một lần.
+     *
+     * Gói lại thành lớp riêng thay vì lồng `Triple` trong `Triple`: ba khoá thì
+     * `Triple` còn đọc được, thêm cái thứ tư là thành `first.second` với
+     * `second.first`, và chỗ đó sai thì thư viện xếp lộn mà không ai thấy sai ở
+     * đâu.
+     */
+    private class Bo(
+        val nhomKhoa: CollationKey,
+        val thuTu: Int,
+        val tenKhoa: CollationKey,
+        val bai: Track
+    )
 
     /** So không dấu, không phân biệt hoa thường — như mọi chỗ so tên bài khác. */
     private fun khoaTrung(t: Track): String = buildString {

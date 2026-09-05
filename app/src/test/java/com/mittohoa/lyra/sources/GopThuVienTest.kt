@@ -22,13 +22,15 @@ class GopThuVienTest {
         caSi: String = "Ai Do",
         dai: Long = 200_000,
         loai: MediaKind = MediaKind.AUDIO,
-        album: String = ""
+        album: String = "",
+        thuTu: Int = 0
     ) = Track(
         id = "ma-$ten",
         source = MusicSource.LOCAL,
         title = ten,
         artist = caSi,
         album = album,
+        soThuTu = thuTu,
         durationMs = dai,
         kind = loai
     )
@@ -114,6 +116,46 @@ class GopThuVienTest {
         )
         // Nhóm rỗng đứng trước mọi nhóm có tên.
         assertEquals(listOf("Aaa Khong Album", "Bbb Co Album"), ten(ThuVienNgoai.gop(trongMay, emptyList())))
+    }
+
+    @Test fun `trong album thi xep theo so thu tu, khong theo bang chu cai`() {
+        // Mot dia nhac co thu tu cua no, va thu tu ay la mot phan cua tac pham.
+        // Xep theo bang chu cai thi bai mo dau nam giua, bai ket nam dau.
+        val trongMay = listOf(
+            bai("Zzz Bai Cuoi", album = "Dia", thuTu = 3),
+            bai("Aaa Bai Giua", album = "Dia", thuTu = 2),
+            bai("Mmm Bai Dau", album = "Dia", thuTu = 1)
+        )
+        assertEquals(
+            listOf("Mmm Bai Dau", "Aaa Bai Giua", "Zzz Bai Cuoi"),
+            ten(ThuVienNgoai.gop(trongMay, emptyList()))
+        )
+    }
+
+    @Test fun `bai khong danh so bi day xuong cuoi nhom`() {
+        // Mot album danh so day du kem vai tep le (bonus, ban thu): phan danh
+        // so phai lien mach, may tep le doi o duoi.
+        val trongMay = listOf(
+            bai("Aaa Bonus Khong So", album = "Dia"),
+            bai("Zzz Bai Hai", album = "Dia", thuTu = 2),
+            bai("Mmm Bai Mot", album = "Dia", thuTu = 1)
+        )
+        assertEquals(
+            listOf("Mmm Bai Mot", "Zzz Bai Hai", "Aaa Bonus Khong So"),
+            ten(ThuVienNgoai.gop(trongMay, emptyList()))
+        )
+    }
+
+    @Test fun `so thu tu chi co nghia TRONG album, khong tron giua cac album`() {
+        val trongMay = listOf(
+            bai("Bai Cua Dia B", album = "Bbb", thuTu = 1),
+            bai("Bai Cua Dia A", album = "Aaa", thuTu = 9)
+        )
+        // Nhom xep truoc: ca album Aaa di truoc, du so thu tu lon hon.
+        assertEquals(
+            listOf("Bai Cua Dia A", "Bai Cua Dia B"),
+            ten(ThuVienNgoai.gop(trongMay, emptyList()))
+        )
     }
 
     @Test fun `nhac di truoc phim`() {

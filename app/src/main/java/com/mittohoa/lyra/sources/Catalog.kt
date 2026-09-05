@@ -53,6 +53,14 @@ data class Track(
      * chu khong theo the, va voi ho thi ten thu muc CHINH LA ten album.
      */
     val thuMuc: String = "",
+    /**
+     * So thu tu bai trong album. 0 khi the khong ghi.
+     *
+     * Mot dia nhac co thu tu cua no, va thu tu do la mot phan cua tac pham -
+     * xep theo bang chu cai thi bai mo dau co the nam giua, bai ket nam dau.
+     * Xem `ThuVienNgoai.xepTheoTen`.
+     */
+    val soThuTu: Int = 0,
     val durationMs: Long = 0,
     /**
      * KHONG luu xuong dia: duong phat cua ca hai nguon online deu co han, va
