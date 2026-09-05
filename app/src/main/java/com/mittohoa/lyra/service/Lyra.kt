@@ -36,6 +36,7 @@ import com.mittohoa.lyra.download.Downloads
 import com.mittohoa.lyra.player.Artwork
 import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.sources.Catalog
+import com.mittohoa.lyra.data.ThuMucNhac
 import com.mittohoa.lyra.sources.LocalLibrary
 import com.mittohoa.lyra.sources.ThuVienNgoai
 import com.mittohoa.lyra.sources.LrclibPublish
@@ -557,22 +558,43 @@ object Lyra {
      */
     fun loadLibrary(context: Context) {
         val app = context.applicationContext
-        scope.launch {
-            val danhMuc = LocalLibrary.all(app)
-            // Danh muc he thong truoc, roi moi toi cac thu muc nguoi dung tu
-            // tro vao. Chua tro thu muc nao thi `tatCa` tra rong ngay va khong
-            // cham dia lan nao - duong pho thong khong phai tra gia cho mot
-            // tinh nang phan lon nguoi dung khong bat.
-            val tuTro = ThuVienNgoai.tatCa(app)
-            val found = ThuVienNgoai.gop(danhMuc, tuTro)
-            _library.value = found
-            Catalog.library = found
-            Log.i(
-                TAG,
-                "Thu vien: ${danhMuc.size} tu danh muc he thong, " +
-                    "them ${found.size - danhMuc.size} tu thu muc tu tro"
-            )
-        }
+        scope.launch { napThuVien(app) }
+    }
+
+    /**
+     * Nhu `loadLibrary`, nhung CHO XONG moi tra ve.
+     *
+     * Man hinh Cai dat can biet luc nao quet xong de con tat chu "Dang quet".
+     * Khong co ban treo thi no phai tu quet lay mot lan nua chi de dem, tuc
+     * quet hai lan cho mot lan nguoi dung bam.
+     */
+    suspend fun napThuVien(context: Context) {
+        val app = context.applicationContext
+
+        // Pham vi quet do nguoi dung dat. Rong = khong gioi han, tuc doc ca
+        // danh muc nhu truoc - bat nguoi ta phai chon mot thu muc moi thay
+        // duoc nhac cua chinh minh la mot man hinh trong vo co.
+        val pham = withContext(Dispatchers.IO) { ThuMucNhac(app).duongQuet() }
+
+        val danhMuc = LocalLibrary.all(app, pham)
+        // Danh muc he thong truoc, roi moi toi cac thu muc nguoi dung tu tro
+        // vao. Chua tro thu muc nao thi `tatCa` tra rong ngay va khong cham dia
+        // lan nao - duong pho thong khong phai tra gia cho mot tinh nang phan
+        // lon nguoi dung khong bat.
+        //
+        // Hai duong cung doc mot thu muc la co y: danh muc he thong nhanh va co
+        // san anh bia, con duong quet thang nhat nhung tep danh muc bo sot.
+        // `gop` chong trung phan giao nhau.
+        val tuTro = ThuVienNgoai.tatCa(app)
+        val found = ThuVienNgoai.gop(danhMuc, tuTro)
+        _library.value = found
+        Catalog.library = found
+        Log.i(
+            TAG,
+            "Thu vien: ${danhMuc.size} tu danh muc he thong, " +
+                "them ${found.size - danhMuc.size} tu thu muc tu tro" +
+                if (pham.isEmpty()) "" else " (gioi han ${pham.size} thu muc)"
+        )
     }
 
     /** Phat ca thu vien tu mot bai. */

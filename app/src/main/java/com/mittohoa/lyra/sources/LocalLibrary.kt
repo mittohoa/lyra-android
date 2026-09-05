@@ -58,12 +58,47 @@ object LocalLibrary {
      * mot chu: mot thu vien vai nghin bai van chi la vai tram KB trong bo nho,
      * con hoi lai co so du lieu he thong theo tung phim thi giat thay ro.
      */
-    suspend fun all(context: Context): List<Track> = withContext(Dispatchers.IO) {
+    suspend fun all(
+        context: Context,
+        /**
+         * Chi lay tep nam trong may thu muc nay. Rong = khong gioi han.
+         *
+         * Day la PHAM VI QUET, do nguoi dung dat trong Cai dat. Ap ngay trong
+         * cau truy van chu khong loc sau khi doc ve: mot thu vien vai nghin bai
+         * ma chi lay mot thu muc thi doc het roi vut di la tra gia cho tat ca
+         * nhung bai khong ai hoi toi.
+         */
+        chiTrong: List<String> = emptyList()
+    ): List<Track> = withContext(Dispatchers.IO) {
         // Nhac truoc, video sau. Hai quyen rieng nhau tu Android 13, nen nguoi
         // dung hoan toan co the dong y mot ben va tu choi ben kia - moi ben tu
         // nuot ngoai le cua minh de ben con lai van ra duoc danh sach.
-        docNhac(context) + docVideo(context)
+        docNhac(context, chiTrong) + docVideo(context, chiTrong)
     }
+
+    /**
+     * Menh de loc theo thu muc, hoac `null` khi khong gioi han.
+     *
+     * Loc bang `_data` chu khong bang `RELATIVE_PATH`: cot kia chi co tu
+     * Android 10, ma AURA chay tu Android 8. Mot cot dung duoc o moi doi thi
+     * khong phai viet hai nhanh roi chi kiem duoc mot.
+     */
+    internal fun locThuMuc(cot: String, duong: List<String>): Pair<String, Array<String>>? {
+        if (duong.isEmpty()) return null
+        val ve = duong.joinToString(" OR ") { "$cot LIKE ? ESCAPE '\\'" }
+        return "($ve)" to duong.map { thoatLike(it) + "/%" }.toTypedArray()
+    }
+
+    /**
+     * Thoat ba ky tu mang nghia rieng trong `LIKE`.
+     *
+     * Khong thoat thi mot thu muc ten `My_Nhac` cung khop `MyXNhac`, vi `_`
+     * trong LIKE la "mot ky tu bat ky". Chuyen nho, nhung no bien mot pham vi
+     * NGUOI DUNG DAT RA thanh mot pham vi rong hon ho tuong - dung cai ma man
+     * hinh nay hua la se khong lam.
+     */
+    internal fun thoatLike(s: String): String =
+        s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     /**
      * Video trong may.
@@ -76,8 +111,10 @@ object LocalLibrary {
      * KHONG loc theo do dai hay theo thu muc. Loc thi luon co mot ai do co dung
      * ba phut nhac trong mot tep hai muoi phut, hoac de MV o cho khong ai ngo.
      */
-    private fun docVideo(context: Context): List<Track> {
+    @Suppress("DEPRECATION")   // `DATA` la cot duy nhat loc duoc tu Android 8
+    private fun docVideo(context: Context, chiTrong: List<String>): List<Track> {
         val ra = ArrayList<Track>(64)
+        val loc = locThuMuc(MediaStore.Video.Media.DATA, chiTrong)
         try {
             context.contentResolver.query(
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
@@ -90,8 +127,8 @@ object LocalLibrary {
                     MediaStore.Video.Media.HEIGHT,
                     MediaStore.Video.Media.ORIENTATION
                 ),
-                null,
-                null,
+                loc?.first,
+                loc?.second,
                 "${MediaStore.Video.Media.TITLE} COLLATE NOCASE ASC"
             )?.use { c ->
                 val idCol = c.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
@@ -134,14 +171,16 @@ object LocalLibrary {
         return ra
     }
 
-    private fun docNhac(context: Context): List<Track> {
+    @Suppress("DEPRECATION")   // `DATA` la cot duy nhat loc duoc tu Android 8
+    private fun docNhac(context: Context, chiTrong: List<String>): List<Track> {
         val out = ArrayList<Track>(256)
+        val loc = locThuMuc(MediaStore.Audio.Media.DATA, chiTrong)
         try {
             context.contentResolver.query(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 PROJECTION,
-                MUSIC_ONLY,
-                null,
+                if (loc == null) MUSIC_ONLY else "$MUSIC_ONLY AND ${loc.first}",
+                loc?.second,
                 "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
             )?.use { cursor ->
                 val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)

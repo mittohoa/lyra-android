@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import com.mittohoa.lyra.sources.ThuVienNgoai
 
 /**
  * Những thư mục người dùng đã tự trỏ AURA vào.
@@ -54,6 +55,19 @@ class ThuMucNhac(context: Context) {
 
         return song.map(Uri::parse)
     }
+
+    /**
+     * Các thư mục ấy dưới dạng đường dẫn thật, để lọc danh mục hệ thống.
+     *
+     * Rỗng nghĩa là KHÔNG GIỚI HẠN — người dùng chưa chọn gì thì AURA đọc cả
+     * danh mục như trước. Đó là mặc định đúng: bắt người ta phải chọn một thư
+     * mục mới thấy được nhạc của chính mình là một màn hình trống vô cớ.
+     *
+     * Chọn rồi thì danh sách này là PHẠM VI: chỉ nhạc và video nằm trong đó mới
+     * vào thư viện. Đây là điểm khác nhau thật giữa "app quét khắp máy" và
+     * "app đọc đúng chỗ được cho phép".
+     */
+    fun duongQuet(): List<String> = danhSach().mapNotNull(ThuVienNgoai::duongTuyetDoi)
 
     /**
      * Nhận một thư mục vừa được chọn.

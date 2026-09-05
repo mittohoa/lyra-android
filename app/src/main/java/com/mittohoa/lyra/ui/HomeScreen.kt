@@ -1157,9 +1157,9 @@ internal fun TunePane(
 
         }
         Muc(
-            tieuDe = "Thư mục nhạc",
+            tieuDe = "Thư mục quét",
             accent = accent,
-            tomTat = "Trỏ AURA vào thư mục mà danh mục hệ thống bỏ sót"
+            tomTat = "Giới hạn AURA chỉ đọc nhạc và video trong thư mục bạn chọn"
         ) {
             ThuMucNhacMuc(accent)
         }

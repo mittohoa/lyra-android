@@ -381,6 +381,35 @@ object ThuVienNgoai {
         null
     }
 
+    /**
+     * Đường dẫn thật của một thư mục đã được trao quyền.
+     *
+     * Cần để LỌC danh mục hệ thống: `MediaStore` không biết gì về địa chỉ tài
+     * liệu, nó chỉ biết đường dẫn. Muốn nói "chỉ lấy nhạc trong mấy thư mục
+     * này" thì phải dịch được từ cái người dùng chọn sang cái MediaStore hiểu.
+     *
+     * Mã cây có dạng `<ổ>:<đường>`, và hai ổ quy về hai gốc:
+     *
+     *     primary:Music/Viet   ->  /storage/emulated/0/Music/Viet
+     *     1A2B-3C4D:Nhac       ->  /storage/1A2B-3C4D/Nhac
+     *
+     * KHÔNG có API chính thức nào cho phép dịch này, nhưng đây là hình dạng mà
+     * trình cung cấp tệp của hệ thống dùng suốt từ Android 5 tới nay. Trình
+     * cung cấp của bên thứ ba có thể khác — lúc đó trả về đường dẫn không khớp
+     * gì cả, danh mục hệ thống lọc ra rỗng, và đường quét thẳng thư mục vẫn
+     * gánh được. Sai ở đây làm thư viện thiếu, không làm nó sai.
+     */
+    fun duongTuyetDoi(goc: Uri): String? = try {
+        val id = DocumentsContract.getTreeDocumentId(goc)
+        val o = id.substringBefore(':')
+        val duong = id.substringAfter(':', "")
+        val re = if (o.equals("primary", true)) "/storage/emulated/0" else "/storage/$o"
+        if (duong.isEmpty()) re else "$re/${duong.trimEnd('/')}"
+    } catch (e: Exception) {
+        Log.d(TAG, "Khong doi duoc $goc sang duong dan", e)
+        null
+    }
+
     /** Tên tệp của một tài liệu, lấy từ mã chứ không hỏi lại trình cung cấp. */
     fun tenTaiLieu(tep: Uri): String? = try {
         val id = DocumentsContract.getDocumentId(tep)

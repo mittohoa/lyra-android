@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -31,27 +29,35 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mittohoa.lyra.data.ThuMucNhac
 import com.mittohoa.lyra.service.Lyra
-import com.mittohoa.lyra.sources.ThuVienNgoai
-import kotlinx.coroutines.Dispatchers
+import com.mittohoa.lyra.sources.MediaKind
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
- * Trỏ AURA vào một thư mục nhạc.
+ * Giới hạn AURA chỉ đọc nhạc và video trong thư mục người dùng chọn.
  *
- * Màn hình này tồn tại vì một câu hỏi rất hay gặp: "tôi tải nhạc về rồi mà app
- * không thấy". Có đúng hai nguyên nhân, và chúng cần hai câu trả lời trái
- * ngược nhau — nên chỗ này phải nói thẳng cả hai, thay vì để người dùng thử đi
- * thử lại một thứ không bao giờ chạy.
+ * Hai việc trong một màn hình, và chúng là hai mặt của cùng một câu hỏi
+ * "app được phép nhìn thấy gì":
  *
- *   - Tệp nằm trong bộ nhớ chung mà danh mục hệ thống bỏ sót → chọn thư mục ở
- *     đây là xong.
- *   - Tệp nằm trong bộ nhớ riêng của app đã tải nó → không app nào chạm tới
- *     được, kể cả AURA, kể cả khi đã cấp mọi quyền. Bộ chọn thư mục của Android
- *     cũng sẽ TỪ CHỐI cho chọn `Android/data`. Nói thật chuyện này còn hơn để
- *     họ tưởng mình cấu hình sai.
+ *   - **Hẹp lại.** Chưa chọn gì thì AURA đọc cả danh mục của hệ thống, tức mọi
+ *     tệp phương tiện trên máy — kể cả tiếng ghi âm, nhạc chuông người ta không
+ *     muốn thấy trong thư viện. Chọn thư mục là bảo AURA chỉ đọc đúng chỗ đó.
+ *   - **Rộng ra.** Danh mục hệ thống bỏ sót vài loại tệp: thư mục có `.nomedia`,
+ *     đuôi lạ, tệp vừa chép sang mà máy chưa quét. Thư mục đã chọn thì AURA đọc
+ *     thẳng, không đợi danh mục.
+ *
+ * Cùng một danh sách thư mục lo cả nhạc lẫn video. Không tách hai danh sách:
+ * bộ quét phân loại theo NỘI DUNG THẬT của tệp chứ không theo đuôi, nên một
+ * thư mục lẫn lộn vẫn ra đúng — nhạc vào mục nhạc, phim vào mục phim. Bắt người
+ * dùng khai hai lần cho cùng một thư mục là bắt họ trả lời một câu mà máy tự
+ * biết.
+ *
+ * Còn một chuyện màn hình này phải nói thẳng, vì không nói thì người dùng thử
+ * mãi một thứ không bao giờ chạy: nhạc tải trong Spotify hay YouTube Music nằm
+ * trong bộ nhớ riêng của chính app đó, và từ Android 11 thì không app nào đọc
+ * được vùng ấy — bộ chọn thư mục cũng sẽ không cho chọn vào đấy.
  */
 @Composable
 internal fun ThuMucNhacMuc(accent: Color) {
@@ -61,28 +67,25 @@ internal fun ThuMucNhacMuc(accent: Color) {
 
     val kho = remember { ThuMucNhac(context) }
     var cacThuMuc by remember { mutableStateOf(kho.danhSach()) }
-    var soBai by remember { mutableIntStateOf(0) }
     var dangQuet by remember { mutableStateOf(false) }
     var bao by remember { mutableStateOf<String?>(null) }
 
-    /** Quét lại và nạp lại thư viện. Gọi sau mỗi lần thêm hoặc bỏ thư mục. */
-    fun quetLai() {
+    // Đếm từ chính thư viện đang dùng, không tự quét lấy một lần nữa: con số
+    // người dùng cần thấy là "tôi sẽ thấy bao nhiêu bài", mà đó đúng là thư
+    // viện. Tự quét riêng vừa tốn hai lần vừa có thể ra số khác thư viện thật.
+    val thuVien by Lyra.library.collectAsStateWithLifecycle()
+    val soNhac = thuVien.count { it.kind == MediaKind.AUDIO }
+    val soVideo = thuVien.count { it.kind == MediaKind.VIDEO }
+
+    /** Nạp lại thư viện theo phạm vi mới. Gọi sau mỗi lần thêm hoặc bỏ. */
+    fun napLai() {
         cacThuMuc = kho.danhSach()
-        if (cacThuMuc.isEmpty()) {
-            soBai = 0
-            Lyra.loadLibrary(context)
-            return
-        }
         dangQuet = true
         scope.launch {
-            soBai = withContext(Dispatchers.IO) { ThuVienNgoai.tatCa(context).size }
+            Lyra.napThuVien(context)
             dangQuet = false
-            // Nạp lại thư viện để bài mới hiện ra ngay, không đợi mở lại app.
-            Lyra.loadLibrary(context)
         }
     }
-
-    LaunchedEffect(Unit) { if (cacThuMuc.isNotEmpty()) quetLai() }
 
     val chon = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -91,17 +94,21 @@ internal fun ThuMucNhacMuc(accent: Color) {
         bao = if (kho.them(uri)) null
         else "Máy không cho giữ quyền đọc thư mục này. Thử chọn một thư mục " +
             "trong bộ nhớ trong thay vì trong ứng dụng tệp của bên thứ ba."
-        quetLai()
+        napLai()
     }
 
     Column {
         Text(
             when {
-                cacThuMuc.isEmpty() -> "Chưa trỏ vào thư mục nào. AURA đang chỉ đọc " +
-                    "danh mục nhạc của hệ thống."
                 dangQuet -> "Đang quét…"
-                soBai == 0 -> "Không tìm thấy tệp nhạc nào trong thư mục đã chọn."
-                else -> "Tìm thấy $soBai bài trong thư mục bạn đã trỏ."
+                cacThuMuc.isEmpty() ->
+                    "Chưa giới hạn thư mục nào. AURA đang đọc cả danh mục nhạc " +
+                        "và video của hệ thống — $soNhac bài hát, $soVideo video."
+                soNhac == 0 && soVideo == 0 ->
+                    "Không tìm thấy nhạc hay video nào trong thư mục đã chọn."
+                else ->
+                    "Chỉ đọc trong ${cacThuMuc.size} thư mục dưới đây: " +
+                        "$soNhac bài hát, $soVideo video."
             },
             color = mau.chuMo,
             fontSize = 14.sp,
@@ -141,7 +148,7 @@ internal fun ThuMucNhacMuc(accent: Color) {
                             .clickable {
                                 bao = null
                                 kho.bo(uri)
-                                quetLai()
+                                napLai()
                             }
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     )
@@ -152,25 +159,25 @@ internal fun ThuMucNhacMuc(accent: Color) {
 
         Spacer(Modifier.height(10.dp))
         Text(
-            "Dùng khi bạn thấy tệp nhạc trong trình quản lý tệp mà AURA thì " +
-                "không thấy. Thường là do thư mục có tệp .nomedia, hoặc máy " +
-                "chưa quét lại sau khi bạn chép nhạc sang.",
+            if (cacThuMuc.isEmpty())
+                "Chọn thư mục khi bạn muốn AURA chỉ đọc đúng chỗ mình để nhạc, " +
+                    "hoặc khi bạn thấy tệp trong trình quản lý tệp mà AURA thì " +
+                    "không thấy — thường do thư mục có tệp .nomedia, hoặc máy " +
+                    "chưa quét lại sau khi bạn chép nhạc sang."
+            else
+                "Bỏ hết thư mục thì AURA quay lại đọc cả danh mục của hệ thống.",
             color = mau.chuRatMo,
             fontSize = 13.sp,
             lineHeight = 19.sp
         )
 
         Spacer(Modifier.height(14.dp))
-        Nut(nhan = "Chọn thư mục nhạc", accent = accent, modifier = Modifier.fillMaxWidth()) {
+        Nut(nhan = "Thêm thư mục", accent = accent, modifier = Modifier.fillMaxWidth()) {
             bao = null
             chon.launch(null)
         }
 
         Spacer(Modifier.height(14.dp))
-        // Đây là đoạn quan trọng nhất của cả màn hình. Nhạc tải trong Spotify,
-        // YouTube Music, và bản tải offline của nhiều app khác nằm trong bộ nhớ
-        // riêng của chính app đó. Không có cách nào - không phải AURA thiếu
-        // quyền, mà Android không mở cửa đó cho bất kỳ app nào.
         Text(
             "Nhạc tải trong Spotify hay YouTube Music thì cách này không giúp " +
                 "được. Bản offline của các app đó nằm trong bộ nhớ riêng của " +
@@ -190,9 +197,9 @@ internal fun ThuMucNhacMuc(accent: Color) {
 /**
  * Tên thư mục cho người đọc, không phải địa chỉ máy đọc.
  *
- * Mã tài liệu có dạng `primary:Music/Zing`. Bỏ phần ổ đĩa đi và thay dấu hai
- * chấm bằng dấu gạch chéo là ra đúng đường dẫn người dùng thấy trong trình
- * quản lý tệp. Không đoán được thì trả về nguyên địa chỉ, còn hơn trả về rỗng.
+ * Mã tài liệu có dạng `primary:Music/Zing`. Bỏ phần ổ đĩa đi và giữ lại phần
+ * đường dẫn là ra đúng thứ người dùng thấy trong trình quản lý tệp. Không đoán
+ * được thì trả về nguyên địa chỉ, còn hơn trả về rỗng.
  */
 private fun tenDeDoc(uri: Uri): String = try {
     val id = DocumentsContract.getTreeDocumentId(uri)
