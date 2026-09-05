@@ -3,9 +3,11 @@ package com.mittohoa.lyra.lyrics
 import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.util.Log
 import com.mittohoa.lyra.BuildConfig
+import com.mittohoa.lyra.sources.ThuVienNgoai
 import java.io.File
 
 /**
@@ -66,6 +68,11 @@ object LrcCanhTep {
      * trong tệp — việc đọc thành dòng là của `parseLrc`, chạy lại mỗi lần.
      */
     fun doc(context: Context, uri: String): Lyrics? {
+        // Bai den tu thu muc nguoi dung tu tro vao khong co duong dan tren dia
+        // nao ca - chi co dia chi tai lieu. Phai tach ra mot duong rieng, vi
+        // `File` khong mo duoc dia chi do.
+        ThuVienNgoai.diaChiTuMa(uri)?.let { return docCanhTaiLieu(context, it) }
+
         val duong = duongDan(context, uri) ?: return null
         // Tep nam CANH di truoc the nam TRONG: nguoi dung tu dat tep .lrc do o
         // day, con the trong tep la thu di kem san tu luc tai ve. Cai nguoi ta
@@ -126,15 +133,7 @@ object LrcCanhTep {
      * Android thì phân biệt.
      */
     fun docCanh(duongNhac: String): Lyrics? {
-        val khongDuoi = duongNhac.substringBeforeLast('.')
-        // .lrc truoc .srt: mot tep co ca hai thi ban .lrc gan nhu chac chan la
-        // loi bai hat co nguoi cham vao, con .srt thuong la phu de tai kem.
-        for (ten in listOf(
-            "$khongDuoi.lrc", "$khongDuoi.LRC",
-            "$duongNhac.lrc", "$duongNhac.LRC",
-            "$khongDuoi.srt", "$khongDuoi.SRT",
-            "$duongNhac.srt", "$duongNhac.SRT"
-        )) {
+        for (ten in tenLoiUngVien(duongNhac)) {
             val chu = try {
                 File(ten).takeIf { it.isFile }?.readText()
             } catch (e: Exception) {
@@ -144,23 +143,91 @@ object LrcCanhTep {
                 Log.d(TAG, "khong doc duoc $ten", e)
                 null
             }
-            if (chu.isNullOrBlank()) continue
-
-            val laSrt = ten.endsWith(".srt", ignoreCase = true)
-            val doc =
-                if (laSrt) parseSrt(chu).copy(from = NGUON_PHU_DE)
-                else parseLrc(chu, from = NGUON)
-            if (doc.lines.isEmpty()) {
-                // Tep co chu ma doc ra khong duoc cau nao: dang tep khac han,
-                // hoac hong. Di tiep chu dung nhan mot ban loi rong roi thoi -
-                // nhan roi thi khong con di tim nguon nao khac nua.
-                Log.i(TAG, "tep khong doc ra cau nao, bo qua: $ten")
-                continue
-            }
+            val doc = dungLoi(chu, ten) ?: continue
             Log.i(TAG, "doc duoc " + doc.lines.size + " cau tu $ten")
             return doc
         }
         return null
+    }
+
+    /**
+     * Cac ten tep loi co the nam canh mot tep nhac, theo thu tu uu tien.
+     *
+     * Hai kieu dat ten, vi ca hai deu dang ton tai ngoai doi:
+     *
+     *     bai hat.mp3  ->  bai hat.lrc       (thay duoi - pho bien nhat)
+     *     bai hat.mp3  ->  bai hat.mp3.lrc   (noi them duoi)
+     *
+     * Moi kieu thu ca chu thuong lan chu hoa: Windows khong phan biet nen tep
+     * chep tu may tinh sang rat hay mang duoi viet hoa, con Android thi phan
+     * biet.
+     *
+     * `.lrc` truoc `.srt`: mot tep co ca hai thi ban `.lrc` gan nhu chac chan
+     * la loi bai hat co nguoi cham vao, con `.srt` thuong la phu de tai kem.
+     *
+     * Nhan CA duong dan day du lan ten tep tran - hai duong tim loi (tep trong
+     * may va tai lieu trong thu muc tu tro) dung chung dung mot danh sach nay,
+     * nen them mot duoi moi la ca hai duong cung co.
+     */
+    internal fun tenLoiUngVien(ten: String): List<String> {
+        val khongDuoi = ten.substringBeforeLast('.')
+        return listOf(
+            "$khongDuoi.lrc", "$khongDuoi.LRC",
+            "$ten.lrc", "$ten.LRC",
+            "$khongDuoi.srt", "$khongDuoi.SRT",
+            "$ten.srt", "$ten.SRT"
+        )
+    }
+
+    /**
+     * Doc chu thanh loi, hoac null khi khong ra cau nao.
+     *
+     * Tep co chu ma doc ra khong duoc cau nao nghia la dang tep khac han, hoac
+     * hong. Tra null de ben goi di tiep, chu dung nhan mot ban loi rong roi
+     * thoi - nhan roi thi khong con di tim nguon nao khac nua.
+     */
+    private fun dungLoi(chu: String?, ten: String): Lyrics? {
+        if (chu.isNullOrBlank()) return null
+        val doc =
+            if (ten.endsWith(".srt", ignoreCase = true)) parseSrt(chu).copy(from = NGUON_PHU_DE)
+            else parseLrc(chu, from = NGUON)
+        if (doc.lines.isEmpty()) {
+            Log.i(TAG, "tep khong doc ra cau nao, bo qua: $ten")
+            return null
+        }
+        return doc
+    }
+
+    /**
+     * Loi nam canh mot TAI LIEU - bai den tu thu muc nguoi dung tu tro vao.
+     *
+     * Duong nay ton tai vi bai kieu do khong co duong dan tren dia: ta chi cam
+     * mot dia chi tai lieu, va `File` khong mo duoc no. Khong co doan nay thi
+     * nguoi dung tro AURA vao thu muc nhac cua ho, thay bai hien ra day du, roi
+     * ngac nhien vi may tep `.lrc` nam ngay canh do lai khong duoc doc.
+     */
+    private fun docCanhTaiLieu(context: Context, tep: Uri): Lyrics? {
+        val tenNhac = ThuVienNgoai.tenTaiLieu(tep) ?: return null
+
+        for (ten in tenLoiUngVien(tenNhac)) {
+            val anhEm = ThuVienNgoai.anhEm(tep) { _ -> ten } ?: continue
+            val chu = try {
+                context.contentResolver.openInputStream(anhEm)
+                    ?.use { it.readBytes().decodeToString() }
+            } catch (e: Exception) {
+                // Khong co tep do la chuyen thuong - `openInputStream` nem
+                // `FileNotFoundException` chu khong tra null.
+                null
+            }
+            val doc = dungLoi(chu, ten) ?: continue
+            Log.i(TAG, "doc duoc " + doc.lines.size + " cau tu tai lieu $ten")
+            return doc
+        }
+
+        // Khong co tep nam canh thi xuong the nam TRONG tep nhac - dung thu tu
+        // nhu duong tep trong may: cai nguoi dung tu tay dat o day dang tin hon
+        // cai di kem san tu luc tai ve.
+        return LoiTrongTep.doc(tenNhac) { context.contentResolver.openInputStream(tep) }
     }
 
 
@@ -211,6 +278,14 @@ object LrcCanhTep {
         deLen: Boolean = false
     ): KetQuaGhi {
         if (loi.isBlank()) return KetQuaGhi.Hong("chưa có lời nào để ghi")
+
+        // Bai trong thu muc nguoi dung tu tro vao di duong rieng - va day la
+        // duong CHAC CHAN ghi duoc: nguoi dung da tu trao quyen ghi cho dung
+        // thu muc do, nen khong vap phai luat "chi bon thu muc" cua he thong.
+        ThuVienNgoai.diaChiTuMa(uri)?.let {
+            return ghiTaiLieu(context, it, dungNoiDung(loi, tenBai, caSi), deLen)
+        }
+
         val duongNhac = duongDan(context, uri) ?: return KetQuaGhi.KhongPhaiTepTrongMay
         val dich = File(duongNhac.substringBeforeLast('.') + ".lrc")
         if (dich.exists() && !deLen) return KetQuaGhi.DaCoTep(dich.path)
@@ -227,6 +302,62 @@ object LrcCanhTep {
             // nhân thì lối thoát vẫn thế.
             Log.i(TAG, "khong ghi duoc " + dich.path, e)
             KetQuaGhi.BiChan(dich.name, than)
+        }
+    }
+
+    /**
+     * Ghi `.lrc` nam canh mot TAI LIEU trong thu muc nguoi dung tu tro vao.
+     *
+     * Khac han duong tep trong may o mot diem dang ke: o day khong co luat "chi
+     * bon thu muc nhan tep .lrc". Nguoi dung da tu trao quyen ghi cho dung thu
+     * muc nay qua bo chon, nen he thong khong con gi de chan - `BiChan` o duoi
+     * gan nhu khong bao gio toi, va giu lai chi de phong trinh cung cap tep cua
+     * ben thu ba tra ve chi doc.
+     *
+     * DE LEN thi ghi vao chinh tai lieu da co chu KHONG tao lai: `createDocument`
+     * gap ten trung se de ra "bai (1).lrc" chu khong bao loi, va nguoi dung bam
+     * "Ghi de" ma may de them mot tep thu hai la sai han y ho.
+     */
+    private fun ghiTaiLieu(
+        context: Context,
+        tep: Uri,
+        than: String,
+        deLen: Boolean
+    ): KetQuaGhi {
+        val tenNhac = ThuVienNgoai.tenTaiLieu(tep) ?: return KetQuaGhi.KhongPhaiTepTrongMay
+        val tenLrc = tenNhac.substringBeforeLast('.') + ".lrc"
+
+        val san = ThuVienNgoai.anhEm(tep) { _ -> tenLrc }
+        val daCo = san != null && ThuVienNgoai.coThat(context, san)
+        if (daCo && !deLen) return KetQuaGhi.DaCoTep(tenLrc)
+
+        return try {
+            val dich = if (daCo) san!! else {
+                val cha = ThuVienNgoai.thuMucCha(tep)
+                    ?: return KetQuaGhi.Hong("không tìm được thư mục chứa bài này")
+                DocumentsContract.createDocument(
+                    context.contentResolver,
+                    cha,
+                    // KHONG dung "text/plain": bo cung cap tep se doi duoi theo
+                    // kieu MIME va de ra "bai.lrc.txt". Kieu nhi phan thi khong
+                    // co duoi nao de doi, nen ten giu nguyen - cung ly do man
+                    // hinh "Chon cho luu" dang dung kieu nay.
+                    "application/octet-stream",
+                    tenLrc
+                ) ?: return KetQuaGhi.Hong("không tạo được tệp trong thư mục đó")
+            }
+
+            // "wt" - cat ngan truoc khi ghi. Thieu chu `t` thi ghi de mot ban
+            // loi ngan hon ban cu se de lai duoi thua cua ban cu.
+            context.contentResolver.openOutputStream(dich, "wt")?.use {
+                it.write(than.toByteArray())
+            } ?: return KetQuaGhi.Hong("không mở được tệp để ghi")
+
+            Log.i(TAG, "da ghi loi ra tai lieu $tenLrc")
+            KetQuaGhi.Xong(tenLrc)
+        } catch (e: Exception) {
+            Log.i(TAG, "khong ghi duoc tai lieu $tenLrc", e)
+            KetQuaGhi.BiChan(tenLrc, than)
         }
     }
 
