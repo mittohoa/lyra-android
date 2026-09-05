@@ -1,5 +1,17 @@
+import com.android.build.api.artifact.SingleArtifact
 import java.io.FileInputStream
 import java.util.Properties
+
+/**
+ * So phien ban, khai o day chu khong nhet thang vao `defaultConfig`.
+ *
+ * Ten tep ban gop cung phai mang so nay - xem khoi `androidComponents` o duoi.
+ * Khai mot cho thi doi phien ban la sua mot dong; khai hai cho thi som muon co
+ * mot ban gop mang ten cua ban truoc, va do la loai nham lan khong ai phat hien
+ * cho toi luc nop nham file len Play.
+ */
+val maPhienBan = 27
+val tenPhienBan = "0.3.16"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -36,8 +48,8 @@ android {
         // Google Play đòi targetSdk không được cũ hơn một năm so với bản Android
         // mới nhất. 36 là Android 16.
         targetSdk = 36
-        versionCode = 27
-        versionName = "0.3.16"
+        versionCode = maPhienBan
+        versionName = tenPhienBan
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -171,6 +183,42 @@ android {
 
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+    }
+}
+
+/**
+ * Chep ban gop ra mot ban sao MANG SO PHIEN BAN trong ten.
+ *
+ * VI SAO CAN. Gradle luon xuat ra dung mot ten - `app-play-release.aab` - va
+ * ghi de len tep cu moi lan dung. Dung lien may ban trong mot buoi thi cac ban
+ * truoc bien mat khong dau vet, va den luc muon doi chieu "ban nop tuan truoc
+ * co mang thay doi nay chua" thi khong con gi de mo ra xem.
+ *
+ * CHEP chu khong DOI TEN: ban goc de nguyen cho cu, nen moi thu quen duong dan
+ * do - Play Console, kich ban dung san, hay chinh thoi quen cua nguoi dung -
+ * deu khong hong. Ban danh so la mot ban luu nam rieng.
+ *
+ * DAT SANG THU MUC KHAC, khong ghi chung vao `outputs/bundle/`. Thu muc do do
+ * AGP quan ly va co tac vu khac cua no doc vao; ghi them tep la vao giua thi
+ * Gradle bao loi phu thuoc ngam va ca lan dung that bai. Da vap dung cho nay.
+ *
+ * Lay tep qua `SingleArtifact.BUNDLE` chu khong tu doan duong dan: dia chi thu
+ * ra nam trong tay AGP va da doi vai lan qua cac doi. Hoi AGP thi doi bao nhieu
+ * lan nua cung khong phai sua o day.
+ *
+ * `finalizedBy` de chay TU DONG sau moi lan dung ban gop. Bat nguoi ta nho goi
+ * them mot lenh nghia la se co lan quen, ma lan quen do trung dung lan can nho
+ * nhat.
+ */
+androidComponents {
+    onVariants { bienThe ->
+        val ten = bienThe.name.replaceFirstChar { it.uppercase() }
+        val chep = tasks.register<Copy>("chepBanGopDanhSo$ten") {
+            from(bienThe.artifacts.get(SingleArtifact.BUNDLE))
+            into(layout.buildDirectory.dir("outputs/ban-gop-danh-so/${bienThe.name}"))
+            rename { "lyra-${bienThe.name}-$tenPhienBan.aab" }
+        }
+        tasks.matching { it.name == "bundle$ten" }.configureEach { finalizedBy(chep) }
     }
 }
 
