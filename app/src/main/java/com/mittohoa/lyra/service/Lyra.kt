@@ -549,6 +549,18 @@ object Lyra {
     private val _library = MutableStateFlow<List<Track>>(emptyList())
     val library: StateFlow<List<Track>> = _library.asStateFlow()
 
+    private val _coThuMuc = MutableStateFlow(false)
+
+    /**
+     * Nguoi dung da chi cho AURA thu muc nao chua.
+     *
+     * Man hinh can phan biet HAI chuyen rat khac nhau ma deu ra mot thu vien
+     * rong: chua cho phep doc o dau (loi thoat la vao Cai dat chon thu muc), va
+     * da cho phep nhung trong do khong co bai nao (loi thoat la chon thu muc
+     * khac). Gop lam mot thi cau bao luon sai mot nua so nguoi doc no.
+     */
+    val coThuMuc: StateFlow<Boolean> = _coThuMuc.asStateFlow()
+
     /**
      * Doc nhac trong may.
      *
@@ -571,11 +583,25 @@ object Lyra {
     suspend fun napThuVien(context: Context) {
         val app = context.applicationContext
 
-        // Pham vi quet do nguoi dung dat. Rong = khong gioi han, tuc doc ca
-        // danh muc nhu truoc - bat nguoi ta phai chon mot thu muc moi thay
-        // duoc nhac cua chinh minh la mot man hinh trong vo co.
-        val pham = withContext(Dispatchers.IO) { ThuMucNhac(app).duongQuet() }
+        val thuMuc = withContext(Dispatchers.IO) { ThuMucNhac(app).danhSach() }
+        _coThuMuc.value = thuMuc.isNotEmpty()
 
+        // KHONG TU QUET GI CA. Chua chon thu muc thi thu vien rong, va AURA
+        // khong doc mot dong nao cua danh muc he thong.
+        //
+        // Doi lai han so voi cach thong thuong, va la co y: mac dinh "quet sach
+        // may roi bay ra" nghia la app cam ca bo suu tap phuong tien cua nguoi
+        // dung ma chua ai cho phep gi ngoai mot o quyen ho bam cho xong. Khong
+        // doc gi cho toi khi duoc chi dich danh thi cai ho trao la mot thu muc
+        // CU THE, khong phai ca chiec dien thoai.
+        if (thuMuc.isEmpty()) {
+            _library.value = emptyList()
+            Catalog.library = emptyList()
+            Log.i(TAG, "Thu vien: chua chon thu muc nao, khong doc gi")
+            return
+        }
+
+        val pham = thuMuc.mapNotNull(ThuVienNgoai::duongTuyetDoi)
         val danhMuc = LocalLibrary.all(app, pham)
         // Danh muc he thong truoc, roi moi toi cac thu muc nguoi dung tu tro
         // vao. Chua tro thu muc nao thi `tatCa` tra rong ngay va khong cham dia

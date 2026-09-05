@@ -36,17 +36,19 @@ import com.mittohoa.lyra.sources.MediaKind
 import kotlinx.coroutines.launch
 
 /**
- * Giới hạn AURA chỉ đọc nhạc và video trong thư mục người dùng chọn.
+ * Chỉ ra cho AURA những thư mục nó được phép đọc.
  *
- * Hai việc trong một màn hình, và chúng là hai mặt của cùng một câu hỏi
- * "app được phép nhìn thấy gì":
+ * Đây là CỬA DUY NHẤT để nhạc trong máy vào được AURA. Chưa chọn gì thì thư
+ * viện rỗng — không phải "ít bài", mà là không đọc gì cả. Màn hình này vì thế
+ * không phải một tuỳ chọn nâng cao, nó là bước đầu tiên.
  *
- *   - **Hẹp lại.** Chưa chọn gì thì AURA đọc cả danh mục của hệ thống, tức mọi
- *     tệp phương tiện trên máy — kể cả tiếng ghi âm, nhạc chuông người ta không
- *     muốn thấy trong thư viện. Chọn thư mục là bảo AURA chỉ đọc đúng chỗ đó.
- *   - **Rộng ra.** Danh mục hệ thống bỏ sót vài loại tệp: thư mục có `.nomedia`,
- *     đuôi lạ, tệp vừa chép sang mà máy chưa quét. Thư mục đã chọn thì AURA đọc
- *     thẳng, không đợi danh mục.
+ * Đổi lại người dùng được hai thứ:
+ *
+ *   - **Biết chính xác app nhìn thấy gì.** Thứ họ trao là một thư mục cụ thể
+ *     chứ không phải cả bộ sưu tập phương tiện sau một ô quyền bấm cho xong.
+ *   - **Thấy được nhiều hơn.** Thư mục đã chỉ thì đọc thẳng, không đợi danh
+ *     mục hệ thống, nên với tới cả tệp danh mục bỏ sót: thư mục có `.nomedia`,
+ *     đuôi lạ, hoặc nhạc vừa chép sang mà máy chưa quét lại.
  *
  * Cùng một danh sách thư mục lo cả nhạc lẫn video. Không tách hai danh sách:
  * bộ quét phân loại theo NỘI DUNG THẬT của tệp chứ không theo đuôi, nên một
@@ -102,8 +104,7 @@ internal fun ThuMucNhacMuc(accent: Color) {
             when {
                 dangQuet -> "Đang quét…"
                 cacThuMuc.isEmpty() ->
-                    "Chưa giới hạn thư mục nào. AURA đang đọc cả danh mục nhạc " +
-                        "và video của hệ thống — $soNhac bài hát, $soVideo video."
+                    "Chưa chọn thư mục nào, nên AURA chưa đọc gì trên máy bạn."
                 soNhac == 0 && soVideo == 0 ->
                     "Không tìm thấy nhạc hay video nào trong thư mục đã chọn."
                 else ->
@@ -160,12 +161,12 @@ internal fun ThuMucNhacMuc(accent: Color) {
         Spacer(Modifier.height(10.dp))
         Text(
             if (cacThuMuc.isEmpty())
-                "Chọn thư mục khi bạn muốn AURA chỉ đọc đúng chỗ mình để nhạc, " +
-                    "hoặc khi bạn thấy tệp trong trình quản lý tệp mà AURA thì " +
-                    "không thấy — thường do thư mục có tệp .nomedia, hoặc máy " +
-                    "chưa quét lại sau khi bạn chép nhạc sang."
+                "AURA không tự quét máy bạn. Nó chỉ đọc trong thư mục bạn chỉ " +
+                    "đích danh ở đây — và đọc thẳng, nên thấy được cả những tệp " +
+                    "danh mục hệ thống bỏ sót: thư mục có .nomedia, đuôi tệp lạ, " +
+                    "hoặc nhạc vừa chép sang mà máy chưa quét lại."
             else
-                "Bỏ hết thư mục thì AURA quay lại đọc cả danh mục của hệ thống.",
+                "Bỏ hết thư mục thì AURA không còn đọc gì trên máy nữa.",
             color = mau.chuRatMo,
             fontSize = 13.sp,
             lineHeight = 19.sp

@@ -48,7 +48,8 @@ trên máy thật: gói thử không nằm trong `enabled_notification_listeners
 | Lời trên thẻ màn hình khoá | ✅ |
 | Sáu hiệu ứng chữ, cho cả trang Lời lẫn khung nổi | ✅ |
 | Ô bật/tắt nhanh trong Cài đặt nhanh | ✅ |
-| Trỏ vào thư mục nhạc mà danh mục hệ thống bỏ sót | ✅ |
+| **Không tự quét máy** — chỉ đọc thư mục bạn chỉ định, nhạc lẫn video | ✅ |
+| Đọc được cả tệp danh mục hệ thống bỏ sót (`.nomedia`, đuôi lạ) | ✅ |
 | Đọc và ghi `.lrc` ngay trong thư mục đó | ✅ |
 | Tải nhạc kèm lời nhúng trong file | ✅ chỉ bản `sideload` |
 

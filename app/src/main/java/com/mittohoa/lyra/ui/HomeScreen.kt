@@ -153,6 +153,8 @@ fun HomeScreen(
     onCycleRepeat: () -> Unit,
     library: List<Track>,
     canReadLibrary: Boolean,
+    /** Nguoi dung da chi cho AURA thu muc nao chua - xem `Lyra.coThuMuc`. */
+    daChonThuMuc: Boolean,
     onAskLibrary: () -> Unit,
     onPlayFromLibrary: (Int) -> Unit,
     playlists: List<com.mittohoa.lyra.data.Playlist>,
@@ -302,6 +304,7 @@ fun HomeScreen(
                         onEnqueue = onEnqueue,
                         library = library,
                         canReadLibrary = canReadLibrary,
+                        daChonThuMuc = daChonThuMuc,
                         onAskLibrary = onAskLibrary,
                         onPlayFromLibrary = onPlayFromLibrary,
                         playlists = playlists,

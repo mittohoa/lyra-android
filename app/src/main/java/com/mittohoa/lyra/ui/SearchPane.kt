@@ -70,6 +70,14 @@ fun SearchPane(
     onEnqueue: (Track) -> Unit,
     library: List<Track>,
     canReadLibrary: Boolean,
+    /**
+     * Nguoi dung da chi cho AURA thu muc nao chua.
+     *
+     * Tach hai chuyen deu ra mot thu vien rong: CHUA CHI CHO NO CHO NAO (loi
+     * thoat la vao Cai dat chon thu muc) va da chi roi nhung trong do khong co
+     * bai nao. Gop lam mot thi cau bao luon sai voi mot nua so nguoi doc.
+     */
+    daChonThuMuc: Boolean,
     onAskLibrary: () -> Unit,
     onPlayFromLibrary: (Int) -> Unit,
     playlists: List<Playlist>,
@@ -155,6 +163,27 @@ fun SearchPane(
             // nhin. Ket luan "khong tim thay" o day la mot cau tra loi sai, va
             // no che mat dung cai nut sua duoc chuyen do. Nang nhat o ban Play,
             // noi ma nhac trong may la kho DUY NHAT.
+            // Chua chi thu muc nao thi day moi la thu chan, khong phai quyen.
+            // Phai dung TRUOC nhanh xin quyen: bam "Cho phep" luc nay khong
+            // lam thu vien hien ra mot bai nao, va mot nut nhu the con te hon
+            // khong co nut.
+            results.isEmpty() && !daChonThuMuc -> Center {
+                Text(
+                    "Nhạc trong máy",
+                    color = mau.chuMo,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "AURA không tự quét máy bạn. Vào Cài đặt › Thư mục quét rồi " +
+                        "chỉ cho nó thư mục bạn để nhạc — nó chỉ đọc đúng trong đó, " +
+                        "và thấy được cả những tệp máy bỏ sót.",
+                    color = mau.chuRatMo,
+                    fontSize = 14.sp
+                )
+            }
+
             results.isEmpty() && !canReadLibrary -> Center {
                 Ask(
                     title = if (query.isBlank()) "Nhạc trong máy" else "Chưa tìm được",

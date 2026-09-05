@@ -4,25 +4,27 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import com.mittohoa.lyra.sources.ThuVienNgoai
 
 /**
- * Những thư mục người dùng đã tự trỏ AURA vào.
+ * Những thư mục người dùng đã chỉ đích danh cho AURA đọc.
  *
- * VÌ SAO CẦN, khi đã đọc `MediaStore` rồi: MediaStore chỉ chứa thứ nó đã đánh
- * chỉ mục. Ba trường hợp rơi ra ngoài, và cả ba đều là nhạc thật của người dùng:
+ * ĐÂY LÀ TOÀN BỘ PHẠM VI. Danh sách này rỗng thì AURA không đọc một tệp nào
+ * trên máy — không phải "đọc ít đi", mà là không đọc gì cả.
  *
- *   - Thư mục có tệp `.nomedia` — máy quét bỏ qua cả thư mục. Nhiều app tải
- *     nhạc đặt sẵn tệp này để nhạc của họ không lẫn vào thư viện chung.
- *   - Đuôi tệp lạ hoặc kiểu MIME máy không nhận, nên không vào bảng audio.
- *   - Tệp vừa chép sang qua cáp mà máy chưa quét lại.
+ * Khác hẳn cách thông thường, và là có chủ ý. Mặc định của gần như mọi trình
+ * phát là quét sạch máy rồi bày ra, và người dùng chỉ được hỏi đúng một câu
+ * "cho phép đọc nhạc?" — bấm Đồng ý là trao cả bộ sưu tập phương tiện. Ở đây
+ * thứ họ trao là một thư mục CỤ THỂ, chọn bằng tay, thu lại được bất cứ lúc
+ * nào ngay tại màn hình Cài đặt.
  *
- * Người dùng nhìn thấy tệp trong trình quản lý tệp nhưng AURA thì không, và
- * không có cách nào giải thích chuyện đó cho xuôi. Trỏ thẳng vào thư mục là
- * đường vòng qua cả bộ máy đánh chỉ mục.
+ * Đi kèm một cái lợi không nhỏ: thư mục đã chỉ thì đọc THẲNG, không qua danh
+ * mục hệ thống, nên với tới được cả những tệp danh mục bỏ sót — thư mục có
+ * `.nomedia`, đuôi lạ, hoặc tệp vừa chép sang mà máy chưa quét lại. Người dùng
+ * nhìn thấy tệp trong trình quản lý tệp mà app không thấy là chuyện không giải
+ * thích cho xuôi được.
  *
  * KHÔNG xin thêm quyền nào. `ACTION_OPEN_DOCUMENT_TREE` là người dùng tự chọn
- * và tự trao, mỗi thư mục một lần, thu lại được bất cứ lúc nào ở đây.
+ * và tự trao, mỗi thư mục một lần.
  *
  * Quyền được trao là VĨNH VIỄN (`takePersistableUriPermission`) — không giữ thì
  * khởi động lại máy là mất, và người dùng phải chọn lại thư mục mỗi sáng.
@@ -55,19 +57,6 @@ class ThuMucNhac(context: Context) {
 
         return song.map(Uri::parse)
     }
-
-    /**
-     * Các thư mục ấy dưới dạng đường dẫn thật, để lọc danh mục hệ thống.
-     *
-     * Rỗng nghĩa là KHÔNG GIỚI HẠN — người dùng chưa chọn gì thì AURA đọc cả
-     * danh mục như trước. Đó là mặc định đúng: bắt người ta phải chọn một thư
-     * mục mới thấy được nhạc của chính mình là một màn hình trống vô cớ.
-     *
-     * Chọn rồi thì danh sách này là PHẠM VI: chỉ nhạc và video nằm trong đó mới
-     * vào thư viện. Đây là điểm khác nhau thật giữa "app quét khắp máy" và
-     * "app đọc đúng chỗ được cho phép".
-     */
-    fun duongQuet(): List<String> = danhSach().mapNotNull(ThuVienNgoai::duongTuyetDoi)
 
     /**
      * Nhận một thư mục vừa được chọn.

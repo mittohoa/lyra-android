@@ -102,6 +102,14 @@ class MainActivity : ComponentActivity() {
         // khong bi cat ngang boi hai dai he thong
         enableEdgeToEdge()
         readPermissions()
+        // Nap thu vien VO DIEU KIEN, khong cho co quyen doc nhac.
+        //
+        // Thu muc nguoi dung tu chi qua bo chon khong can mot quyen media nao
+        // het - quyen ay chi lam duong doc qua danh muc he thong nhanh hon.
+        // Treo lan nap vao quyen do nghia la ai chi thu muc cho AURA nhung tu
+        // choi quyen doc ca may se khong bao gio thay bai nao, dung nhung
+        // nguoi da chon cach can trong nhat.
+        Lyra.loadLibrary(this)
 
         setContent {
             // Mat giay: giay sang, muc toi, hay theo may. Giu o day chu khong
@@ -142,6 +150,7 @@ class MainActivity : ComponentActivity() {
             val shuffle by Lyra.shuffle.collectAsStateWithLifecycle()
             val repeat by Lyra.repeat.collectAsStateWithLifecycle()
             val library by Lyra.library.collectAsStateWithLifecycle()
+            val daChonThuMuc by Lyra.coThuMuc.collectAsStateWithLifecycle()
             val playlists by Lyra.playlists.collectAsStateWithLifecycle()
             val downloads by Lyra.downloads.collectAsStateWithLifecycle()
             val banMoi by Lyra.banMoi.collectAsStateWithLifecycle()
@@ -238,6 +247,7 @@ class MainActivity : ComponentActivity() {
                 onCycleRepeat = { Lyra.cycleRepeat(this) },
                 library = library,
                 canReadLibrary = canReadLibrary,
+                daChonThuMuc = daChonThuMuc,
                 onAskLibrary = { askAudio.launch(quyenThuVien) },
                 onPlayFromLibrary = { Lyra.playFromLibrary(this, it) },
                 playlists = playlists,
