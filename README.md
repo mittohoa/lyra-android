@@ -48,6 +48,8 @@ trên máy thật: gói thử không nằm trong `enabled_notification_listeners
 | Lời trên thẻ màn hình khoá | ✅ |
 | Sáu hiệu ứng chữ, cho cả trang Lời lẫn khung nổi | ✅ |
 | Ô bật/tắt nhanh trong Cài đặt nhanh | ✅ |
+| Trỏ vào thư mục nhạc mà danh mục hệ thống bỏ sót | ✅ |
+| Đọc và ghi `.lrc` ngay trong thư mục đó | ✅ |
 | Tải nhạc kèm lời nhúng trong file | ✅ chỉ bản `sideload` |
 
 ---
@@ -56,32 +58,50 @@ trên máy thật: gói thử không nằm trong `enabled_notification_listeners
 
 | | `sideload` | `play` |
 |---|---|---|
-| Tìm và phát nhạc Zing MP3 / NhacCuaTui | có | **không có** |
+| **Tìm** nhạc ở Zing MP3 / NhacCuaTui | có | có |
+| **Phát** nhạc từ hai nguồn đó | có | **không có** |
 | Tải nhạc về máy | có | **không có** |
 | Tra lời ở Zing / NhacCuaTui | có | **không có** |
 | Tự tải và cài bản mới | có | không (Play tự lo) |
 | Nhạc trong máy, lời LRCLIB, dịch, khung lời nổi, thẻ màn hình khoá | đầy đủ | đầy đủ |
 
-Hai API của Zing và NhacCuaTui là API nội bộ, không ai cấp phép cho Lyra dùng,
-và thứ chúng trả về là cả một kho nhạc thương mại. Phát kho đó qua một app trên
-Play là chuyện bị gỡ — gỡ kèm cả tài khoản nhà phát triển, chứ không chỉ rớt một
-lần nộp. Nên bản Play không mang chúng, kể cả phần tra lời vốn rủi ro thấp hơn
-hẳn: một bản dựng *không mang dòng nào* là điều nói được bằng một câu kiểm chứng
-được, khác hẳn "có mang nhưng không gọi tới". Giá phải trả là độ phủ lời bài Việt
-giảm, vì LRCLIB yếu hơn Zing ở mảng đó.
+Hai API của Zing và NhacCuaTui là API nội bộ, không ai cấp phép cho Lyra dùng.
+Nhưng ranh giới không nằm ở chỗ *có gọi API hay không* — nó nằm ở chỗ **phục vụ
+nội dung có bản quyền**. Thứ khiến một app bị gỡ khỏi Play, gỡ kèm cả tài khoản
+nhà phát triển, là phát cả một kho nhạc thương mại miễn phí. Liệt kê tên bài và
+tên ca sĩ thì không phải chuyện đó.
+
+Nên bản Play mượn đúng cái hai nguồn ấy giỏi — **tìm nhạc Việt**, thứ LRCLIB làm
+rất kém — mà không lấy một chữ nội dung nào của họ. Chạm vào một kết quả thì
+Lyra **tra lời** cho bài đó ở LRCLIB chứ không phát.
+
+Đây là chỗ đã đổi so với các bản 0.1.8–0.3.1. Hồi đó bản Play không mang một
+dòng mã Zing/NCT nào, và câu ấy kiểm được bằng cách soi dex. Bây giờ **không nói
+câu đó được nữa**: file nộp có mang mã gọi API để tìm bài. Đó là cái giá của
+việc bản Play tìm được nhạc Việt, và nói thẳng ra thì hơn là để ai đó tự phát
+hiện.
 
 Tách bằng **bộ mã nguồn** (`src/sideload/`, `src/play/`) chứ không bằng một cờ
 bật/tắt lúc chạy: một cái cờ vẫn để lại toàn bộ mã trong file cài đặt, và người
 duyệt Play mở file ra xem thì thấy. Đường ranh nằm ở `sources/NguonNgoai.kt` —
-mỗi biến thể một bản.
+mỗi biến thể một bản. Bản `play` cho `duongPhat()` trả `null` và để `NGUON_LOI`
+rỗng, nên hai nhánh ấy không còn ai gọi tới và R8 dọn chúng đi.
 
-Kiểm chứng được, và đã kiểm trên bản **gỡ lỗi** để R8 không phải là lời giải
-thích cho việc thiếu mã:
+Vẫn kiểm chứng được, chỉ là câu khẳng định giờ hẹp hơn và chính xác hơn. Ba điểm
+cuối của Zing, ba số phận khác nhau trong cùng một file nộp:
 
 ```
-$ unzip -p app-play-arm64-v8a-debug.apk classes*.dex | grep -c zingmp3.vn
-0
+$ unzip -p app-play-release.aab base/dex/classes.dex > c.dex
+$ for e in /api/v2/search/multi /api/v2/song/get/streaming /api/v2/lyric/get/lyric; do
+    grep -aq "$e" c.dex && echo "$e  còn" || echo "$e  đã bị cắt"
+  done
+/api/v2/search/multi         còn
+/api/v2/song/get/streaming   đã bị cắt
+/api/v2/lyric/get/lyric      đã bị cắt
 ```
+
+Chuỗi `keyDecryptLyric` — khoá giải mã lời của NhacCuaTui — cũng không còn trong
+bản Play.
 
 ```bash
 ./gradlew assembleSideloadDebug     # cài tay, có tải nhạc
