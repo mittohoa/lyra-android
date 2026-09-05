@@ -111,7 +111,7 @@ bản Play.
 ./gradlew :app:testDebugUnitTest    # bộ kiểm tra logic thuần
 ```
 
-Yêu cầu: **JDK 17** và Android SDK. `compileSdk`/`targetSdk` là **36**
+Yêu cầu: **JDK 21** và Android SDK. `compileSdk`/`targetSdk` là **36**
 (Android 16), tối thiểu là API 26 (Android 8) — mốc đầu tiên có kiểu cửa sổ nổi
 mà app này cần.
 
