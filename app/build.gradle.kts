@@ -36,8 +36,8 @@ android {
         // Google Play đòi targetSdk không được cũ hơn một năm so với bản Android
         // mới nhất. 36 là Android 16.
         targetSdk = 36
-        versionCode = 24
-        versionName = "0.3.13"
+        versionCode = 25
+        versionName = "0.3.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
