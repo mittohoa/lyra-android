@@ -1157,6 +1157,14 @@ internal fun TunePane(
 
         }
         Muc(
+            tieuDe = "Thư mục nhạc",
+            accent = accent,
+            tomTat = "Trỏ AURA vào thư mục mà danh mục hệ thống bỏ sót"
+        ) {
+            ThuMucNhacMuc(accent)
+        }
+
+        Muc(
             tieuDe = "Lời tự nhập",
             accent = accent,
             tomTat = "Sao lưu và khôi phục lời bạn tự gõ hoặc tự căn giờ"

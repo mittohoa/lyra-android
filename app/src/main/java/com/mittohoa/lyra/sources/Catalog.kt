@@ -133,10 +133,16 @@ object Catalog {
     /** Duong phat that cho mot bai, hoac null khi nguon tu choi. */
     suspend fun streamUrl(track: Track): String? = when (track.source) {
         // File trong may: dia chi `content://` dung duoc ngay, khong hoi ai ca
-        MusicSource.LOCAL -> track.streamUrl ?: track.id.toLongOrNull()?.let {
-            if (track.kind == MediaKind.VIDEO) LocalLibrary.videoUri(it)
-            else LocalLibrary.trackUri(it)
-        }
+        MusicSource.LOCAL -> track.streamUrl
+            // Bai trong thu muc nguoi dung tu tro vao: ma mang san dia chi tai
+            // lieu, giai ra la xong. Phai dung TRUOC duong MediaStore, vi ma
+            // do khong bao gio la mot so - roi xuong duoi thi tra null va bai
+            // im lang khi mo lai tu danh sach phat da luu.
+            ?: ThuVienNgoai.giaiMaDiaChi(track.id)
+            ?: track.id.toLongOrNull()?.let {
+                if (track.kind == MediaKind.VIDEO) LocalLibrary.videoUri(it)
+                else LocalLibrary.trackUri(it)
+            }
         // Ban Play tra null o day. Danh sach phat cu mang theo bai Zing/NCT thi
         // bai do bao loi phat - dung han, va tot hon la giu mot nut bam khong
         // bao gio an gi.

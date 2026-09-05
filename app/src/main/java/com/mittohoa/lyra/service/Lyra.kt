@@ -37,6 +37,7 @@ import com.mittohoa.lyra.player.Artwork
 import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.sources.Catalog
 import com.mittohoa.lyra.sources.LocalLibrary
+import com.mittohoa.lyra.sources.ThuVienNgoai
 import com.mittohoa.lyra.sources.LrclibPublish
 import com.mittohoa.lyra.sources.Track
 import com.mittohoa.lyra.translate.TranslationRepository
@@ -557,10 +558,20 @@ object Lyra {
     fun loadLibrary(context: Context) {
         val app = context.applicationContext
         scope.launch {
-            val found = LocalLibrary.all(app)
+            val danhMuc = LocalLibrary.all(app)
+            // Danh muc he thong truoc, roi moi toi cac thu muc nguoi dung tu
+            // tro vao. Chua tro thu muc nao thi `tatCa` tra rong ngay va khong
+            // cham dia lan nao - duong pho thong khong phai tra gia cho mot
+            // tinh nang phan lon nguoi dung khong bat.
+            val tuTro = ThuVienNgoai.tatCa(app)
+            val found = ThuVienNgoai.gop(danhMuc, tuTro)
             _library.value = found
             Catalog.library = found
-            Log.i(TAG, "Thu vien trong may: ${found.size} bai")
+            Log.i(
+                TAG,
+                "Thu vien: ${danhMuc.size} tu danh muc he thong, " +
+                    "them ${found.size - danhMuc.size} tu thu muc tu tro"
+            )
         }
     }
 

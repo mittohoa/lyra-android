@@ -8,6 +8,7 @@ import android.os.Build
 import android.util.Size
 import android.util.Log
 import com.mittohoa.lyra.sources.Http
+import com.mittohoa.lyra.sources.ThuVienNgoai
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,6 +47,26 @@ object Artwork {
     suspend fun load(context: Context, url: String?): Bitmap? {
         if (url.isNullOrBlank()) return null
         synchronized(cache) { cache[url] }?.let { return it }
+
+        // Bia nam trong THE cua tep nhac - bai doc tu thu muc nguoi dung tu tro
+        // vao. Phai xet TRUOC hai truong hop duoi: dia chi ben trong tien to
+        // cung la `content://`, ma di duong do thi ta nap ca chuc MB nhac vao
+        // bo nho roi moi biet no khong phai anh.
+        if (url.startsWith(ThuVienNgoai.BIA_TRONG_THE)) {
+            return biaTrongThe(context, url)
+        }
+
+        // Phim trong thu muc nguoi dung tu tro vao. Khong nhan ra bang
+        // `laVideo` duoc: dia chi tai lieu khong co doan `/video/` nhu dia chi
+        // cua MediaStore, nen loai phai duoc noi ra tu luc quet.
+        if (url.startsWith(ThuVienNgoai.KHUNG_TRONG_TEP)) {
+            return withContext(Dispatchers.IO) {
+                val that = url.removePrefix(ThuVienNgoai.KHUNG_TRONG_TEP)
+                val bitmap = khungHinh(context, android.net.Uri.parse(that))
+                if (bitmap != null) synchronized(cache) { cache[url] = bitmap }
+                bitmap
+            }
+        }
 
         if (url.startsWith("content://") || url.startsWith("file://")) {
             return loadLocal(context, url)
@@ -88,6 +109,35 @@ object Artwork {
             } catch (e: Exception) {
                 // Album khong co bia la chuyen rat thuong, khong phai loi
                 null
+            }
+        }
+
+    /**
+     * Bia rut tu the cua chinh tep nhac.
+     *
+     * `MediaMetadataRetriever` doc phan the o dau tep chu khong nap ca ban
+     * nhac, nen mot bai 10 MB cung chi ton dung mieng anh. Khong co the thi tra
+     * null - rat thuong, khong phai loi.
+     */
+    private suspend fun biaTrongThe(context: Context, url: String): Bitmap? =
+        withContext(Dispatchers.IO) {
+            val that = url.removePrefix(ThuVienNgoai.BIA_TRONG_THE)
+            val doc = MediaMetadataRetriever()
+            try {
+                doc.setDataSource(context, android.net.Uri.parse(that))
+                val bitmap = doc.embeddedPicture?.let(::decodeScaled)
+                if (bitmap != null) synchronized(cache) { cache[url] = bitmap }
+                bitmap
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            } finally {
+                try {
+                    doc.release()
+                } catch (e: Exception) {
+                    Log.d(TAG, "release() nem", e)
+                }
             }
         }
 
