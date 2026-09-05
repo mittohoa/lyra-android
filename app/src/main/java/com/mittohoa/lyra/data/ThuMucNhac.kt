@@ -59,6 +59,25 @@ class ThuMucNhac(context: Context) {
     }
 
     /**
+     * Trần số bài cho một lần quét thư mục.
+     *
+     * Phải có trần: người dùng hoàn toàn có thể trỏ vào gốc thẻ nhớ, và đọc thẻ
+     * từng tệp trên vài chục nghìn tệp là hàng phút đứng hình.
+     *
+     * Nhưng trần phải **đổi được**. Người có thư viện lớn hơn trần mà không có
+     * cách nâng thì mất bài vĩnh viễn, và mất một cách im lặng — không lỗi,
+     * không danh sách rỗng, chỉ là vài album biến mất.
+     */
+    fun tranSoBai(): Int = prefs.getInt(KEY_TRAN, TRAN_MAC_DINH)
+
+    /** Nâng trần thêm một bậc. Trả về trần mới. */
+    fun nangTran(): Int {
+        val moi = tranSoBai() + TRAN_MAC_DINH
+        prefs.edit().putInt(KEY_TRAN, moi).apply()
+        return moi
+    }
+
+    /**
      * Nhận một thư mục vừa được chọn.
      *
      * Trả về false khi hệ thống từ chối trao quyền lâu dài — hiếm, nhưng có
@@ -97,6 +116,10 @@ class ThuMucNhac(context: Context) {
 
     private companion object {
         const val KEY = "cac-thu-muc"
+        const val KEY_TRAN = "tran-so-bai"
+
+        /** Cũng là bước nâng mỗi lần bấm — xem `nangTran`. */
+        const val TRAN_MAC_DINH = 2000
         const val TAG = "AuraThuMuc"
     }
 }

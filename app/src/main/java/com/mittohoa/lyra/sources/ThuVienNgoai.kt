@@ -47,8 +47,28 @@ object ThuVienNgoai {
      */
     private val nho = object : LinkedHashMap<String, Track>(64, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Track>?) =
-            size > TRAN_SO_BAI * 2
+            size > tranDangDung * 2
     }
+
+    /**
+     * Kết quả một lần quét: các bài, và có phải đã dừng vì chạm trần không.
+     *
+     * Trả kèm `chamTran` chứ không chỉ trả danh sách: dừng ở trần mà im lặng
+     * thì người có thư viện lớn hơn trần mất bài **không dấu hiệu gì** — không
+     * lỗi, không danh sách rỗng, chỉ là vài album biến mất và họ không có cách
+     * nào đoán ra tại sao. Đó là kiểu hỏng tệ nhất trong các kiểu hỏng.
+     */
+    class KetQuaQuet(val bai: List<Track>, val chamTran: Boolean)
+
+    /**
+     * Trần đang áp cho lần quét gần nhất.
+     *
+     * Giữ lại để bộ nhớ đệm biết cần nhớ tới đâu — trần nâng lên thì đệm cũng
+     * phải nới theo, không thì quét lần sau vừa đọc thêm bài mới vừa đẩy bài cũ
+     * ra khỏi đệm, và mỗi lần nạp lại là một vòng đọc thẻ gần như từ đầu.
+     */
+    @Volatile
+    private var tranDangDung = 2000
 
     /**
      * Đọc hết các thư mục đã trỏ.
@@ -57,19 +77,24 @@ object ThuVienNgoai {
      * của bên thứ ba trả về rác — chỉ làm mất đúng thư mục đó, chứ không được
      * phép làm trắng cả thư viện.
      */
-    suspend fun tatCa(context: Context): List<Track> = withContext(Dispatchers.IO) {
+    suspend fun tatCa(context: Context): KetQuaQuet = withContext(Dispatchers.IO) {
         val kho = ThuMucNhac(context)
+        val tran = kho.tranSoBai()
+        tranDangDung = tran
         val ra = ArrayList<Track>(64)
 
         for (goc in kho.danhSach()) {
             try {
-                quet(context, goc, DocumentsContract.getTreeDocumentId(goc), ra, 0)
+                quet(context, goc, DocumentsContract.getTreeDocumentId(goc), ra, 0, tran)
             } catch (e: Exception) {
                 Log.w(TAG, "Khong doc duoc thu muc $goc", e)
             }
-            if (ra.size >= TRAN_SO_BAI) break
+            if (ra.size >= tran) break
         }
-        ra
+        // Đầy đúng bằng trần thì coi như đã cắt. Có thể oan khi thư mục có đúng
+        // chừng ấy bài, nhưng cái giá của việc báo oan là một dòng chữ thừa,
+        // còn cái giá của việc im lặng là mất bài mà không ai biết.
+        KetQuaQuet(ra, ra.size >= tran)
     }
 
     /**
@@ -84,9 +109,10 @@ object ThuVienNgoai {
         goc: Uri,
         docId: String,
         ra: MutableList<Track>,
-        doSau: Int
+        doSau: Int,
+        tran: Int
     ) {
-        if (doSau > TRAN_DO_SAU || ra.size >= TRAN_SO_BAI) return
+        if (doSau > TRAN_DO_SAU || ra.size >= tran) return
 
         val con = DocumentsContract.buildChildDocumentsUriUsingTree(goc, docId)
         context.contentResolver.query(
@@ -114,7 +140,7 @@ object ThuVienNgoai {
             val nhanhCon = ArrayList<String>(8)
 
             while (c.moveToNext()) {
-                if (ra.size >= TRAN_SO_BAI) break
+                if (ra.size >= tran) break
                 val id = c.getString(idCot) ?: continue
                 val ten = c.getString(tenCot).orEmpty()
                 val mime = c.getString(mimeCot).orEmpty()
@@ -144,7 +170,7 @@ object ThuVienNgoai {
                 }
             }
 
-            for (id in nhanhCon) quet(context, goc, id, ra, doSau + 1)
+            for (id in nhanhCon) quet(context, goc, id, ra, doSau + 1, tran)
         }
     }
 
@@ -536,10 +562,12 @@ object ThuVienNgoai {
     )
 
     /**
-     * Trần số bài. Trỏ vào gốc một thẻ nhớ lớn là chuyện có thật, và quét hết
-     * nó bằng `MediaMetadataRetriever` mất hàng phút.
+     * Trần độ sâu. Trỏ vào gốc một thẻ nhớ lớn là chuyện có thật, và ở đó có
+     * những nhánh lồng nhau rất sâu.
+     *
+     * Trần SỐ BÀI thì không nằm ở đây — nó do người dùng đổi được, xem
+     * `ThuMucNhac.tranSoBai`.
      */
-    private const val TRAN_SO_BAI = 2000
     private const val TRAN_DO_SAU = 8
     private const val TIEN_TO = "saf-"
 

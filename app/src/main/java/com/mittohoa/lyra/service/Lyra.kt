@@ -561,6 +561,17 @@ object Lyra {
      */
     val coThuMuc: StateFlow<Boolean> = _coThuMuc.asStateFlow()
 
+    private val _chamTranThuMuc = MutableStateFlow(false)
+
+    /**
+     * Lan quet gan nhat co dung vi cham tran khong.
+     *
+     * Man hinh Cai dat phai noi ra: dung o tran ma im lang thi nguoi co thu vien
+     * lon hon tran mat bai KHONG DAU HIEU GI - khong loi, khong danh sach rong,
+     * chi la vai album bien mat ma ho khong doan duoc tai sao.
+     */
+    val chamTranThuMuc: StateFlow<Boolean> = _chamTranThuMuc.asStateFlow()
+
     /**
      * Doc nhac trong may.
      *
@@ -583,7 +594,8 @@ object Lyra {
     suspend fun napThuVien(context: Context) {
         val app = context.applicationContext
 
-        val thuMuc = withContext(Dispatchers.IO) { ThuMucNhac(app).danhSach() }
+        val kho = ThuMucNhac(app)
+        val thuMuc = withContext(Dispatchers.IO) { kho.danhSach() }
         _coThuMuc.value = thuMuc.isNotEmpty()
 
         // KHONG TU QUET GI CA. Chua chon thu muc thi thu vien rong, va AURA
@@ -596,6 +608,7 @@ object Lyra {
         // CU THE, khong phai ca chiec dien thoai.
         if (thuMuc.isEmpty()) {
             _library.value = emptyList()
+            _chamTranThuMuc.value = false
             Catalog.library = emptyList()
             Log.i(TAG, "Thu vien: chua chon thu muc nao, khong doc gi")
             return
@@ -612,14 +625,19 @@ object Lyra {
         // san anh bia, con duong quet thang nhat nhung tep danh muc bo sot.
         // `gop` chong trung phan giao nhau.
         val tuTro = ThuVienNgoai.tatCa(app)
-        val found = ThuVienNgoai.gop(danhMuc, tuTro)
+        _chamTranThuMuc.value = tuTro.chamTran
+        val found = ThuVienNgoai.gop(danhMuc, tuTro.bai)
         _library.value = found
         Catalog.library = found
         Log.i(
             TAG,
             "Thu vien: ${danhMuc.size} tu danh muc he thong, " +
                 "them ${found.size - danhMuc.size} tu thu muc tu tro" +
-                if (pham.isEmpty()) "" else " (gioi han ${pham.size} thu muc)"
+                (if (pham.isEmpty()) "" else " (gioi han ${pham.size} thu muc)") +
+                // Ghi ra chu khong de im: khi co nguoi bao "thieu bai", day la
+                // dong duy nhat phan biet duoc "thu muc chi co chung ay" voi
+                // "da doc toi tran roi dung".
+                (if (tuTro.chamTran) " - DUNG O TRAN ${kho.tranSoBai()} BAI" else "")
         )
     }
 

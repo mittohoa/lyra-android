@@ -74,6 +74,7 @@ internal fun ThuMucNhacMuc(accent: Color) {
     // người dùng cần thấy là "tôi sẽ thấy bao nhiêu bài", mà đó đúng là thư
     // viện. Tự quét riêng vừa tốn hai lần vừa có thể ra số khác thư viện thật.
     val thuVien by Lyra.library.collectAsStateWithLifecycle()
+    val chamTran by Lyra.chamTranThuMuc.collectAsStateWithLifecycle()
     val soNhac = thuVien.count { it.kind == MediaKind.AUDIO }
     val soVideo = thuVien.count { it.kind == MediaKind.VIDEO }
 
@@ -123,6 +124,25 @@ internal fun ThuMucNhacMuc(accent: Color) {
         bao?.let {
             Spacer(Modifier.height(8.dp))
             Text(it, color = mau.chu, fontSize = 13.sp, lineHeight = 19.sp)
+        }
+
+        // Chạm trần thì PHẢI nói ra. Dừng im lặng nghĩa là người có thư viện
+        // lớn hơn trần mất bài mà không dấu hiệu gì — không lỗi, không danh
+        // sách rỗng, chỉ là vài album biến mất.
+        if (chamTran && !dangQuet) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Đã đọc tới giới hạn ${kho.tranSoBai()} bài rồi dừng. Thư mục có " +
+                    "thể còn nữa — đọc thêm thì mất thời gian hơn mỗi lần mở app.",
+                color = mau.chu,
+                fontSize = 13.sp,
+                lineHeight = 19.sp
+            )
+            Spacer(Modifier.height(10.dp))
+            Nut(nhan = "Đọc thêm 2000 bài", accent = accent, modifier = Modifier.fillMaxWidth()) {
+                kho.nangTran()
+                napLai()
+            }
         }
 
         if (cacThuMuc.isNotEmpty()) {
