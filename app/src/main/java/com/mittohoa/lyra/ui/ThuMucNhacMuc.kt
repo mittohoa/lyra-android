@@ -2,8 +2,6 @@ package com.mittohoa.lyra.ui
 
 import android.net.Uri
 import android.provider.DocumentsContract
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -89,15 +87,21 @@ internal fun ThuMucNhacMuc(accent: Color) {
         }
     }
 
-    val chon = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        bao = if (kho.them(uri)) null
-        else "Máy không cho giữ quyền đọc thư mục này. Thử chọn một thư mục " +
-            "trong bộ nhớ trong thay vì trong ứng dụng tệp của bên thứ ba."
-        napLai()
-    }
+    val chonThuMuc = nhoBoChonThuMuc(
+        onBatDau = {
+            bao = null
+            dangQuet = true
+        },
+        onXong = { nhanDuoc ->
+            dangQuet = false
+            cacThuMuc = kho.danhSach()
+            if (!nhanDuoc) {
+                bao = "Máy không cho giữ quyền đọc thư mục này. Thử chọn một " +
+                    "thư mục trong bộ nhớ trong thay vì trong ứng dụng tệp của " +
+                    "bên thứ ba."
+            }
+        }
+    )
 
     Column {
         Text(
@@ -174,8 +178,7 @@ internal fun ThuMucNhacMuc(accent: Color) {
 
         Spacer(Modifier.height(14.dp))
         Nut(nhan = "Thêm thư mục", accent = accent, modifier = Modifier.fillMaxWidth()) {
-            bao = null
-            chon.launch(null)
+            chonThuMuc()
         }
 
         Spacer(Modifier.height(14.dp))

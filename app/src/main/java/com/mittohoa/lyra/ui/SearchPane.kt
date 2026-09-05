@@ -93,6 +93,11 @@ fun SearchPane(
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
 
+    // Dang ky o TANG NGOAI CUNG, khong trong nhanh `when` va khong sau lenh
+    // `return` cua man hinh danh sach phat: bo nhan ket qua phai duoc dang ky
+    // dung mot lan moi lan dung, khong the nam sau mot dieu kien.
+    val chonThuMuc = nhoBoChonThuMuc()
+
     // Nhạc trong máy thì bản nào cũng phát được. Nhạc ở Zing/NCT thì tuỳ bản
     // dựng — xem `NguonNgoai`. Bản Play tìm được nhưng không phát, nên chạm
     // vào kết quả là TRA LỜI chứ không phải phát.
@@ -168,19 +173,18 @@ fun SearchPane(
             // lam thu vien hien ra mot bai nao, va mot nut nhu the con te hon
             // khong co nut.
             results.isEmpty() && !daChonThuMuc -> Center {
-                Text(
-                    "Nhạc trong máy",
-                    color = mau.chuMo,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "AURA không tự quét máy bạn. Vào Cài đặt › Thư mục quét rồi " +
-                        "chỉ cho nó thư mục bạn để nhạc — nó chỉ đọc đúng trong đó, " +
-                        "và thấy được cả những tệp máy bỏ sót.",
-                    color = mau.chuRatMo,
-                    fontSize = 14.sp
+                Ask(
+                    title = if (query.isBlank()) "Nhạc trong máy" else "Chưa tìm được",
+                    body = "AURA không tự quét máy bạn. Chỉ cho nó thư mục bạn để " +
+                        "nhạc — nó chỉ đọc đúng trong đó, và đọc thẳng nên thấy " +
+                        "được cả những tệp máy bỏ sót.",
+                    // Mo THANG bo chon, khong day nguoi dung sang trang Cai dat.
+                    // Cung mot viec ma di duong kia la ba nhip: sang Cai dat, tim
+                    // dung muc, roi moi bam. Bo chon cua he thong da la mot man
+                    // hinh rieng co nut quay lai - khong can muon them mot cai.
+                    action = "Chọn thư mục",
+                    accent = accent,
+                    onAction = chonThuMuc
                 )
             }
 
