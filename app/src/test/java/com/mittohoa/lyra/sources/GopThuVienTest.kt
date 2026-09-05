@@ -21,12 +21,14 @@ class GopThuVienTest {
         ten: String,
         caSi: String = "Ai Do",
         dai: Long = 200_000,
-        loai: MediaKind = MediaKind.AUDIO
+        loai: MediaKind = MediaKind.AUDIO,
+        album: String = ""
     ) = Track(
         id = "ma-$ten",
         source = MusicSource.LOCAL,
         title = ten,
         artist = caSi,
+        album = album,
         durationMs = dai,
         kind = loai
     )
@@ -84,6 +86,34 @@ class GopThuVienTest {
         // nguoi khong bat tinh nang nay van xep theo luat cu.
         val trongMay = listOf(bai("Zoo"), bai("Ánh"))
         assertEquals(listOf("Ánh", "Zoo"), ten(ThuVienNgoai.gop(trongMay, emptyList())))
+    }
+
+    @Test fun `cung album ma the ghi khac chu hoa van nam lien nhau`() {
+        // Do duoc tren may that: mot album tai ve co ba tep ghi "Touch Of
+        // Light" va mot tep ghi "Touch of Light". Xep theo chu nguyen ban thi
+        // album ay bi cat lam doi, moi nua mot tieu de, va nguoi dung khong co
+        // cach nao doan ra vi sao.
+        val trongMay = listOf(
+            bai("Illusion Original", album = "Touch Of Light"),
+            bai("Zzz Bai Khac", album = "Zzz Album Khac"),
+            bai("Illusion Remix", album = "Touch of Light")
+        )
+        val ra = ThuVienNgoai.gop(trongMay, emptyList())
+        // Hai bai cua cung album phai dung canh nhau, khong bi bai cua album
+        // khac chen vao giua.
+        assertEquals(
+            listOf("Illusion Original", "Illusion Remix", "Zzz Bai Khac"),
+            ten(ra)
+        )
+    }
+
+    @Test fun `bai khong co album xep theo nhom rong, khong lan vao album khac`() {
+        val trongMay = listOf(
+            bai("Bbb Co Album", album = "Mmm Album"),
+            bai("Aaa Khong Album")
+        )
+        // Nhóm rỗng đứng trước mọi nhóm có tên.
+        assertEquals(listOf("Aaa Khong Album", "Bbb Co Album"), ten(ThuVienNgoai.gop(trongMay, emptyList())))
     }
 
     @Test fun `nhac di truoc phim`() {

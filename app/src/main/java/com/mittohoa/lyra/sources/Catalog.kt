@@ -38,6 +38,21 @@ data class Track(
     val title: String,
     val artist: String,
     val artworkUrl: String? = null,
+    /**
+     * Ten album, doc tu the. Rong khi the khong ghi.
+     *
+     * Them SAU khi `Track` da duoc luu xuong dia trong danh sach phat - nen
+     * phai co gia tri mac dinh, khong thi moi danh sach phat cu deu doc hong.
+     */
+    val album: String = "",
+    /**
+     * Ten thu muc chua tep, KHONG phai duong dan day du.
+     *
+     * De hien khi the khong ghi album: mot dong "Trong may" cho ca thu vien thi
+     * khong noi duoc bai nay den tu dau. Rat nhieu nguoi xep nhac theo thu muc
+     * chu khong theo the, va voi ho thi ten thu muc CHINH LA ten album.
+     */
+    val thuMuc: String = "",
     val durationMs: Long = 0,
     /**
      * KHONG luu xuong dia: duong phat cua ca hai nguon online deu co han, va
@@ -69,6 +84,15 @@ data class Track(
      *
      * Duong that duoc hoi ngay truoc khi phat - xem `StreamResolver`.
      */
+    /**
+     * Nhan gom nhom tren man hinh thu vien.
+     *
+     * Album truoc, thieu the thi ten thu muc. Rat nhieu nguoi xep nhac theo thu
+     * muc chu khong theo the - voi ho thi ten thu muc CHINH LA ten album, va
+     * hien mot nhom "khong ro" cho ca dong nhac do thi khong giup duoc ai.
+     */
+    val nhom: String get() = album.ifBlank { thuMuc }
+
     val playbackUri: String get() = buildString {
         append("lyra://").append(source.key).append('/').append(id)
         // Mang theo LOAI, vi hang doi chi con dia chi nay chu khong con doi

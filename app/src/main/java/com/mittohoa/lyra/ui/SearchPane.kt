@@ -98,6 +98,10 @@ fun SearchPane(
     // dung mot lan moi lan dung, khong the nam sau mot dieu kien.
     val chonThuMuc = nhoBoChonThuMuc()
 
+    // Dung o TANG NGOAI CUNG, khong trong nhanh `when`: `remember` gan vao vi
+    // tri trong cay dung, ma vi tri do doi theo nhanh nao dang chay.
+    val dongThuVien = remember(library) { dungDongThuVien(library) }
+
     // Nhạc trong máy thì bản nào cũng phát được. Nhạc ở Zing/NCT thì tuỳ bản
     // dựng — xem `NguonNgoai`. Bản Play tìm được nhưng không phát, nên chạm
     // vào kết quả là TRA LỜI chứ không phải phát.
@@ -266,16 +270,42 @@ fun SearchPane(
                         modifier = Modifier.padding(start = 24.dp, top = 6.dp, bottom = 6.dp)
                     )
                 }
-                itemsIndexed(library, key = { _, t -> t.playbackUri }) { i, track ->
-                    TrackRow(
-                        track = track,
-                        accent = accent,
-                        playing = track.playbackUri == playingUri,
-                        onPlay = { onPlayFromLibrary(i) },
-                        onEnqueue = { onEnqueue(track) },
-                        download = null,
-                        onDownload = {}
-                    )
+                itemsIndexed(
+                    dongThuVien,
+                    key = { _, d ->
+                        when (d) {
+                            is DongThuVien.TieuDe -> "nhom:" + d.nhan
+                            is DongThuVien.Bai -> library[d.viTri].playbackUri
+                        }
+                    }
+                ) { _, d ->
+                    when (d) {
+                        is DongThuVien.TieuDe -> Text(
+                            if (d.so > 1) "${d.nhan}  ·  ${d.so} bài" else d.nhan,
+                            color = mau.chuMo,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(
+                                start = 24.dp, end = 24.dp, top = 14.dp, bottom = 4.dp
+                            )
+                        )
+
+                        is DongThuVien.Bai -> {
+                            val track = library[d.viTri]
+                            TrackRow(
+                                track = track,
+                                accent = accent,
+                                playing = track.playbackUri == playingUri,
+                                // Chi so GOC trong `library`, khong phai chi so
+                                // dong dang ve: hang doi duoc xep tu danh sach
+                                // that, ma danh sach ve thi co xen tieu de.
+                                onPlay = { onPlayFromLibrary(d.viTri) },
+                                onEnqueue = { onEnqueue(track) },
+                                download = null,
+                                onDownload = {}
+                            )
+                        }
+                    }
                 }
             }
 
@@ -513,6 +543,50 @@ fun DebouncedSearch(query: String, onSearch: (String) -> Unit) {
  * quay tay hien ra "63 bai" - con so dung ma y nghia thi sai han, va nguoi
  * dung tuong AURA vua doc nham cai gi do.
  */
+/**
+ * Mot dong trong danh sach thu vien: hoac mot tieu de nhom, hoac mot bai.
+ *
+ * Bai mang CHI SO GOC trong `library` chu khong mang ca doi tuong: bam vao mot
+ * bai la xep CA thu vien lam hang doi tu bai do tro di, nen ben goi can biet
+ * bai nam thu may trong danh sach that - ma danh sach ve thi da xen them tieu
+ * de vao giua.
+ */
+private sealed interface DongThuVien {
+    data class TieuDe(val nhan: String, val so: Int) : DongThuVien
+    data class Bai(val viTri: Int) : DongThuVien
+}
+
+/**
+ * Xen tieu de nhom vao giua cac bai.
+ *
+ * ĐOI HOI `library` DA XEP THEO NHOM - xem `ThuVienNgoai.gop`. Ham nay chi cat
+ * ra moi lan nhan nhom doi, chu khong tu gom: gom o day nghia la doi thu tu ve
+ * so voi thu tu that, va the la chi so tro sai bai.
+ */
+private fun dungDongThuVien(library: List<Track>): List<DongThuVien> {
+    if (library.isEmpty()) return emptyList()
+    val ra = ArrayList<DongThuVien>(library.size + 8)
+    var truoc: String? = null
+    library.forEachIndexed { i, bai ->
+        // So khong phan biet hoa thuong, y het khoa xep o `ThuVienNgoai`. Hai
+        // cho phai dung CUNG mot luat: xep theo mot luat roi cat theo luat khac
+        // thi mot album co the bi cat lam nhieu cum roi rac.
+        val khoa = bai.nhom.lowercase()
+        if (khoa != truoc) {
+            // Dem ngay tai day de tieu de noi duoc nhom co bao nhieu bai. Moi
+            // phan tu chi bi dem dung mot lan qua tat ca cac nhom.
+            var so = 0
+            while (i + so < library.size && library[i + so].nhom.lowercase() == khoa) so++
+            // Hien chinh chu cua bai DAU nhom - mot cach ghi that trong tep,
+            // khong phai ban viet thuong dung de so sanh.
+            ra.add(DongThuVien.TieuDe(bai.nhom.ifBlank { "Không rõ album" }, so))
+            truoc = khoa
+        }
+        ra.add(DongThuVien.Bai(i))
+    }
+    return ra
+}
+
 private fun demThuVien(library: List<Track>): String {
     val video = library.count { it.kind == MediaKind.VIDEO }
     val nhac = library.size - video

@@ -43,13 +43,29 @@ object LocalLibrary {
         AND (is_podcast IS NULL OR is_podcast = 0)
     """
 
+    @Suppress("DEPRECATION")   // `DATA` la duong duy nhat lay ten thu muc tu Android 8
     private val PROJECTION = arrayOf(
         MediaStore.Audio.Media._ID,
         MediaStore.Audio.Media.TITLE,
         MediaStore.Audio.Media.ARTIST,
+        MediaStore.Audio.Media.ALBUM,
         MediaStore.Audio.Media.ALBUM_ID,
-        MediaStore.Audio.Media.DURATION
+        MediaStore.Audio.Media.DURATION,
+        MediaStore.Audio.Media.DATA
     )
+
+    /**
+     * Ten thu muc chua tep, cat ra tu duong dan day du.
+     *
+     * `/storage/emulated/0/Music/Off Land - Microcosm/01.mp3` -> `Off Land - Microcosm`
+     *
+     * Chi lay DOAN CUOI chu khong lay ca duong: man hinh can mot cai nhan doc
+     * luot duoc, ma mot duong dan day du thi vua dai vua toan phan khong ai can.
+     */
+    internal fun tenThuMuc(duong: String?): String {
+        if (duong.isNullOrBlank()) return ""
+        return duong.substringBeforeLast('/', "").substringAfterLast('/')
+    }
 
     /**
      * Doc ca thu vien, sap theo ten bai.
@@ -125,7 +141,8 @@ object LocalLibrary {
                     MediaStore.Video.Media.DURATION,
                     MediaStore.Video.Media.WIDTH,
                     MediaStore.Video.Media.HEIGHT,
-                    MediaStore.Video.Media.ORIENTATION
+                    MediaStore.Video.Media.ORIENTATION,
+                    MediaStore.Video.Media.DATA
                 ),
                 loc?.first,
                 loc?.second,
@@ -138,6 +155,7 @@ object LocalLibrary {
                 val wCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.WIDTH)
                 val hCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.HEIGHT)
                 val xoayCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.ORIENTATION)
+                val duongCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
 
                 while (c.moveToNext()) {
                     val id = c.getLong(idCol)
@@ -153,6 +171,9 @@ object LocalLibrary {
                             // Anh dai dien la MOT KHUNG HINH lay tu chinh video -
                             // `Artwork` nhan ra dia chi video va rut khung ho.
                             artworkUrl = videoUri(id),
+                            // Video khong co the album; thu muc la thu duy nhat
+                            // noi duoc no den tu dau.
+                            thuMuc = tenThuMuc(c.getString(duongCol)),
                             durationMs = c.getLong(durationCol),
                             streamUrl = videoUri(id),
                             kind = MediaKind.VIDEO,
@@ -187,11 +208,14 @@ object LocalLibrary {
                 val titleCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
                 val artistCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
                 val albumCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+                val tenAlbumCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
                 val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+                val duongCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
 
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idCol)
                     val artist = cursor.getString(artistCol).orEmpty()
+                    val tenAlbum = cursor.getString(tenAlbumCol).orEmpty()
                     out.add(
                         Track(
                             id = id.toString(),
@@ -201,6 +225,9 @@ object LocalLibrary {
                             // nghe si. De nguyen thi man hinh day chu do
                             artist = if (artist == MediaStore.UNKNOWN_STRING) "" else artist,
                             artworkUrl = albumArtUri(cursor.getLong(albumCol)),
+                            // Cung mot cho dien "<unknown>" nhu nghe si
+                            album = if (tenAlbum == MediaStore.UNKNOWN_STRING) "" else tenAlbum,
+                            thuMuc = tenThuMuc(cursor.getString(duongCol)),
                             durationMs = cursor.getLong(durationCol),
                             streamUrl = trackUri(id)
                         )

@@ -217,6 +217,15 @@ object ThuVienNgoai {
                 title = ten,
                 artist = doc.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
                     ?.trim().orEmpty(),
+                album = doc.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+                    ?.trim().orEmpty(),
+                // Ten thu muc cat tu chinh ma tai lieu. Khong hoi lai trinh
+                // cung cap: mot cau truy van nua cho MOI tep, chi de lay mot
+                // cai nhan, la cai gia khong dang.
+                thuMuc = LocalLibrary.tenThuMuc(
+                    runCatching { DocumentsContract.getDocumentId(uri).substringAfter(':', "") }
+                        .getOrDefault("")
+                ),
                 // Ảnh đại diện nằm trong CHÍNH tệp, không phải một tệp ảnh
                 // riêng: nhạc thì là bìa trong thẻ, phim thì là một khung hình.
                 // Đánh dấu bằng tiền tố để `Artwork` đi thẳng đường đúng, khỏi
@@ -285,9 +294,19 @@ object ThuVienNgoai {
     private fun xepTheoTen(bai: List<Track>): List<Track> {
         if (bai.size < 2) return bai
         val luat = Collator.getInstance(Locale.forLanguageTag("vi-VN"))
-        return bai.map { luat.getCollationKey(it.title) to it }
-            .sortedBy { it.first }
-            .map { it.second }
+        // Nhom truoc, roi moi toi ten bai TRONG nhom. Man hinh chen mot dong
+        // tieu de moi lan doi nhom, nen thu tu o day phai la thu tu hien ra -
+        // xep theo ten bai roi gom nhom sau thi cung mot album se hien thanh
+        // may cum roi rac, moi cum mot tieu de.
+        // Khoa nhom KHONG PHAN BIET HOA THUONG. Do tren may that: cung mot
+        // album ma cac tep ghi the khac nhau mot chu - "Touch Of Light" ba bai,
+        // "Touch of Light" mot bai - va xep theo chu nguyen ban thi album ay bi
+        // cat lam doi, moi nua mot tieu de. Nguoi dung khong the biet vi sao.
+        return bai.map {
+            Triple(luat.getCollationKey(it.nhom.lowercase()), luat.getCollationKey(it.title), it)
+        }
+            .sortedWith(compareBy({ it.first }, { it.second }))
+            .map { it.third }
     }
 
     /** Vân tay của một tệp: đổi tệp thì đổi khoá, và thẻ được đọc lại. */
