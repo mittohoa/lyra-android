@@ -108,6 +108,7 @@ fun TheLoiManHinh(
     Column(
         Modifier
             .fillMaxSize()
+            .chanChamXuyen()
             .background(mau.nen)
             // Man hinh nay ve tran ra sat vien nhu ca app, nen phai tu chua le
             // cho hai dai he thong. Khong chua thi dong "The loi" chui len duoi

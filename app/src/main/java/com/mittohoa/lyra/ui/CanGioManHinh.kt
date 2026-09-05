@@ -99,6 +99,7 @@ fun CanGioManHinh(
     Column(
         Modifier
             .fillMaxSize()
+            .chanChamXuyen()
             .background(mau.nen)
             .statusBarsPadding()
             .navigationBarsPadding()

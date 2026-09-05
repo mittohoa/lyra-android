@@ -123,6 +123,14 @@ internal fun ToanManHinh(
         Box(
             Modifier
                 .fillMaxSize()
+                // ĐẶT TRƯỚC `clickable`: lượt `Main` đi từ trong ra ngoài, nên
+                // cái nằm sau trong chuỗi được nhận trước. Đảo hai dòng này thì
+                // chính cú chạm bật/tắt hàng nút bị nuốt mất.
+                //
+                // `clickable` sẵn có đã chặn được chạm xuyên; dòng này thêm
+                // phần VUỐT — không có nó thì vuốt ngang trên màn hình video
+                // vẫn lật trang của bộ vuốt nằm dưới.
+                .chanChamXuyen()
                 .background(Color.Black)
                 .clickable(
                     indication = null,
