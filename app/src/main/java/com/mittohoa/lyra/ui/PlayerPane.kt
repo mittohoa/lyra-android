@@ -203,16 +203,27 @@ internal fun Seek(
                     )
                 }
             }
+
+            // Giờ CHỈ hiện lúc đang kéo, và đè lên chính thanh tua.
+            //
+            // Hai dòng giờ cố định ở dưới đã bỏ đi để lấy chỗ. Nhưng bỏ sạch
+            // thì kéo tua thành mò: không có gì nói ngón tay đang dừng ở phút
+            // nào. Hiện lúc kéo là đúng lúc con số ấy có ích, và vì nó đè lên
+            // thanh nên không lấy thêm một dòng chiều cao nào.
+            if (dragging) {
+                Text(
+                    clockLabel(shown),
+                    color = mau.chu,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .background(mau.nen.copy(alpha = 0.88f), RoundedCornerShape(50))
+                        .padding(horizontal = 9.dp, vertical = 1.dp)
+                )
+            }
         }
 
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(clockLabel(shown), color = mau.chuRatMo, fontSize = 12.5.sp)
-            Text(
-                if (duration > 0) clockLabel(duration) else "--:--",
-                color = mau.chuRatMo,
-                fontSize = 12.5.sp
-            )
-        }
     }
 }
 
