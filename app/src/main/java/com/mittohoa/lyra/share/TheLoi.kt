@@ -366,6 +366,29 @@ object TheLoi {
  * Luôn ghi đè MỘT file duy nhất chứ không đặt tên theo thời gian: mỗi lần chia
  * sẻ mà sinh một file mới thì thư mục tạm phình mãi, và không có ai dọn.
  */
+/**
+ * Gui doan video di, dung duong nhu gui anh.
+ *
+ * Tach ham rieng chu khong nhet them mot tham so vao `guiTheLoi`: kieu MIME va
+ * `clipData` khac nhau, ma gop lai thi than ham day nhung `if` cho hai thu von
+ * chi chung nhau moi cai vo.
+ */
+fun guiVideoLoi(context: android.content.Context, tep: java.io.File, tenBai: String) {
+    val uri = androidx.core.content.FileProvider.getUriForFile(
+        context, "${context.packageName}.chiase", tep
+    )
+    val gui = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+        type = "video/mp4"
+        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+        putExtra(android.content.Intent.EXTRA_TITLE, tenBai)
+        // Cung ly do nhu ben gui anh: bang chon cua he thong la mot tien trinh
+        // khac, va no can doc tep de ve anh xem truoc.
+        clipData = android.content.ClipData.newUri(context.contentResolver, tenBai, uri)
+        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(android.content.Intent.createChooser(gui, null))
+}
+
 fun guiTheLoi(context: android.content.Context, anh: android.graphics.Bitmap, tenBai: String) {
     val thuMuc = java.io.File(context.cacheDir, "the-loi").apply { mkdirs() }
     val file = java.io.File(thuMuc, "lyra-loi.png")
