@@ -86,10 +86,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/loi_tat" />
         </activity>
 
         <!--
@@ -99,6 +95,10 @@
           khong de lai gi trong danh sach ung dung gan day. Nguoi dung bam loi
           tat va thay khung loi hien len ngay tren app nhac ho dang mo - khong
           co mot khung AURA nao nhap nhay o giua.
+
+          Bang loi tat cua trinh khoi chay KHONG tu dong sau khi bam. Da thu
+          `Theme.Translucent.NoTitleBar` va da thu doi `finish()` xuong
+          `onResume`; ca hai deu khong doi duoc gi. Xem `LoiNoiActivity`.
         -->
         <activity
             android:name=".ui.LoiNoiActivity"

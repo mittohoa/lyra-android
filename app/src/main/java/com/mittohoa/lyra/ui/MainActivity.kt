@@ -45,8 +45,14 @@ import com.mittohoa.lyra.service.LyraTileService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
-/** Hành động của lối tắt "Tìm bài" — xem `res/xml/loi_tat.xml`. */
-private const val ACTION_TIM = "com.mittohoa.lyra.action.TIM"
+/**
+ * Hành động của lối tắt "Tìm bài" — xem `LoiTat`.
+ *
+ * `internal` chứ không `private`: `LoiTat` đặt nó vào Intent, `MainActivity`
+ * đọc nó ra. Hai bên phải nói cùng một chuỗi, và cách chắc chắn nhất để hai bên
+ * nói cùng một chuỗi là chỉ có một chuỗi.
+ */
+internal const val ACTION_TIM = "com.mittohoa.lyra.action.TIM"
 
 class MainActivity : ComponentActivity() {
 
@@ -136,6 +142,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         docLoiTat(intent)
+        // Dựng lối tắt nhấn-giữ-biểu-tượng. Phải làm lúc chạy chứ không khai
+        // được trong XML — xem `LoiTat` để biết vì sao.
+        LoiTat.dat(this)
         // Ve tran ra sat vien: nen mau lay tu anh bia phai chay het man hinh,
         // khong bi cat ngang boi hai dai he thong
         enableEdgeToEdge()

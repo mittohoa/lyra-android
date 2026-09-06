@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bieu tuong loi tat "Tim bai": kinh lup tren nen tim.
+
+  Cung quy uoc voi `ic_loi_tat_loi_noi` - xem chu thich ben do de biet vi sao
+  loi tat phai co nen rieng con o Quick Settings thi khong.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <path
+        android:pathData="M16,132 L16,132 A116,116 0 0 1 132,16 L380,16 A116,116 0 0 1 496,132 L496,380 A116,116 0 0 1 380,496 L132,496 A116,116 0 0 1 16,380 Z"
+        android:fillColor="#5B2FD6" />
+
+    <!-- Vong kinh: mot hinh tron rong, ve bang hai cung noi nhau -->
+    <path
+        android:pathData="M232,120 a112,112 0 1 0 0,224 a112,112 0 1 0 0,-224 Z M232,164 a68,68 0 1 1 0,136 a68,68 0 1 1 0,-136 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Can cam -->
+    <path
+        android:pathData="M310,310 L392,392 A22,22 0 0 1 360,424 L278,342 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

@@ -13,19 +13,6 @@ import java.util.Properties
 val maPhienBan = 33
 val tenPhienBan = "0.3.22"
 
-/**
- * Danh tinh cua app tren may. Khai o day de CHI CO MOT BAN.
- *
- * Tep `res/xml/loi_tat.xml` phai biet chuoi nay: mot loi tat trong do tro toi
- * mot goi khong ton tai thi Android LANG LE khong dung no - khong loi, khong
- * canh bao, chi la nhan giu bieu tuong ma chang thay gi. Ma ban go loi mang
- * duoi `.debug`, nen viet cung mot chuoi vao XML la dung sai o ban do.
- *
- * Nen chuoi di theo duong `resValue` xuong `@string/id_app`, va moi bien the
- * lay dung ten cua chinh no.
- */
-val idApp = "com.mittohoa.lyra_player"
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -54,8 +41,7 @@ android {
         // Cung mot id voi ban Windows. Khac `namespace` o tren - `namespace`
         // la goi ma nguon, con day la danh tinh cua app tren may va tren Play.
         // Hai thu nay khong bat buoc phai trung nhau.
-        applicationId = idApp
-        resValue("string", "id_app", idApp)
+        applicationId = "com.mittohoa.lyra_player"
         // 26 la moc toi thieu that su: TYPE_APPLICATION_OVERLAY chi co tu day.
         // Cac kieu cua so overlay cu hon deu da bi Android chan.
         minSdk = 26
@@ -134,8 +120,6 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
-            // Ghi de ban o `defaultConfig`: goi nay mang duoi `.debug`.
-            resValue("string", "id_app", "$idApp.debug")
             // Bo dong khong dung khi chay thu. Bo may dich cua ML Kit nang
             // 15,6 MB CHO MOI KIEN TRUC CPU, nen mot ban go loi gom du bon
             // kien truc len toi 76 MB - moi lan cai lai la mot phut ngoi doi.
