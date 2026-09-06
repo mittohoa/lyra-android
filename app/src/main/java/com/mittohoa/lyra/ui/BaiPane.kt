@@ -247,17 +247,6 @@ fun BaiPane(
         DaiNguCanh(
             now = now,
             bia = artwork ?: now.artwork,
-            // CHỈ hiện nguồn khi nhạc đến từ app KHÁC.
-            //
-            // AURA tự phát thì người dùng vừa tự bấm bài đó trong chính app
-            // này — nói lại "Trong máy" là kể một điều họ vừa làm. Dòng nguồn
-            // chỉ đáng có mặt khi nó trả lời được một câu thật: bài đang phát ở
-            // đâu ra, khi nó không đến từ đây.
-            //
-            // Gọi `tenApp` VÔ ĐIỀU KIỆN rồi mới chọn, không gọi trong nhánh
-            // `if`: nó có `remember` bên trong, mà nhớ trong một nhánh thì đổi
-            // nhánh là mất chỗ nhớ.
-            nguon = if (Lyra.laLyraPhat()) null else tenAppNguon,
             accent = accent,
             xemBia = xemBia,
             onDoiMat = { xemBia = it },
@@ -374,7 +363,19 @@ fun BaiPane(
         //
         // Chỗ này TỪNG có một nét kẻ tách phần đọc khỏi phần bấm. Việc ấy giờ
         // do vệt mờ ở đáy vùng lời lo — cùng công dụng, không dựng thêm cạnh.
-        if (!chiXem) Column(Modifier.padding(start = 26.dp, end = 26.dp, top = 10.dp, bottom = 6.dp)) {
+        // Danh tính nằm NGOÀI khối điều khiển, không nằm trong.
+        //
+        // Bản Play tìm được nhạc ở Zing/NCT nhưng không phát, nên khối điều
+        // khiển bị giấu đi (`chiXem`). Nhét tên bài vào trong đó thì đúng bản
+        // ấy lại mất luôn tên bài — mà đó là bản mà một dòng chữ còn quan trọng
+        // hơn, vì nó chẳng còn gì khác để nói đang xem lời của bài nào.
+        //
+        // CHỈ hiện nguồn khi nhạc đến từ app KHÁC. AURA tự phát thì người dùng
+        // vừa tự bấm bài đó trong chính app này — nói lại "Trong máy" là kể một
+        // điều họ vừa làm.
+        KhoiDanhTinh(now, nguon = if (Lyra.laLyraPhat()) null else tenAppNguon)
+
+        if (!chiXem) Column(Modifier.padding(start = 26.dp, end = 26.dp, top = 4.dp, bottom = 6.dp)) {
             Seek(
                 accent = accent,
                 position = position,
@@ -496,18 +497,74 @@ private fun tenApp(goi: String): String? {
 }
 
 /**
- * Dải ngữ cảnh: bài nào, ai hát, và hai chip đổi mặt.
+ * Khối danh tính: bài nào, ai hát, đến từ đâu.
  *
- * Luôn có mặt, kể cả khi đang đọc lời. Trang Lời cũ không có gì nói nó đang ở
- * bài nào — Zing và YouTube Music đều để đúng một dải như thế này ở đầu trang
- * lời, và đó là thứ đáng lấy.
+ * Nằm NGAY TRÊN thanh tua chứ không ở đầu trang. Ba thứ mô tả cùng một bài —
+ * tên, vị trí đang phát, nút điều khiển — đứng liền một khối thì mắt đọc xuôi
+ * một mạch; để tên bài ở tận đầu trang là tách nó khỏi cái thanh nói về nó.
+ *
+ * Đây là chỗ NCT, Zing và Spotify đều đặt, và lần này lý do của họ áp được cho
+ * AURA: ô bìa nhỏ vẫn nằm ở góc trái trên, nên trang Lời không mất chỗ nhận
+ * biết đang ở bài nào — thứ mà dải ngữ cảnh cũ sinh ra để lo.
+ */
+@Composable
+private fun KhoiDanhTinh(
+    now: NowPlaying,
+    /** Bài này đến từ đâu. `null` khi AURA tự phát — xem chỗ gọi. */
+    nguon: String?
+) {
+    Column(Modifier.fillMaxWidth().padding(start = 26.dp, end = 26.dp, bottom = 4.dp)) {
+        // Nguồn là dòng nhỏ nhất và mờ nhất — nó trả lời một câu người ta chỉ
+        // hỏi khi thắc mắc, không phải thứ cần đọc. Đọc không ra tên app thì BỎ
+        // HẲN dòng này chứ không bày tên gói.
+        if (!nguon.isNullOrBlank()) {
+            Text(
+                nguon,
+                color = mau.chuRatMo,
+                fontSize = 11.5.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Text(
+            now.title,
+            color = mau.chu,
+            fontFamily = boChu.loi,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            // CHẠY NGANG thay vì cắt bằng ba chấm. Tên bài Việt hay dài, và
+            // phần bị cắt thường là phần phân biệt — "(Bản Acoustic)",
+            // "ft. ai đó". Ba chấm giấu đúng chỗ người ta cần đọc.
+            modifier = Modifier.basicMarquee()
+        )
+        if (now.artist.isNotEmpty()) {
+            Text(
+                now.artist,
+                color = mau.chuMo,
+                fontSize = 12.5.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+/**
+ * Hàng nút ở đầu trang: ô bìa nhỏ bên trái, các nút chức năng bên phải.
+ *
+ * TỪNG mang cả tên bài và ca sĩ, và đó là lý do nó nặng — một hàng gánh hai
+ * loại việc khác nhau, danh tính và nút bấm. Chữ đã xuống dưới cùng thanh tua;
+ * ở đây chỉ còn nút.
+ *
+ * GIỮ Ô BÌA NHỎ. Nó là thứ rẻ nhất để mắt liếc một cái biết đang bài nào mà
+ * không tốn dòng chữ nào — nhờ nó mà việc đưa tên bài xuống đáy không làm trang
+ * Lời mất chỗ nhận biết.
  */
 @Composable
 private fun DaiNguCanh(
     now: NowPlaying,
     bia: android.graphics.Bitmap?,
-    /** Bài này đến từ đâu — "Trong máy", "Zing MP3", hay tên app đang phát. */
-    nguon: String?,
     accent: Color,
     xemBia: Boolean,
     onDoiMat: (Boolean) -> Unit,
@@ -520,12 +577,14 @@ private fun DaiNguCanh(
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 22.dp, top = 12.dp, bottom = 10.dp),
+            // Thấp hơn bản cũ: hàng này giờ chỉ còn nút, không còn ba dòng chữ
+            // phải chừa chỗ. Đệm dôi ra trả lại cho vùng lời.
+            .padding(start = 20.dp, end = 22.dp, top = 8.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             Modifier
-                .size(46.dp)
+                .size(40.dp)
                 // Bo tròn hơn và BỎ VIỀN: ô bìa nhỏ trước đây là một hình vuông
                 // có nét bao, tức thêm một cạnh nữa trên màn hình vốn đang cố
                 // liền mạch. Không viền thì ảnh bìa tự nó là khối, còn bài chưa
@@ -545,53 +604,8 @@ private fun DaiNguCanh(
                 LyraMark(size = 26.dp, busy = false)
             }
         }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            // Ba tầng: nguồn trên, tên bài giữa, ca sĩ dưới.
-            //
-            // Nguồn là dòng nhỏ nhất và mờ nhất — nó trả lời một câu người ta
-            // chỉ hỏi khi thắc mắc ("bài này ở đâu ra?"), không phải thứ cần
-            // đọc. Đọc không ra tên app thì BỎ HẲN dòng này chứ không bày tên
-            // gói: `com.google.android.apps.youtube.music` không nói gì với ai.
-            if (!nguon.isNullOrBlank()) {
-                // Chữ THƯỜNG, không giãn, không đậm.
-                //
-                // Bản đầu viết hoa toàn bộ kèm giãn chữ — kiểu nhãn phân loại.
-                // Đặt kiểu ấy lên trên cùng thì nó hét to hơn cả tên bài, mà nó
-                // chỉ là câu trả lời cho một thắc mắc thỉnh thoảng. Ở đây thứ
-                // duy nhất được to tiếng là tên bài.
-                Text(
-                    nguon,
-                    color = mau.chuRatMo,
-                    fontSize = 11.5.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Text(
-                now.title,
-                color = mau.chu,
-                fontFamily = boChu.loi,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                // CHẠY NGANG thay vì cắt bằng ba chấm. Tên bài Việt hay dài, và
-                // phần bị cắt thường là phần phân biệt — "… (Bản Acoustic)",
-                // "… ft. ai đó". Ba chấm giấu đúng chỗ người ta cần đọc; chạy
-                // ngang thì chậm hơn nhưng cuối cùng vẫn cho xem hết.
-                modifier = Modifier.basicMarquee()
-            )
-            if (now.artist.isNotEmpty()) {
-                Text(
-                    now.artist,
-                    color = mau.chuMo,
-                    fontSize = 12.5.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-        Spacer(Modifier.width(8.dp))
+        // Chữ đã xuống dưới, chỗ này chỉ còn khoảng trống đẩy nút sang phải.
+        Spacer(Modifier.weight(1f))
         if (luyenTapDuoc) {
             Box(
                 Modifier
