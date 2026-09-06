@@ -1,6 +1,5 @@
 package com.mittohoa.lyra.ui
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -91,13 +90,24 @@ import kotlin.math.roundToInt
  * khác nhau, nhưng **giống nhau ở một điểm**: điều khiển luôn với tới được
  * trong lúc đọc lời. Bố cục ở đây theo đúng điểm đó —
  *
- *   dải ngữ cảnh (luôn có)  ·  một mặt đổi được  ·  điều khiển (luôn có)
+ *   dải ngữ cảnh (luôn có)  ·  bìa rồi lời, cuộn liền  ·  điều khiển (luôn có)
  *
- * Khác cả ba ở chỗ **lời là mặt mặc định**. Zing bắt vuốt, YouTube Music bắt
- * bấm một chip, NCT chỉ cho hai câu — cả ba coi lời là mặt phụ phải đi tìm, vì
- * cả ba là app nhạc. AURA thì lời chính là thứ nó làm ra.
+ * Khác cả ba ở chỗ **không phải đi tìm lời**. Zing bắt vuốt, YouTube Music bắt
+ * bấm một chip, NCT chỉ cho hai câu — cả ba coi lời là mặt phụ, vì cả ba là app
+ * nhạc. AURA thì lời chính là thứ nó làm ra.
  *
- * Đổi mặt bằng HAI CHIP chứ không bằng vuốt ngang, dù Zing vuốt. Điều hướng
+ * BÌA VÀ LỜI KHÔNG CÒN LÀ HAI MẶT. Trước đây có cặp chip "Lời / Bìa" để đổi qua
+ * lại, và cặp chip ấy bắt người dùng chọn giữa hai thứ họ muốn thấy cùng lúc:
+ * bìa để biết đang bài nào, lời để đọc. Giờ bìa là MỤC ĐẦU của chính danh sách
+ * lời — mở lên thấy bìa, cuộn xuống thì bìa trôi lên nhường chỗ cho chữ, và nó
+ * tự quay lại khi lời cuộn về đầu bài mới. Không có nút nào phải bấm.
+ *
+ * Còn HÀNG ĐỢI thì đúng là một trang khác thật, nên nó là một tấm đè lên, mở
+ * bằng nút ☰ trên dải ngữ cảnh. Không nhét được nó vào cuối danh sách lời: nó
+ * cần cử chỉ nhấn-giữ-rồi-kéo, mà hai danh sách cuộn dọc lồng nhau thì giành
+ * nhau cùng một cú vuốt.
+ *
+ * Vẫn KHÔNG dùng vuốt ngang cho bất cứ việc gì ở đây, dù Zing vuốt. Điều hướng
  * của AURA đã là một pager ngang rồi; lồng thêm một pager ngang nữa thì mặt
  * trong nuốt hết cú vuốt và không ai sang được trang Tìm hay Chỉnh.
  */
@@ -226,7 +236,11 @@ fun BaiPane(
     // được nút của họ nhưng không nhìn thấy hàng đợi của họ.
     val hangDoiRieng = queue.isNotEmpty() && queueIndex >= 0
 
-    var xemBia by remember { mutableStateOf(false) }
+    // Hàng đợi là một TẤM ĐÈ LÊN, mở ra rồi đóng lại — không phải một trong hai
+    // mặt ngang hàng nhau như trước. Đổi bài thì tự đóng: người ta mở nó ra để
+    // chọn bài kế, chọn xong rồi mà tấm vẫn che thì phải bấm thêm một cái nữa
+    // mới nhìn được bài mình vừa chọn.
+    var xemHangDoi by remember(queueIndex) { mutableStateOf(false) }
     val doanLap by Lyra.doanLap.collectAsStateWithLifecycle()
     val nguonHangDoi by Lyra.nguonHangDoi.collectAsStateWithLifecycle()
     val tenAppNguon = tenApp(now.packageName)
@@ -263,8 +277,9 @@ fun BaiPane(
             // là mất chỗ nhớ.
             nguon = if (Lyra.laLyraPhat()) null else tenAppNguon,
             accent = accent,
-            xemBia = xemBia,
-            onDoiMat = { xemBia = it },
+            hangDoiDuoc = hangDoiRieng,
+            dangXemHangDoi = xemHangDoi,
+            onHangDoi = { xemHangDoi = !xemHangDoi },
             chiaSeDuoc = lyrics.lines.isNotEmpty(),
             onChiaSe = { onChiaSeCau(dongDangHat) },
             luyenTapDuoc = lyrics.lines.isNotEmpty() && tuaDuoc,
@@ -282,57 +297,53 @@ fun BaiPane(
         )
 
         Box(Modifier.weight(1f)) {
-            Crossfade(xemBia, label = "mat") { hienBia ->
-                if (hienBia) {
-                    MatBia(
+            MatLoi(
+                // Bìa là MỤC ĐẦU của chính danh sách lời, không phải
+                // một mặt riêng phải bấm mới sang. Hai mặt Bìa và Lời
+                // giờ là một: bìa ở trên, lời chảy xuống dưới, cuộn
+                // xuống đọc thì bìa trôi lên vì nó đã làm xong việc.
+                khoiBia = {
+                    KhoiBia(
                         now = now,
                         bia = artwork ?: now.artwork,
                         accent = accent,
-                        queue = queue,
-                        queueIndex = queueIndex,
-                        hangDoiRieng = hangDoiRieng,
                         chiXem = chiXem,
                         nguon = nguonHangDoi,
-                        onSkipInQueue = onSkipInQueue,
-                        onRemoveFromQueue = onRemoveFromQueue,
-                        onDoiCho = { tu, den -> Lyra.doiChoTrongHangDoi(ngucanh, tu, den) },
-                        onLuuHangDoi = { naming = true },
+                        queue = queue,
+                        queueIndex = queueIndex,
                         onToanManHinh = onToanManHinh,
                         toanManHinh = toanManHinh
                     )
-                } else {
-                    MatLoi(
-                        lyrics = lyrics,
-                        active = dongDangHat,
-                        loading = loading,
-                        position = position,
-                        accent = accent,
-                        translation = translation,
-                        baoKhongTua = baoKhongTua,
-                        onChamDong = { i ->
-                            when {
-                                luyenTap && dongA == null -> dongA = i
-                                luyenTap -> {
-                                    Lyra.datDoanLap(ngucanh, dongA!!, i)
-                                    dongA = null
-                                    luyenTap = false
-                                }
-                                tuaDuoc -> onSeekToLine(i)
-                                else -> baoKhongTua = true
-                            }
-                        },
-                        onSyncToLine = onSyncToLine,
-                        onClearOffset = onClearOffset,
-                        onEditLyrics = onEditLyrics,
-                        onDownloadModel = onDownloadModel,
-                        effect = effect,
-                        gop = trangThaiGop,
-                        onGop = { Lyra.gopLoiChoLrclib() },
-                        onThoiGop = { Lyra.thoiGopLoi() },
-                        onCanGio = onCanGio
-                    )
-                }
-            }
+                },
+                lyrics = lyrics,
+                active = dongDangHat,
+                loading = loading,
+                position = position,
+                accent = accent,
+                translation = translation,
+                baoKhongTua = baoKhongTua,
+                onChamDong = { i ->
+                    when {
+                        luyenTap && dongA == null -> dongA = i
+                        luyenTap -> {
+                            Lyra.datDoanLap(ngucanh, dongA!!, i)
+                            dongA = null
+                            luyenTap = false
+                        }
+                        tuaDuoc -> onSeekToLine(i)
+                        else -> baoKhongTua = true
+                    }
+                },
+                onSyncToLine = onSyncToLine,
+                onClearOffset = onClearOffset,
+                onEditLyrics = onEditLyrics,
+                onDownloadModel = onDownloadModel,
+                effect = effect,
+                gop = trangThaiGop,
+                onGop = { Lyra.gopLoiChoLrclib() },
+                onThoiGop = { Lyra.thoiGopLoi() },
+                onCanGio = onCanGio
+            )
 
             // Chữ MỜ DẦN vào nền trước khi tới hàng nút, thay cho một nét kẻ.
             //
@@ -351,6 +362,20 @@ fun BaiPane(
                     .height(28.dp)
                     .background(Brush.verticalGradient(listOf(Color.Transparent, mau.nen)))
             )
+
+            // Hàng đợi đè lên vùng lời, KHÔNG đè lên thanh tua và hàng nút:
+            // đang xem danh sách bài kế mà vẫn tạm dừng hay tua được là đúng.
+            if (xemHangDoi && hangDoiRieng) {
+                TamHangDoi(
+                    queue = queue,
+                    queueIndex = queueIndex,
+                    onSkipInQueue = onSkipInQueue,
+                    onRemoveFromQueue = onRemoveFromQueue,
+                    onDoiCho = { tu, den -> Lyra.doiChoTrongHangDoi(ngucanh, tu, den) },
+                    onLuuHangDoi = { naming = true },
+                    onDong = { xemHangDoi = false }
+                )
+            }
         }
 
         if (luyenTap || doanLap != null) {
@@ -431,14 +456,14 @@ fun BaiPane(
 }
 
 /**
- * Độ đục của nền chip khi chip CHƯA được chọn.
+ * Độ đục của nền các nút tròn trên dải ngữ cảnh khi nút CHƯA bật.
  *
- * Nền chìm đặc biến mỗi chip thành một viên nút rời nổi trên nền — đúng thứ vừa
- * bỏ công xoá đi ở chỗ khác. Để nó trong bớt thì vệt màu phía sau ăn xuyên qua,
- * và hàng chip đọc ra như một phần của dải chứ không phải mấy vật thể đặt lên.
+ * Nền chìm đặc biến mỗi nút thành một viên rời nổi trên nền — đúng thứ vừa bỏ
+ * công xoá đi ở chỗ khác. Để nó trong bớt thì vệt màu phía sau ăn xuyên qua, và
+ * hàng nút đọc ra như một phần của dải chứ không phải mấy vật thể đặt lên.
  *
- * Chip ĐANG chọn thì vẫn tô đặc màu nhấn: đó là chỗ duy nhất trên dải cần hét
- * lên, và làm nó mờ đi thì không còn gì phân biệt được chọn với không chọn.
+ * Nút ĐANG bật thì vẫn tô đặc màu nhấn: đó là chỗ duy nhất trên dải cần hét
+ * lên, và làm nó mờ đi thì không còn gì phân biệt bật với tắt.
  */
 private const val DUC_CHIP = 0.40f
 
@@ -655,8 +680,10 @@ private fun DaiNguCanh(
     /** Bài này đến từ đâu. `null` khi AURA tự phát — xem chỗ gọi. */
     nguon: String?,
     accent: Color,
-    xemBia: Boolean,
-    onDoiMat: (Boolean) -> Unit,
+    /** Có hàng đợi của riêng AURA để mở ra xem hay không. */
+    hangDoiDuoc: Boolean,
+    dangXemHangDoi: Boolean,
+    onHangDoi: () -> Unit,
     chiaSeDuoc: Boolean,
     onChiaSe: () -> Unit,
     luyenTapDuoc: Boolean,
@@ -753,27 +780,25 @@ private fun DaiNguCanh(
             }
             Spacer(Modifier.width(8.dp))
         }
-        ChipMat("Lời", !xemBia, accent) { onDoiMat(false) }
-        Spacer(Modifier.width(6.dp))
-        ChipMat("Bìa", xemBia, accent) { onDoiMat(true) }
-    }
-}
-
-@Composable
-private fun ChipMat(nhan: String, dangChon: Boolean, accent: Color, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (dangChon) accent else mau.nenChim.copy(alpha = DUC_CHIP))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Text(
-            nhan,
-            color = if (dangChon) Color.White else mau.chuMo,
-            fontSize = 12.5.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        // Cặp chip "Lời / Bìa" đã BỎ. Bìa không còn là một mặt phải bấm mới
+        // sang — nó nằm ngay đầu danh sách lời, cuộn lên là thấy. Chỗ đó giờ
+        // để cho hàng đợi, thứ thật sự là một trang khác.
+        if (hangDoiDuoc) {
+            Box(
+                Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (dangXemHangDoi) accent else mau.nenChim.copy(alpha = DUC_CHIP))
+                    .clickable(onClick = onHangDoi),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "☰",
+                    color = if (dangXemHangDoi) Color.White else mau.chuMo,
+                    fontSize = 15.sp
+                )
+            }
+        }
     }
 }
 
@@ -844,23 +869,116 @@ private fun DaiLuyenTap(
     }
 }
 
-/** Mặt bìa: bản in, nguồn đang phát, và hàng đợi phía dưới. */
+/**
+ * Khối bìa: ảnh bìa (hoặc khung video), dòng trạng thái, và nguồn đang phát.
+ *
+ * Đây là MỤC ĐẦU của danh sách lời, không phải một mặt riêng. Cuộn xuống đọc
+ * thì nó trôi lên vì nó đã làm xong việc của mình; muốn nhìn lại bìa thì cuộn
+ * ngược lên, không phải bấm để đổi trang.
+ */
 @Composable
-private fun MatBia(
+private fun KhoiBia(
     now: NowPlaying,
     bia: android.graphics.Bitmap?,
     accent: Color,
-    queue: List<Track>,
-    queueIndex: Int,
-    hangDoiRieng: Boolean,
     chiXem: Boolean,
     nguon: String?,
+    queue: List<Track>,
+    queueIndex: Int,
+    onToanManHinh: () -> Unit,
+    toanManHinh: Boolean
+) {
+    // Bai dang phat la video thi chinh o bia tro thanh man hinh. Mot trang rieng
+    // cho video se cat doi app lam hai nua ma khong duoc gi: cho de anh bia von
+    // da la mot o hinh vuong dat giua trang.
+    val baiNay = queue.getOrNull(queueIndex)
+    val laVideo = baiNay?.kind == MediaKind.VIDEO && !toanManHinh
+
+    Stage(
+        accent = accent,
+        kind = if (laVideo) MediaKind.VIDEO else MediaKind.AUDIO,
+        tiLe = if (laVideo) baiNay?.tiLe else null
+    ) {
+        if (laVideo) {
+            ManHinhVideo(dangPhat = now.isPlaying)
+            // Nút mở toàn màn hình, góc dưới phải của chính ô hình. Không đặt ở
+            // dải nút chung bên dưới: nó chỉ có nghĩa khi đang có hình, mà ô
+            // hình thì là chỗ mắt đang nhìn.
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(10.dp)
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(onClick = onToanManHinh),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("⛶", color = Color.White, fontSize = 17.sp)
+            }
+        } else if (bia != null) {
+            Image(
+                bitmap = bia.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                LyraMark(size = 64.dp, busy = false)
+            }
+        }
+    }
+
+    Spacer(Modifier.height(14.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(6.dp)
+                .clip(RoundedCornerShape(50))
+                .background(if (now.isPlaying) accent else mau.chuRatMo)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            if (chiXem) "Đang tra lời — bản này không phát nhạc từ nguồn đó"
+            else "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
+            color = mau.chuRatMo,
+            fontSize = 13.5.sp
+        )
+    }
+
+    if (nguon != null) {
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "PHÁT TỪ · " + nguon.uppercase(),
+            color = mau.chuRatMo,
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.2.sp
+        )
+    }
+}
+
+/**
+ * Tấm hàng đợi: những bài SẼ phát tiếp, kéo thả sắp lại được.
+ *
+ * KHÔNG còn vẽ ảnh bìa. Từ lúc bìa nằm ở đầu mặt Lời, vẽ lại nó ở đây là bày
+ * cùng một thứ hai lần, và nó đẩy hàng đợi — thứ người ta mở tấm này ra để
+ * xem — xuống dưới mép màn hình.
+ *
+ * Vẫn là một tấm ĐÈ LÊN chứ không nhét vào cuối danh sách lời: hàng đợi cần cử
+ * chỉ nhấn-giữ-rồi-kéo của riêng nó, mà lồng một danh sách cuộn dọc vào trong
+ * một danh sách cuộn dọc khác thì hai bên giành nhau cùng một cú vuốt.
+ */
+@Composable
+private fun TamHangDoi(
+    queue: List<Track>,
+    queueIndex: Int,
     onSkipInQueue: (Int) -> Unit,
     onRemoveFromQueue: (Int) -> Unit,
     onDoiCho: (Int, Int) -> Unit,
     onLuuHangDoi: () -> Unit,
-    onToanManHinh: () -> Unit,
-    toanManHinh: Boolean
+    onDong: () -> Unit
 ) {
     // Kéo thả sắp lại hàng đợi.
     //
@@ -871,83 +989,21 @@ private fun MatBia(
     var keoTu by remember { mutableIntStateOf(-1) }
     var lech by remember { mutableFloatStateOf(0f) }
     var caoMuc by remember { mutableIntStateOf(0) }
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 26.dp, end = 26.dp, bottom = 24.dp)
+
+    // Nền ĐẶC, và nuốt mọi cú chạm rơi ra ngoài các ô bài. Tấm này che mặt Lời
+    // đang nằm dưới; để chạm lọt xuống thì người dùng bấm trúng một câu lời họ
+    // không nhìn thấy. Xem `chanChamXuyen` để biết vì sao Compose không tự chặn.
+    Box(
+        Modifier
+            .fillMaxSize()
+            .chanChamXuyen()
+            .background(mau.nen)
     ) {
-        item {
-            // Bai dang phat la video thi chinh o bia tro thanh man hinh. Mot
-            // trang rieng cho video se cat doi app lam hai nua ma khong duoc gi:
-            // cho de anh bia von da la mot o hinh vuong dat giua trang.
-            val baiNay = queue.getOrNull(queueIndex)
-            val laVideo = baiNay?.kind == MediaKind.VIDEO && !toanManHinh
-
-            Stage(
-                accent = accent,
-                kind = if (laVideo) MediaKind.VIDEO else MediaKind.AUDIO,
-                tiLe = if (laVideo) baiNay?.tiLe else null
-            ) {
-                if (laVideo) {
-                    ManHinhVideo(dangPhat = now.isPlaying)
-                    // Nút mở toàn màn hình, góc dưới phải của chính ô hình.
-                    // Không đặt ở dải nút chung bên dưới: nó chỉ có nghĩa khi
-                    // đang có hình, mà ô hình thì là chỗ mắt đang nhìn.
-                    Box(
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(10.dp)
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.Black.copy(alpha = 0.5f))
-                            .clickable(onClick = onToanManHinh),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("⛶", color = Color.White, fontSize = 17.sp)
-                    }
-                } else if (bia != null) {
-                    Image(
-                        bitmap = bia.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        LyraMark(size = 64.dp, busy = false)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(14.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(6.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (now.isPlaying) accent else mau.chuRatMo)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    if (chiXem) "Đang tra lời — bản này không phát nhạc từ nguồn đó"
-                    else "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
-                    color = mau.chuRatMo,
-                    fontSize = 13.5.sp
-                )
-            }
-
-            if (nguon != null) {
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "PHÁT TỪ · " + nguon.uppercase(),
-                    color = mau.chuRatMo,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.2.sp
-                )
-            }
-
-            if (hangDoiRieng) {
-                Spacer(Modifier.height(26.dp))
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 26.dp, end = 26.dp, top = 16.dp, bottom = 24.dp)
+        ) {
+            item {
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -962,26 +1018,37 @@ private fun MatBia(
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(mau.nenChim)
-                            .clickable(onClick = onLuuHangDoi)
-                            .padding(horizontal = 14.dp, vertical = 7.dp)
-                    ) {
-                        Text(
-                            "Lưu thành danh sách",
-                            color = mau.chu,
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(mau.nenChim)
+                                .clickable(onClick = onLuuHangDoi)
+                                .padding(horizontal = 14.dp, vertical = 7.dp)
+                        ) {
+                            Text(
+                                "Lưu thành danh sách",
+                                color = mau.chu,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(mau.nenChim)
+                                .clickable(onClick = onDong),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("×", color = mau.chuMo, fontSize = 19.sp)
+                        }
                     }
                 }
                 Spacer(Modifier.height(4.dp))
             }
-        }
 
-        if (hangDoiRieng) {
             val from = (queueIndex + 1).coerceAtMost(queue.size)
             val conLai = queue.subList(from, queue.size)
             itemsIndexed(conLai, key = { _, t -> t.playbackUri }) { i, track ->
@@ -1038,6 +1105,10 @@ private fun MatBia(
 /** Mặt lời: dải báo ở trên, lời cuộn ở dưới. */
 @Composable
 private fun MatLoi(
+    // Bìa vẽ như MỤC ĐẦU của danh sách lời chứ không phải một mặt riêng.
+    // Truyền vào chứ không dựng tại chỗ: `MatLoi` không cần biết gì về ảnh
+    // bìa, hàng đợi hay toàn màn hình, và nó vẫn không biết.
+    khoiBia: @Composable () -> Unit,
     lyrics: Lyrics,
     active: Int,
     loading: Boolean,
@@ -1094,7 +1165,10 @@ private fun MatLoi(
 
     LaunchedEffect(active, trustTiming) {
         if (trustTiming && active >= 0 && lyrics.lines.isNotEmpty()) {
-            listState.animateScrollToItem(active.coerceAtLeast(0), scrollOffset = -260)
+            // CỘNG MỘT vì mục 0 của danh sách là khối bìa, không phải câu lời.
+            // Dòng thứ `active` nằm ở mục `active + 1`. Quên số này thì lời tự
+            // cuộn lệch đúng một câu suốt cả bài — sai lặng lẽ, không báo gì.
+            listState.animateScrollToItem(active.coerceAtLeast(0) + 1, scrollOffset = -260)
         }
     }
 
@@ -1122,30 +1196,38 @@ private fun MatLoi(
     }
 
     if (lyrics.isEmpty) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                LyraMark(size = 54.dp, busy = loading)
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    if (loading) "Đang tìm lời…" else "Chưa tìm thấy lời cho bài này",
-                    color = mau.chuMo,
-                    fontSize = 14.5.sp
-                )
-                if (!loading) {
-                    Spacer(Modifier.height(22.dp))
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(accent)
-                            .clickable(onClick = onEditLyrics)
-                            .padding(horizontal = 28.dp, vertical = 14.dp)
-                    ) {
-                        Text(
-                            "Tự nhập lời",
-                            color = Color.White,
-                            fontSize = 14.5.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+        // Không có lời thì VẪN CÓ BÌA. Từ lúc bìa thôi là một mặt riêng, nhánh
+        // này là chỗ duy nhất còn lại có thể vô tình nuốt mất nó — và một bài
+        // không tìm ra lời mà cũng mất luôn ảnh bìa thì trang bài trắng trơn.
+        Column(Modifier.fillMaxSize()) {
+            // Đệm phải khai LẠI ở đây. Nhánh kia lấy nó từ `contentPadding` của
+            // `LazyColumn`, mà nhánh này không có `LazyColumn` nào.
+            Column(Modifier.padding(start = 26.dp, end = 26.dp, top = 30.dp)) { khoiBia() }
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    LyraMark(size = 54.dp, busy = loading)
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        if (loading) "Đang tìm lời…" else "Chưa tìm thấy lời cho bài này",
+                        color = mau.chuMo,
+                        fontSize = 14.5.sp
+                    )
+                    if (!loading) {
+                        Spacer(Modifier.height(22.dp))
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(accent)
+                                .clickable(onClick = onEditLyrics)
+                                .padding(horizontal = 28.dp, vertical = 14.dp)
+                        ) {
+                            Text(
+                                "Tự nhập lời",
+                                color = Color.White,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
@@ -1315,6 +1397,15 @@ private fun MatLoi(
             contentPadding = PaddingValues(start = 26.dp, end = 26.dp, top = 30.dp, bottom = 46.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            item(key = "bia") {
+                Column {
+                    khoiBia()
+                    // Nới rộng hơn khoảng cách giữa hai câu lời: chỗ này là
+                    // chuyển từ hình sang chữ, không phải câu này sang câu kế.
+                    Spacer(Modifier.height(18.dp))
+                }
+            }
+
             itemsIndexed(lyrics.lines, key = { i, _ -> i }) { i, line ->
                 DongLoi(
                     chiSo = i,
