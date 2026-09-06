@@ -3,12 +3,12 @@ package com.mittohoa.lyra.ui
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.MarqueeSpacing
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,6 +35,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import com.mittohoa.lyra.lyrics.LrcCanhTep
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,6 +50,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -55,6 +58,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.scale
@@ -71,6 +75,7 @@ import com.mittohoa.lyra.sources.Track
 import com.mittohoa.lyra.translate.TranslationState
 import com.mittohoa.lyra.translate.languageName
 import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 /**
  * Trang Bài: bìa và lời của CÙNG một bài, trong cùng một trang.
@@ -521,43 +526,80 @@ private fun tenApp(goi: String): String? {
  */
 @Composable
 private fun KhoiDanhTinh(now: NowPlaying) {
+    ChuChay(
+        chu = now.title,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 26.dp, end = 26.dp, bottom = 4.dp)
+    )
+}
+
+/**
+ * Chữ trôi ngang LIÊN TỤC, chạy cả khi chữ ngắn hơn khung.
+ *
+ * `basicMarquee` của Compose không làm được việc này: nó chỉ chạy khi chữ tràn
+ * khung, còn tên bài vừa chỗ thì đứng im. Đúng về mặt thiết kế — Zing, NCT,
+ * Spotify đều thế — nhưng không phải thứ được yêu cầu ở đây.
+ *
+ * Cách chạy: vẽ chữ HAI LẦN cách nhau một khoảng hở, rồi dịch cả hàng sang
+ * trái đúng bằng "một bản + khoảng hở" và lặp lại. Đúng lúc bản đầu trôi khuất
+ * thì bản sau đã tới đúng vị trí bản đầu vừa rời — nên vòng lặp không có mối
+ * nối, mắt không thấy chỗ nhảy.
+ *
+ * Thời lượng tính theo QUÃNG ĐƯỜNG chứ không đặt cứng: tên dài và tên ngắn
+ * phải trôi cùng một tốc độ, không thì tên ngắn vụt qua còn tên dài thì lết.
+ */
+@Composable
+private fun ChuChay(chu: String, modifier: Modifier = Modifier) {
+    val doRong = with(LocalDensity.current) { HO_CHU_CHAY.toPx() }
+    var rongChu by remember(chu) { mutableIntStateOf(0) }
+    val lech = remember(chu) { Animatable(0f) }
+
+    LaunchedEffect(chu, rongChu) {
+        if (rongChu <= 0) return@LaunchedEffect
+        val quang = rongChu + doRong
+        lech.snapTo(0f)
+        lech.animateTo(
+            targetValue = -quang,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = (quang / TOC_DO_CHU_CHAY * 1000).toInt().coerceAtLeast(1),
+                    easing = LinearEasing
+                ),
+                repeatMode = RepeatMode.Restart
+            )
+        )
+    }
+
+    Box(modifier.clipToBounds()) {
+        Row(Modifier.offset { IntOffset(lech.value.roundToInt(), 0) }) {
+            MotBanChu(chu) { rongChu = it }
+            Spacer(Modifier.width(HO_CHU_CHAY))
+            // Bản thứ hai chỉ để vá chỗ trống lúc bản đầu trôi ra ngoài.
+            MotBanChu(chu) {}
+        }
+    }
+}
+
+@Composable
+private fun MotBanChu(chu: String, onRong: (Int) -> Unit) {
     Text(
-        now.title,
+        chu,
         color = mau.chu,
         fontFamily = boChu.loi,
         fontSize = 21.sp,
         fontWeight = FontWeight.Medium,
         maxLines = 1,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 26.dp, end = 26.dp, bottom = 4.dp)
-            // Chữ TRÔI LIÊN TỤC từ phải sang trái, không giật từng chặng.
-            //
-            // Ba mặc định của `basicMarquee` đều phải bỏ, và mỗi cái hỏng một
-            // kiểu:
-            //
-            //   iterations = 3        chạy ba lượt rồi đứng im — ai mở app sau
-            //                         lúc đó không thấy gì chạy, mà đuôi tên
-            //                         bài vẫn bị giấu y như cắt bằng ba chấm
-            //   repeatDelayMillis     dừng 1,2 giây mỗi vòng, nên nhìn ra là
-            //                         giật và nhảy chứ không phải trôi
-            //   initialDelayMillis    còn chờ thêm một nhịp nữa trước lượt đầu
-            //
-            // `spacing` là khoảng hở giữa lượt này và lượt sau. Không có nó thì
-            // đuôi câu dính liền vào đầu câu và mắt không biết chỗ nào là hết.
-            //
-            // `velocity` chậm hơn mặc định: đây là chữ để ĐỌC, không phải bảng
-            // chạy chữ ngoài đường.
-            .basicMarquee(
-                iterations = Int.MAX_VALUE,
-                repeatDelayMillis = 0,
-                initialDelayMillis = 0,
-                spacing = MarqueeSpacing(52.dp),
-                velocity = 32.dp
-            )
+        softWrap = false,
+        onTextLayout = { onRong(it.size.width) }
     )
 }
 
+/** Khoảng hở giữa bản chữ này và bản lặp lại, để mắt biết chỗ nào là hết câu. */
+private val HO_CHU_CHAY = 64.dp
+
+/** Điểm ảnh mỗi giây. Chữ để ĐỌC, không phải bảng chạy chữ ngoài đường. */
+private const val TOC_DO_CHU_CHAY = 45f
 /**
  * Dải đầu trang: ô bìa nhỏ · nguồn và ca sĩ · các nút chức năng.
  *
