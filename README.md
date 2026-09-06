@@ -47,6 +47,8 @@ trên máy thật: gói thử không nằm trong `enabled_notification_listeners
 | Danh sách phát | ✅ |
 | Lời trên thẻ màn hình khoá | ✅ |
 | Sáu hiệu ứng chữ, cho cả trang Lời lẫn khung nổi | ✅ |
+| Chia sẻ thẻ lời: sáu mẫu, lấy được nhiều dòng một lúc | ✅ |
+| Chia sẻ **video ngắn** — mỗi cảnh một tấm thẻ, không tiếng | ✅ |
 | Ô bật/tắt nhanh trong Cài đặt nhanh | ✅ |
 | **Không tự quét máy** — chỉ đọc thư mục bạn chỉ định, nhạc lẫn video | ✅ |
 | Đọc được cả tệp danh mục hệ thống bỏ sót (`.nomedia`, đuôi lạ) | ✅ |
