@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,17 +45,32 @@ import androidx.compose.ui.unit.sp
 import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.lyrics.LyricLine
 import com.mittohoa.lyra.share.TheLoi
+import com.mittohoa.lyra.share.VideoLoi
 import com.mittohoa.lyra.share.guiTheLoi
+import com.mittohoa.lyra.share.guiVideoLoi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Nhiều nhất bao nhiêu dòng vào một tấm thẻ.
+ * Nhiều nhất bao nhiêu dòng lấy được một lần.
  *
- * Thẻ có kích thước cố định 1080×1350 và chữ tự co lại cho vừa. Nhồi thêm nữa
- * thì chữ nhỏ tới mức chính thứ đem khoe lại là thứ khó đọc nhất trên ảnh.
+ * Trần này là cho VIDEO, nơi lời được cắt thành nhiều cảnh nên dài bao nhiêu
+ * cũng đọc được. Thẻ ảnh thì chật hơn hẳn — xem `DONG_MOI_CANH`.
  */
-private const val TRAN_DONG = 4
+private const val TRAN_DONG = 8
+
+/**
+ * Mỗi cảnh video, và mỗi tấm thẻ ảnh, chứa nhiều nhất bấy nhiêu dòng.
+ *
+ * Thẻ có kích thước cố định 1080×1350 và chữ tự co lại cho vừa. Nhồi quá thì
+ * chữ nhỏ tới mức chính thứ đem khoe lại là thứ khó đọc nhất trên ảnh.
+ *
+ * Video dùng CÙNG con số này: mỗi cảnh vẽ bằng đúng bộ vẽ thẻ, nên cảnh nào
+ * cũng phải đọc được như một tấm thẻ. Chọn tám dòng thì ra bốn cảnh chứ không
+ * phải một cảnh nhồi tám dòng.
+ */
+private const val DONG_MOI_CANH = 2
 
 /**
  * Xem trước tấm thẻ lời rồi gửi đi.
@@ -106,6 +122,13 @@ fun TheLoiManHinh(
     // co lại cho vừa. Nhồi thêm nữa thì chữ nhỏ tới mức chính thứ đem khoe lại
     // là thứ khó đọc nhất trên tấm ảnh.
     var soDong by remember { mutableIntStateOf(1) }
+
+    // Trạng thái của việc dựng video. `baoVideo` chỉ có chữ khi hỏng — dựng
+    // xong thì bảng chia sẻ tự hiện ra, không cần báo thêm câu nào.
+    var dangDungVideo by remember { mutableStateOf(false) }
+    var tienDo by remember { mutableIntStateOf(0) }
+    var baoVideo by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     val conLai = dungDuoc.size - viTri
     val soDongThat = soDong.coerceAtMost(minOf(TRAN_DONG, conLai))
     val cauHat = remember(viTri, soDongThat, dungDuoc, cacDong) {
@@ -260,10 +283,79 @@ fun TheLoiManHinh(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "Chia sẻ",
+                "Chia sẻ ảnh",
                 color = if (anh != null) Color.White else mau.chuRatMo,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        // Dựng video mất vài giây, nên nút phải NÓI nó đang làm gì.
+        //
+        // Im lặng trong lúc dựng là kiểu hỏng tệ nhất ở đây: người dùng bấm,
+        // không thấy gì, bấm lại — và lần bấm thứ hai chồng lên lần đầu.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 22.dp)
+                .clip(RoundedCornerShape(50))
+                .background(mau.nenChim)
+                .clickable(enabled = !dangDungVideo) {
+                    dangDungVideo = true
+                    tienDo = 0
+                    scope.launch {
+                        runCatching {
+                            VideoLoi.dung(
+                                context = context,
+                                // Cắt thành CẢNH chứ không dồn hết vào một
+                                // màn: mỗi cảnh vẽ bằng đúng bộ vẽ thẻ, nên
+                                // cảnh nào cũng phải đọc được như một tấm thẻ.
+                                cacCau = dungDuoc.drop(viTri).take(soDongThat)
+                                    .map { cacDong[it].text }
+                                    .chunked(DONG_MOI_CANH)
+                                    .map { it.joinToString("\n") },
+                                tenBai = tenBai,
+                                caSi = caSi,
+                                mauNhan = accent.toArgb(),
+                                laGiay = bangMau.laGiay,
+                                kieuChu = kieuChu,
+                                mau = mauThe,
+                                bia = bia,
+                                onTienDo = { tienDo = it }
+                            )
+                        }.onSuccess {
+                            guiVideoLoi(context, it, tenBai)
+                        }.onFailure {
+                            baoVideo = "Không dựng được video: " +
+                                (it.message ?: "lỗi không rõ")
+                        }
+                        dangDungVideo = false
+                    }
+                }
+                .padding(vertical = 15.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                if (dangDungVideo) "Đang dựng video… $tienDo%"
+                // Nói luôn đoạn sẽ dài bao nhiêu — dựng mất vài giây, người ta
+                // cần biết mình đang chờ để lấy cái gì.
+                else {
+                    val soCanh = (soDongThat + DONG_MOI_CANH - 1) / DONG_MOI_CANH
+                    "Chia sẻ video · khoảng ${(soCanh * 2.6f).toInt()} giây"
+                },
+                color = mau.chu,
+                fontSize = 14.5.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        baoVideo?.let {
+            Text(
+                it,
+                color = mau.chu,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+                modifier = Modifier.padding(bottom = 18.dp)
             )
         }
     }
