@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -551,13 +552,27 @@ private fun KhoiDanhTinh(now: NowPlaying) {
  */
 @Composable
 private fun ChuChay(chu: String, modifier: Modifier = Modifier) {
-    val doRong = with(LocalDensity.current) { HO_CHU_CHAY.toPx() }
+    val doDay = LocalDensity.current
     var rongChu by remember(chu) { mutableIntStateOf(0) }
+    var rongKhung by remember { mutableIntStateOf(0) }
     val lech = remember(chu) { Animatable(0f) }
 
-    LaunchedEffect(chu, rongChu) {
+    // KHOẢNG HỞ BẰNG ĐÚNG BỀ NGANG KHUNG, không phải một con số cố định.
+    //
+    // Đây là chỗ bản đầu sai. Hở cố định 64dp thì với tên bài NGẮN, cả hai bản
+    // chữ cùng lọt vào khung một lúc — người dùng thấy đuôi bản một, khoảng hở,
+    // rồi chữ đầu của bản hai, và đọc ra như một chữ bị văng xa khỏi phần còn
+    // lại. Tên dài thì không lộ, vì bản hai luôn nằm ngoài màn hình.
+    //
+    // Hở bằng bề ngang khung thì bản sau chỉ bắt đầu vào khung đúng lúc bản
+    // trước vừa ra hẳn. Không bao giờ thấy hai bản cùng lúc, dù chữ ngắn tới
+    // đâu — đổi lại có một quãng trống trôi qua, đúng như bảng chạy chữ thật.
+    val hoPx = maxOf(rongKhung, with(doDay) { HO_TOI_THIEU.roundToPx() })
+    val hoDp = with(doDay) { hoPx.toDp() }
+
+    LaunchedEffect(chu, rongChu, hoPx) {
         if (rongChu <= 0) return@LaunchedEffect
-        val quang = rongChu + doRong
+        val quang = (rongChu + hoPx).toFloat()
         lech.snapTo(0f)
         lech.animateTo(
             targetValue = -quang,
@@ -571,10 +586,29 @@ private fun ChuChay(chu: String, modifier: Modifier = Modifier) {
         )
     }
 
-    Box(modifier.clipToBounds()) {
-        Row(Modifier.offset { IntOffset(lech.value.roundToInt(), 0) }) {
+    Box(
+        modifier
+            .clipToBounds()
+            .onSizeChanged { rongKhung = it.width }
+    ) {
+        Row(
+            Modifier
+                // CHO HÀNG RỘNG VƯỢT KHUNG. Không có dòng này thì `Row` bị bó
+                // theo bề ngang của `Box`, và mọi thứ không lọt sẽ bị nén còn 0
+                // điểm ảnh — bản chữ thứ hai biến mất, nên chạy hết một vòng là
+                // màn hình trống trơn.
+                //
+                // Đây cũng chính là gốc của lỗi "chữ đầu văng xa" trước đó: hồi
+                // hở còn 64dp thì bản hai chưa mất hẳn, chỉ bị cắt còn vài chữ,
+                // và mấy chữ sót ấy trông như một mẩu rơi ra khỏi câu.
+                //
+                // `Box` bọc ngoài đã `clipToBounds`, nên phần thò ra vẫn bị cắt
+                // gọn ở rìa chứ không tràn sang chỗ khác.
+                .wrapContentWidth(align = Alignment.Start, unbounded = true)
+                .offset { IntOffset(lech.value.roundToInt(), 0) }
+        ) {
             MotBanChu(chu) { rongChu = it }
-            Spacer(Modifier.width(HO_CHU_CHAY))
+            Spacer(Modifier.width(hoDp))
             // Bản thứ hai chỉ để vá chỗ trống lúc bản đầu trôi ra ngoài.
             MotBanChu(chu) {}
         }
@@ -595,8 +629,8 @@ private fun MotBanChu(chu: String, onRong: (Int) -> Unit) {
     )
 }
 
-/** Khoảng hở giữa bản chữ này và bản lặp lại, để mắt biết chỗ nào là hết câu. */
-private val HO_CHU_CHAY = 64.dp
+/** Sàn cho khoảng hở, dùng khi chưa đo được bề ngang khung. */
+private val HO_TOI_THIEU = 64.dp
 
 /** Điểm ảnh mỗi giây. Chữ để ĐỌC, không phải bảng chạy chữ ngoài đường. */
 private const val TOC_DO_CHU_CHAY = 45f
