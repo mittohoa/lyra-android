@@ -49,11 +49,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
+ * Nhiều nhất bao nhiêu dòng vào một tấm thẻ.
+ *
+ * Thẻ có kích thước cố định 1080×1350 và chữ tự co lại cho vừa. Nhồi thêm nữa
+ * thì chữ nhỏ tới mức chính thứ đem khoe lại là thứ khó đọc nhất trên ảnh.
+ */
+private const val TRAN_DONG = 4
+
+/**
  * Xem trước tấm thẻ lời rồi gửi đi.
  *
  * Mở ra ở câu đang hát vì đó là câu người ta vừa nghe thấy và muốn giữ lại,
  * nhưng đổi được sang câu khác bằng hai nút ‹ ›: câu đáng chia sẻ thường là câu
  * vừa trôi qua, không phải câu đang trôi.
+ *
+ * Lấy được NHIỀU DÒNG vào một thẻ, không chỉ một. Một câu tách khỏi đoạn của nó
+ * thường mất nghĩa, và người nhận không có gì để bám.
  */
 @Composable
 fun TheLoiManHinh(
@@ -85,7 +96,21 @@ fun TheLoiManHinh(
         val gan = dungDuoc.indexOfFirst { it >= dongDau }
         mutableIntStateOf(if (gan >= 0) gan else dungDuoc.lastIndex)
     }
-    val cauHat = cacDong[dungDuoc[viTri]].text
+    // Bao nhiêu dòng vào thẻ, tính từ dòng đang chọn.
+    //
+    // Bản đầu chỉ cho đúng MỘT câu, và đó là chỗ hụt thật: người ta chia sẻ một
+    // đoạn chứ ít khi một câu. Một câu tách khỏi đoạn của nó thường mất nghĩa,
+    // và người nhận không có gì để bám.
+    //
+    // Trần bốn dòng, không mở hơn: thẻ có kích thước cố định 1080×1350, chữ tự
+    // co lại cho vừa. Nhồi thêm nữa thì chữ nhỏ tới mức chính thứ đem khoe lại
+    // là thứ khó đọc nhất trên tấm ảnh.
+    var soDong by remember { mutableIntStateOf(1) }
+    val conLai = dungDuoc.size - viTri
+    val soDongThat = soDong.coerceAtMost(minOf(TRAN_DONG, conLai))
+    val cauHat = remember(viTri, soDongThat, dungDuoc, cacDong) {
+        dungDuoc.drop(viTri).take(soDongThat).joinToString("\n") { cacDong[it].text }
+    }
 
     // Vẽ trên luồng nền: một tấm 1080×1350 kèm bố cục chữ là việc của CPU, làm
     // trên luồng chính thì mỗi lần bấm ‹ › là một cú khựng.
@@ -191,13 +216,35 @@ fun TheLoiManHinh(
         ) {
             NutDoiCau("‹", viTri > 0) { viTri-- }
             Text(
-                "Câu ${viTri + 1}/${dungDuoc.size}",
+                if (soDongThat > 1) "Câu ${viTri + 1}–${viTri + soDongThat}/${dungDuoc.size}"
+                else "Câu ${viTri + 1}/${dungDuoc.size}",
                 color = mau.chuMo,
                 fontSize = 13.5.sp,
                 modifier = Modifier.weight(1f),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             NutDoiCau("›", viTri < dungDuoc.lastIndex) { viTri++ }
+        }
+
+        // Lấy thêm mấy dòng nữa vào cùng một thẻ.
+        //
+        // Hàng riêng chứ không nhét chung với ‹ ›: hai hàng trả lời hai câu
+        // khác nhau — bắt đầu từ đâu, và lấy bao nhiêu. Gộp vào một hàng bốn
+        // nút thì không ai đoán được nút nào làm gì.
+        Row(
+            Modifier.fillMaxWidth().padding(top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            NutDoiCau("−", soDongThat > 1) { soDong = soDongThat - 1 }
+            Text(
+                "$soDongThat dòng",
+                color = mau.chuMo,
+                fontSize = 13.5.sp,
+                modifier = Modifier.weight(1f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            NutDoiCau("+", soDongThat < minOf(TRAN_DONG, conLai)) { soDong = soDongThat + 1 }
         }
 
         Box(
