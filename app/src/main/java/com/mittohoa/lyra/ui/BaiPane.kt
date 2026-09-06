@@ -844,6 +844,96 @@ private fun DaiLuyenTap(
     }
 }
 
+/**
+ * Khối bìa: ảnh bìa (hoặc khung video), dòng trạng thái, và nguồn đang phát.
+ *
+ * Tách ra khỏi `MatBia` để dùng được ở HAI chỗ. Hôm nay mới có một chỗ gọi và
+ * mặt nhìn không đổi gì — bước này chỉ dọn mã, để bước sau cắm được nó vào đầu
+ * mặt Lời mà không phải mổ hai hàm cùng lúc.
+ */
+@Composable
+private fun KhoiBia(
+    now: NowPlaying,
+    bia: android.graphics.Bitmap?,
+    accent: Color,
+    chiXem: Boolean,
+    nguon: String?,
+    queue: List<Track>,
+    queueIndex: Int,
+    onToanManHinh: () -> Unit,
+    toanManHinh: Boolean
+) {
+    // Bai dang phat la video thi chinh o bia tro thanh man hinh. Mot trang rieng
+    // cho video se cat doi app lam hai nua ma khong duoc gi: cho de anh bia von
+    // da la mot o hinh vuong dat giua trang.
+    val baiNay = queue.getOrNull(queueIndex)
+    val laVideo = baiNay?.kind == MediaKind.VIDEO && !toanManHinh
+
+    Stage(
+        accent = accent,
+        kind = if (laVideo) MediaKind.VIDEO else MediaKind.AUDIO,
+        tiLe = if (laVideo) baiNay?.tiLe else null
+    ) {
+        if (laVideo) {
+            ManHinhVideo(dangPhat = now.isPlaying)
+            // Nút mở toàn màn hình, góc dưới phải của chính ô hình. Không đặt ở
+            // dải nút chung bên dưới: nó chỉ có nghĩa khi đang có hình, mà ô
+            // hình thì là chỗ mắt đang nhìn.
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(10.dp)
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(onClick = onToanManHinh),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("⛶", color = Color.White, fontSize = 17.sp)
+            }
+        } else if (bia != null) {
+            Image(
+                bitmap = bia.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                LyraMark(size = 64.dp, busy = false)
+            }
+        }
+    }
+
+    Spacer(Modifier.height(14.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(6.dp)
+                .clip(RoundedCornerShape(50))
+                .background(if (now.isPlaying) accent else mau.chuRatMo)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            if (chiXem) "Đang tra lời — bản này không phát nhạc từ nguồn đó"
+            else "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
+            color = mau.chuRatMo,
+            fontSize = 13.5.sp
+        )
+    }
+
+    if (nguon != null) {
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "PHÁT TỪ · " + nguon.uppercase(),
+            color = mau.chuRatMo,
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.2.sp
+        )
+    }
+}
+
 /** Mặt bìa: bản in, nguồn đang phát, và hàng đợi phía dưới. */
 @Composable
 private fun MatBia(
@@ -876,75 +966,17 @@ private fun MatBia(
         contentPadding = PaddingValues(start = 26.dp, end = 26.dp, bottom = 24.dp)
     ) {
         item {
-            // Bai dang phat la video thi chinh o bia tro thanh man hinh. Mot
-            // trang rieng cho video se cat doi app lam hai nua ma khong duoc gi:
-            // cho de anh bia von da la mot o hinh vuong dat giua trang.
-            val baiNay = queue.getOrNull(queueIndex)
-            val laVideo = baiNay?.kind == MediaKind.VIDEO && !toanManHinh
-
-            Stage(
+            KhoiBia(
+                now = now,
+                bia = bia,
                 accent = accent,
-                kind = if (laVideo) MediaKind.VIDEO else MediaKind.AUDIO,
-                tiLe = if (laVideo) baiNay?.tiLe else null
-            ) {
-                if (laVideo) {
-                    ManHinhVideo(dangPhat = now.isPlaying)
-                    // Nút mở toàn màn hình, góc dưới phải của chính ô hình.
-                    // Không đặt ở dải nút chung bên dưới: nó chỉ có nghĩa khi
-                    // đang có hình, mà ô hình thì là chỗ mắt đang nhìn.
-                    Box(
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(10.dp)
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.Black.copy(alpha = 0.5f))
-                            .clickable(onClick = onToanManHinh),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("⛶", color = Color.White, fontSize = 17.sp)
-                    }
-                } else if (bia != null) {
-                    Image(
-                        bitmap = bia.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        LyraMark(size = 64.dp, busy = false)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(14.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(6.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (now.isPlaying) accent else mau.chuRatMo)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    if (chiXem) "Đang tra lời — bản này không phát nhạc từ nguồn đó"
-                    else "${appLabel(now.packageName)} · ${if (now.isPlaying) "đang phát" else "tạm dừng"}",
-                    color = mau.chuRatMo,
-                    fontSize = 13.5.sp
-                )
-            }
-
-            if (nguon != null) {
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "PHÁT TỪ · " + nguon.uppercase(),
-                    color = mau.chuRatMo,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.2.sp
-                )
-            }
+                chiXem = chiXem,
+                nguon = nguon,
+                queue = queue,
+                queueIndex = queueIndex,
+                onToanManHinh = onToanManHinh,
+                toanManHinh = toanManHinh
+            )
 
             if (hangDoiRieng) {
                 Spacer(Modifier.height(26.dp))
