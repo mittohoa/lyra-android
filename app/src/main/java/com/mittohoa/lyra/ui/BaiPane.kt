@@ -315,6 +315,7 @@ fun BaiPane(
                         toanManHinh = toanManHinh
                     )
                 },
+                khoaBai = now.title + " " + now.artist,
                 lyrics = lyrics,
                 active = dongDangHat,
                 loading = loading,
@@ -1109,6 +1110,14 @@ private fun MatLoi(
     // Truyền vào chứ không dựng tại chỗ: `MatLoi` không cần biết gì về ảnh
     // bìa, hàng đợi hay toàn màn hình, và nó vẫn không biết.
     khoiBia: @Composable () -> Unit,
+    /**
+     * Bài nào — dùng làm mốc để QUÊN việc người dùng đã thu gọn dải lời nhắc.
+     *
+     * Không lấy `lyrics` làm mốc: cùng một bài, `lyrics` còn đổi vài lần nữa
+     * (dịch xong, sửa lời, căn lệch), và mỗi lần đổi lại bung dải ra thì thu
+     * gọn thành một nút không bấm được lâu.
+     */
+    khoaBai: String,
     lyrics: Lyrics,
     active: Int,
     loading: Boolean,
@@ -1160,6 +1169,18 @@ private fun MatLoi(
             "Không lưu được: " + (e.message ?: "lỗi không rõ") + "."
         }
     }
+    // Dải lời nhắc BUNG RA MỖI BÀI, rồi thu gọn được.
+    //
+    // Mấy lời nhắc này đều đáng nói MỘT LẦN cho mỗi bài — "lời của bản thu
+    // khác", "ghi ra tệp", "tải gói dịch" — nhưng chúng nằm lì trên đầu trang
+    // suốt cả bài và ăn mất chỗ của chính thứ người ta mở app ra để đọc.
+    //
+    // Nên: hiện lúc mới sang bài (`remember(khoaBai)` trả về `true` lại), thu
+    // gọn được bằng một nút, và KHÔNG nhớ việc thu gọn sang bài sau. Nhớ luôn
+    // thì bài sau có tệp .lrc chưa ghi hay có gói dịch cần tải cũng không ai
+    // biết — lời nhắc bị tắt vĩnh viễn là lời nhắc vô dụng.
+    var hienNhac by remember(khoaBai) { mutableStateOf(true) }
+
     val listState = rememberLazyListState()
     val translated = (translation as? TranslationState.Done)?.lines ?: emptyList()
 
@@ -1235,161 +1256,183 @@ private fun MatLoi(
         return
     }
 
+    // ĐIỀU KIỆN của từng lời nhắc, viết MỘT LẦN ở đây.
+    //
+    // Trước đây mỗi lời nhắc tự mang cái `if` của nó ngay tại chỗ vẽ. Giờ cần
+    // đếm xem có bao nhiêu cái để nút thu gọn nói được "3 lời nhắc", mà chép
+    // lại chùm điều kiện lần thứ hai để đếm thì sớm muộn hai bản sẽ lệch nhau
+    // và con số nói dối.
+    val nhacChuaCanGio = !lyrics.synced && lyrics.lines.isNotEmpty()
+    val nhacGopLrclib = lyrics.from == "tự nhập" || gop != null
+    // Chỉ mời ghi tệp khi đang phát nhạc TRONG MÁY: nhạc từ Zing hay app khác
+    // thì không có tệp nào trên đĩa để mà ghi cạnh. Và chỉ mời khi lời KHÔNG
+    // PHẢI vừa đọc lên từ chính tệp đó — ghi lại đúng cái mình vừa đọc ra là
+    // một nút bấm xong không đổi gì.
+    val nhacGhiTep = Lyra.laNhacTrongMay() && lyrics.lines.isNotEmpty() &&
+        !LrcCanhTep.laTepCanh(lyrics.from)
+    val nhacDich = translation is TranslationState.NeedsModel ||
+        translation is TranslationState.Failed ||
+        translation == TranslationState.Working
+    val soNhac = 1 + listOf(nhacChuaCanGio, nhacGopLrclib, nhacGhiTep, baoKhongTua, nhacDich)
+        .count { it }
+
     Column(Modifier.fillMaxSize()) {
-        // Một dải báo duy nhất, và nó LUÔN có lối vào chỗ sửa lời.
-        Notice(
+        if (hienNhac) {
+            // Một dải báo duy nhất, và nó LUÔN có lối vào chỗ sửa lời.
+            Notice(
+                accent = accent,
+                text = when {
+                    lyrics.timingSuspect ->
+                        "Lời của bản thu khác nên mốc có thể lệch. Nhấn giữ câu đang " +
+                            "hát để căn lại."
+                    lyrics.offset != 0L ->
+                        "Đã căn lệch " + offsetLabel(lyrics.offset) + ". Bấm để bỏ."
+                    lyrics.from == "tự nhập" -> "Lời bạn tự nhập."
+                    else -> "Lời từ " + lyrics.from + "."
+                },
+                onClick = if (lyrics.offset != 0L) onClearOffset else null,
+                action = if (lyrics.from == "tự nhập") "Sửa lời" else "Tự nhập",
+                onAction = onEditLyrics
+            )
+
+            // Lời chữ trơn thì mời căn giờ.
+            //
+            // Chưa căn thì AURA chỉ hiện được một khối chữ: không tô sáng câu đang
+            // hát, không khung lời nổi chạy theo, không lặp A–B, không thẻ lời. Gần
+            // hết những gì app làm đều đứng trên chỗ có mốc thời gian.
+            if (nhacChuaCanGio) {
+                Notice(
+                    accent = accent,
+                    text = "Lời này chưa có mốc thời gian nên không chạy theo nhạc được.",
+                    action = "Căn giờ",
+                    onAction = onCanGio
+                )
+            }
+
+            // Góp lời ngược lại cho LRCLIB.
+            //
+            // Chỉ mời khi lời là do người dùng TỰ NHẬP: lời tải về từ LRCLIB thì
+            // gửi lại chính nó là vô nghĩa, còn lời từ Zing/NCT thì không phải của
+            // mình mà đem cho.
+            //
+            // Và chỉ MỜI, không tự làm. Đây là đăng lên một kho công cộng ai cũng
+            // đọc được và không rút lại được.
+            if (nhacGopLrclib) {
+                Notice(
+                    accent = accent,
+                    text = when (gop) {
+                        null -> "Góp bản lời này cho LRCLIB để ai cũng dùng được."
+                        is Lyra.TrangThaiGop.DangGiai ->
+                            "Đang giải thử thách chống spam… " +
+                                "${gop.daThu / 1000} nghìn lần bằm"
+                        Lyra.TrangThaiGop.DangGui -> "Đang gửi…"
+                        Lyra.TrangThaiGop.Xong -> "Đã góp cho LRCLIB. Cảm ơn bạn."
+                        is Lyra.TrangThaiGop.Hong -> gop.vi
+                    },
+                    action = when (gop) {
+                        null -> "Góp"
+                        is Lyra.TrangThaiGop.DangGiai -> "Huỷ"
+                        is Lyra.TrangThaiGop.Hong -> "Thử lại"
+                        else -> null
+                    },
+                    onAction = if (gop is Lyra.TrangThaiGop.DangGiai) onThoiGop else onGop
+                )
+            }
+
+            // Ghi lời ra tệp .lrc nằm cạnh tệp nhạc. Xem `nhacGhiTep` ở trên để
+            // biết vì sao lời nhắc này không phải lúc nào cũng có nghĩa.
+            if (nhacGhiTep) {
+                val nhac = LocalContext.current
+                Notice(
+                    accent = accent,
+                    text = baoGhi ?: "Ghi lời này ra tệp .lrc nằm cạnh bài nhạc — " +
+                        "trình phát khác cũng đọc được, và gỡ app đi vẫn còn.",
+                    action = when {
+                        choLuuKhac != null -> "Chọn chỗ lưu"
+                        choDeLen -> "Ghi đè"
+                        else -> "Ghi ra tệp"
+                    },
+                    onAction = {
+                        val cho = choLuuKhac
+                        if (cho != null) {
+                            luuChoKhac.launch(cho.first)
+                            return@Notice
+                        }
+                        when (val kq = Lyra.ghiLoiRaTepCanh(nhac, deLen = choDeLen)) {
+                            is LrcCanhTep.KetQuaGhi.Xong -> {
+                                choDeLen = false
+                                baoGhi = "Đã ghi ra " + tenTep(kq.duong) + "."
+                            }
+                            is LrcCanhTep.KetQuaGhi.DaCoTep -> {
+                                // Không tự đè: tệp nằm sẵn ở đó là công của ai đó,
+                                // có thể là công của chính người dùng gõ trên máy
+                                // tính. Hỏi một câu rẻ hơn làm mất nó nhiều.
+                                choDeLen = true
+                                baoGhi = "Đã có sẵn " + tenTep(kq.duong) + ". Ghi đè lên?"
+                            }
+                            is LrcCanhTep.KetQuaGhi.BiChan -> {
+                                // Không bỏ người dùng cụt đường. Đây là luật của hệ
+                                // thống chứ không phải thiếu quyền nào xin được, nên
+                                // mời họ chọn chỗ khác — việc đó thì luôn làm được.
+                                //
+                                // ĐO ĐƯỢC trên Pixel 6 Pro / Android 17 — chỉ BỐN
+                                // thư mục nhận tệp .lrc:
+                                //
+                                //   được : Music  Movies  Download  Documents
+                                //   chặn : DCIM  Pictures  Recordings  Audiobooks
+                                //          Podcasts  Notifications  Alarms
+                                //
+                                // Nên câu báo kể ra CHỖ ĐƯỢC PHÉP chứ không đoán
+                                // xem chỗ đang hỏng là loại gì. Đã sai hai lần vì
+                                // đoán: lần đầu đổ cho thẻ nhớ (máy không có khe
+                                // thẻ), lần sau đổ cho thư mục ảnh (trong khi
+                                // Recordings cũng chặn mà chẳng dính gì đến ảnh).
+                                choDeLen = false
+                                choLuuKhac = kq.tenGoiY to kq.noiDung
+                                baoGhi = "Android chỉ cho ghi tệp .lrc vào Music, " +
+                                    "Movies, Download và Documents — thư mục của bài " +
+                                    "này không nằm trong số đó. Chọn chỗ khác để lưu?"
+                            }
+                            is LrcCanhTep.KetQuaGhi.Hong -> {
+                                choDeLen = false
+                                baoGhi = "Không ghi được: " + kq.lyDo + "."
+                            }
+                            LrcCanhTep.KetQuaGhi.KhongPhaiTepTrongMay -> {
+                                choDeLen = false
+                                baoGhi = "Bài này không phải tệp trong máy nên không có chỗ để ghi cạnh."
+                            }
+                        }
+                    }
+                )
+            }
+
+            if (baoKhongTua) {
+                Notice(
+                    accent = accent,
+                    text = "App đang phát không cho tua. Nhấn giữ một câu để căn lệch nhịp thay vào đó."
+                )
+            }
+
+            when (translation) {
+                is TranslationState.NeedsModel -> Notice(
+                    accent = accent,
+                    text = "Lời đang là tiếng " + languageName(translation.language) +
+                        ". Tải gói ngôn ngữ về máy để dịch, một lần dùng mãi.",
+                    action = "Tải gói",
+                    onAction = onDownloadModel
+                )
+                is TranslationState.Failed -> Notice(accent = accent, text = translation.why + ".")
+                TranslationState.Working -> Notice(accent = accent, text = "Đang dịch lời…")
+                else -> Unit
+            }
+        }
+
+        ThanhThuGonNhac(
+            soNhac = soNhac,
+            dangHien = hienNhac,
             accent = accent,
-            text = when {
-                lyrics.timingSuspect ->
-                    "Lời của bản thu khác nên mốc có thể lệch. Nhấn giữ câu đang " +
-                        "hát để căn lại."
-                lyrics.offset != 0L ->
-                    "Đã căn lệch " + offsetLabel(lyrics.offset) + ". Bấm để bỏ."
-                lyrics.from == "tự nhập" -> "Lời bạn tự nhập."
-                else -> "Lời từ " + lyrics.from + "."
-            },
-            onClick = if (lyrics.offset != 0L) onClearOffset else null,
-            action = if (lyrics.from == "tự nhập") "Sửa lời" else "Tự nhập",
-            onAction = onEditLyrics
+            onDoi = { hienNhac = !hienNhac }
         )
-
-        // Lời chữ trơn thì mời căn giờ.
-        //
-        // Chưa căn thì AURA chỉ hiện được một khối chữ: không tô sáng câu đang
-        // hát, không khung lời nổi chạy theo, không lặp A–B, không thẻ lời. Gần
-        // hết những gì app làm đều đứng trên chỗ có mốc thời gian.
-        if (!lyrics.synced && lyrics.lines.isNotEmpty()) {
-            Notice(
-                accent = accent,
-                text = "Lời này chưa có mốc thời gian nên không chạy theo nhạc được.",
-                action = "Căn giờ",
-                onAction = onCanGio
-            )
-        }
-
-        // Góp lời ngược lại cho LRCLIB.
-        //
-        // Chỉ mời khi lời là do người dùng TỰ NHẬP: lời tải về từ LRCLIB thì
-        // gửi lại chính nó là vô nghĩa, còn lời từ Zing/NCT thì không phải của
-        // mình mà đem cho.
-        //
-        // Và chỉ MỜI, không tự làm. Đây là đăng lên một kho công cộng ai cũng
-        // đọc được và không rút lại được.
-        if (lyrics.from == "tự nhập" || gop != null) {
-            Notice(
-                accent = accent,
-                text = when (gop) {
-                    null -> "Góp bản lời này cho LRCLIB để ai cũng dùng được."
-                    is Lyra.TrangThaiGop.DangGiai ->
-                        "Đang giải thử thách chống spam… " +
-                            "${gop.daThu / 1000} nghìn lần bằm"
-                    Lyra.TrangThaiGop.DangGui -> "Đang gửi…"
-                    Lyra.TrangThaiGop.Xong -> "Đã góp cho LRCLIB. Cảm ơn bạn."
-                    is Lyra.TrangThaiGop.Hong -> gop.vi
-                },
-                action = when (gop) {
-                    null -> "Góp"
-                    is Lyra.TrangThaiGop.DangGiai -> "Huỷ"
-                    is Lyra.TrangThaiGop.Hong -> "Thử lại"
-                    else -> null
-                },
-                onAction = if (gop is Lyra.TrangThaiGop.DangGiai) onThoiGop else onGop
-            )
-        }
-
-        // Ghi lời ra tệp .lrc nằm cạnh tệp nhạc.
-        //
-        // Chỉ mời khi đang phát nhạc TRONG MÁY: nhạc từ Zing hay từ app khác
-        // thì không có tệp nào trên đĩa để mà ghi cạnh.
-        //
-        // Và chỉ mời khi lời KHÔNG PHẢI vừa đọc lên từ chính tệp đó — ghi lại
-        // đúng cái mình vừa đọc ra là một nút bấm xong không đổi gì.
-        if (Lyra.laNhacTrongMay() && lyrics.lines.isNotEmpty() &&
-            !LrcCanhTep.laTepCanh(lyrics.from)
-        ) {
-            val nhac = LocalContext.current
-            Notice(
-                accent = accent,
-                text = baoGhi ?: "Ghi lời này ra tệp .lrc nằm cạnh bài nhạc — " +
-                    "trình phát khác cũng đọc được, và gỡ app đi vẫn còn.",
-                action = when {
-                    choLuuKhac != null -> "Chọn chỗ lưu"
-                    choDeLen -> "Ghi đè"
-                    else -> "Ghi ra tệp"
-                },
-                onAction = {
-                    val cho = choLuuKhac
-                    if (cho != null) {
-                        luuChoKhac.launch(cho.first)
-                        return@Notice
-                    }
-                    when (val kq = Lyra.ghiLoiRaTepCanh(nhac, deLen = choDeLen)) {
-                        is LrcCanhTep.KetQuaGhi.Xong -> {
-                            choDeLen = false
-                            baoGhi = "Đã ghi ra " + tenTep(kq.duong) + "."
-                        }
-                        is LrcCanhTep.KetQuaGhi.DaCoTep -> {
-                            // Không tự đè: tệp nằm sẵn ở đó là công của ai đó,
-                            // có thể là công của chính người dùng gõ trên máy
-                            // tính. Hỏi một câu rẻ hơn làm mất nó nhiều.
-                            choDeLen = true
-                            baoGhi = "Đã có sẵn " + tenTep(kq.duong) + ". Ghi đè lên?"
-                        }
-                        is LrcCanhTep.KetQuaGhi.BiChan -> {
-                            // Không bỏ người dùng cụt đường. Đây là luật của hệ
-                            // thống chứ không phải thiếu quyền nào xin được, nên
-                            // mời họ chọn chỗ khác — việc đó thì luôn làm được.
-                            //
-                            // ĐO ĐƯỢC trên Pixel 6 Pro / Android 17 — chỉ BỐN
-                            // thư mục nhận tệp .lrc:
-                            //
-                            //   được : Music  Movies  Download  Documents
-                            //   chặn : DCIM  Pictures  Recordings  Audiobooks
-                            //          Podcasts  Notifications  Alarms
-                            //
-                            // Nên câu báo kể ra CHỖ ĐƯỢC PHÉP chứ không đoán
-                            // xem chỗ đang hỏng là loại gì. Đã sai hai lần vì
-                            // đoán: lần đầu đổ cho thẻ nhớ (máy không có khe
-                            // thẻ), lần sau đổ cho thư mục ảnh (trong khi
-                            // Recordings cũng chặn mà chẳng dính gì đến ảnh).
-                            choDeLen = false
-                            choLuuKhac = kq.tenGoiY to kq.noiDung
-                            baoGhi = "Android chỉ cho ghi tệp .lrc vào Music, " +
-                                "Movies, Download và Documents — thư mục của bài " +
-                                "này không nằm trong số đó. Chọn chỗ khác để lưu?"
-                        }
-                        is LrcCanhTep.KetQuaGhi.Hong -> {
-                            choDeLen = false
-                            baoGhi = "Không ghi được: " + kq.lyDo + "."
-                        }
-                        LrcCanhTep.KetQuaGhi.KhongPhaiTepTrongMay -> {
-                            choDeLen = false
-                            baoGhi = "Bài này không phải tệp trong máy nên không có chỗ để ghi cạnh."
-                        }
-                    }
-                }
-            )
-        }
-
-        if (baoKhongTua) {
-            Notice(
-                accent = accent,
-                text = "App đang phát không cho tua. Nhấn giữ một câu để căn lệch nhịp thay vào đó."
-            )
-        }
-
-        when (translation) {
-            is TranslationState.NeedsModel -> Notice(
-                accent = accent,
-                text = "Lời đang là tiếng " + languageName(translation.language) +
-                    ". Tải gói ngôn ngữ về máy để dịch, một lần dùng mãi.",
-                action = "Tải gói",
-                onAction = onDownloadModel
-            )
-            is TranslationState.Failed -> Notice(accent = accent, text = translation.why + ".")
-            TranslationState.Working -> Notice(accent = accent, text = "Đang dịch lời…")
-            else -> Unit
-        }
 
         LazyColumn(
             state = listState,
@@ -1422,6 +1465,61 @@ private fun MatLoi(
                     onNhanGiu = { onSyncToLine(i) }
                 )
             }
+        }
+    }
+}
+
+/**
+ * Nút thu gọn / bung lại dải lời nhắc.
+ *
+ * THU GỌN CHỨ KHÔNG TẮT. Thu gọn thì còn lại đúng một dòng chữ nhỏ nói còn mấy
+ * lời nhắc đang gấp lại, nên người dùng biết mình vừa giấu cái gì và bấm một
+ * cái là thấy lại. Một nút "×" đóng hẳn thì lời nhắc biến mất không dấu vết, và
+ * lời nhắc quan trọng nhất — "bài này chưa có tệp .lrc" — chính là cái người ta
+ * hay đóng nhầm nhất vì nó dài nhất.
+ *
+ * Đặt DƯỚI dải chứ không trên: lúc bung, mắt đọc lời nhắc từ trên xuống rồi mới
+ * gặp nút; lúc gọn, nút nằm ngay sát chỗ lời bài hát bắt đầu nên nó đọc ra như
+ * một cái nắp đậy chứ không phải một mục lạ chen vào đầu trang.
+ */
+@Composable
+private fun ThanhThuGonNhac(
+    soNhac: Int,
+    dangHien: Boolean,
+    accent: Color,
+    onDoi: () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = if (dangHien) 2.dp else 6.dp),
+        horizontalArrangement = Arrangement.End
+    ) {
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(
+                    // Lúc gọn thì nó là thứ DUY NHẤT còn lại của cả dải, nên
+                    // phải nhìn ra được là một nút. Lúc bung thì nó chỉ là cái
+                    // nắp của mấy ô ngay trên, tô đậm nữa là thành ô thứ tư.
+                    if (dangHien) Color.Transparent else accent.copy(alpha = 0.22f)
+                )
+                .clickable(onClick = onDoi)
+                .padding(horizontal = 12.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                if (dangHien) "Thu gọn" else "$soNhac lời nhắc",
+                color = if (dangHien) mau.chuRatMo else mau.chu,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                if (dangHien) "▴" else "▾",
+                color = if (dangHien) mau.chuRatMo else mau.chu,
+                fontSize = 11.sp
+            )
         }
     }
 }
