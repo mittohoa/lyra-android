@@ -2,4 +2,8 @@
 <resources>
     <!-- Khop voi `BangMau.Muc.nen` trong `ui/Kieu.kt`. -->
     <color name="nen_giay">#13110D</color>
+
+    <!-- Khop voi `BangMau.Muc.chu` va `.chuRatMo`. -->
+    <color name="chu_widget">#F6F1E6</color>
+    <color name="chu_widget_mo">#80F6F1E6</color>
 </resources>

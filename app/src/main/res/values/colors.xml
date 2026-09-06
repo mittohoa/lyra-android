@@ -2,4 +2,13 @@
 <resources>
     <!-- Khop voi `BangMau.Giay.nen` trong `ui/Kieu.kt` - sua mot cho thi sua ca hai. -->
     <color name="nen_giay">#FBF6EC</color>
+
+    <!--
+      Chu tren widget. Khop voi `BangMau.Giay.chu` va `.chuRatMo`.
+
+      Phai viet ra day chu khong lay tu bang mau Compose: widget ve trong tien
+      trinh CUA HE THONG, khong co Compose nao chay o do de hoi.
+    -->
+    <color name="chu_widget">#191510</color>
+    <color name="chu_widget_mo">#99191510</color>
 </resources>

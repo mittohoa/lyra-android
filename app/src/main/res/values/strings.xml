@@ -4,4 +4,14 @@
     <string name="tile_label">Lời nổi</string>
     <string name="tile_on">Đang hiện</string>
     <string name="tile_off">Đang tắt</string>
+
+    <string name="loi_tat_loi_noi_dai">Bật khung lời nổi</string>
+    <string name="loi_tat_tim">Tìm bài</string>
+    <string name="loi_tat_tim_dai">Tìm một bài hát</string>
+
+    <string name="widget_mo_ta">Câu đang hát, ngay trên màn hình chính.</string>
+    <string name="widget_chua_co_nhac">AURA</string>
+    <string name="widget_moi_mo_nhac">Mở một bài nhạc để thấy lời ở đây.</string>
+    <string name="widget_dang_tim_loi">Đang tìm lời…</string>
+    <string name="widget_chua_co_loi">Chưa có lời khớp giờ cho bài này.</string>
 </resources>

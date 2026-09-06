@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kinh lup, cho loi tat "Tim bai".
+
+  Cung quy uoc voi `ic_tile`: net don sac, khong nen. Bo dung man hinh chinh tu
+  dat no vao mot o tron va to lai mau theo giao dien may, nen mot cai nen tu ve
+  o day se thanh hai lop nen chong len nhau.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512"
+    android:tint="#FFFFFF">
+
+    <!-- Vong kinh: mot hinh tron rong, ve bang hai cung noi nhau -->
+    <path
+        android:pathData="M224,96 a128,128 0 1 0 0,256 a128,128 0 1 0 0,-256 Z M224,140 a84,84 0 1 1 0,168 a84,84 0 1 1 0,-168 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Can cam -->
+    <path
+        android:pathData="M316,316 L412,412 A22,22 0 0 1 380,444 L284,348 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

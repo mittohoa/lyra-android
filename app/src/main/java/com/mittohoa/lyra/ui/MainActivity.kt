@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +44,9 @@ import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.service.LyraTileService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+
+/** Hành động của lối tắt "Tìm bài" — xem `res/xml/loi_tat.xml`. */
+private const val ACTION_TIM = "com.mittohoa.lyra.action.TIM"
 
 class MainActivity : ComponentActivity() {
 
@@ -96,8 +100,42 @@ class MainActivity : ComponentActivity() {
         if (canReadLibrary) Lyra.loadLibrary(this)
     }
 
+    /**
+     * Trang mà lối tắt vừa yêu cầu mở, và LẦN THỨ MẤY.
+     *
+     * Phải có cái đếm chứ không chỉ số trang. Bấm lối tắt "Tìm bài", vuốt sang
+     * trang khác, rồi bấm lại đúng lối tắt đó: số trang không đổi, nên nếu chỉ
+     * nhìn số trang thì Compose thấy "không có gì mới" và không cuộn đi đâu cả
+     * — lối tắt bấm lần thứ hai trở đi thành ra vô tác dụng.
+     */
+    private var trangLoiTat by mutableIntStateOf(-1)
+    private var lanYeuCau by mutableLongStateOf(0L)
+
+    private fun docLoiTat(intent: Intent?) {
+        val trang = when (intent?.action) {
+            ACTION_TIM -> 0
+            else -> return
+        }
+        trangLoiTat = trang
+        lanYeuCau++
+    }
+
+    /**
+     * Lối tắt bấm trong lúc app ĐANG mở.
+     *
+     * Chạy được là nhờ `launchMode="singleTop"` khai trong manifest — không có
+     * nó thì hệ thống dựng thêm một MainActivity nữa và hàm này không bao giờ
+     * được gọi.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        docLoiTat(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        docLoiTat(intent)
         // Ve tran ra sat vien: nen mau lay tu anh bia phai chay het man hinh,
         // khong bi cat ngang boi hai dai he thong
         enableEdgeToEdge()
@@ -188,6 +226,8 @@ class MainActivity : ComponentActivity() {
                 LocalTextStyle provides TextStyle(fontFamily = boChuDung.giaoDien)
             ) {
             HomeScreen(
+                moTrang = trangLoiTat,
+                lanMoTrang = lanYeuCau,
                 now = now,
                 lyrics = lyrics,
                 loading = loading,

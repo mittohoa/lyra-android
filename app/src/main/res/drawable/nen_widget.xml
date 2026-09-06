@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nền của widget: bo góc, màu giấy như trong app.
+
+  Bo 24dp cho khớp với cách Android 12 trở lên bo mọi widget. Máy cũ hơn không
+  tự bo thì hình này lo, nên hai bên nhìn ra cùng một thứ.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="24dp" />
+    <solid android:color="@color/nen_giay" />
+</shape>

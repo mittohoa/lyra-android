@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Khai báo widget khung lời cho hệ thống.
+
+  `updatePeriodMillis="0"` — KHÔNG cho hệ thống tự gọi lại theo chu kỳ. Nhịp
+  thưa nhất Android nhận là 30 phút, mà một câu lời sống được vài giây; chờ 30
+  phút thì widget luôn hiện câu của bài trước. AURA tự đẩy bản mới lên mỗi lần
+  ĐỔI CÂU, từ chính cái nhịp đang chạy sẵn cho khung lời nổi — xem `Lyra.tick`.
+
+  `resizeMode="horizontal|vertical"` để kéo được: một câu lời dài ngắn thất
+  thường, nên chiều rộng phải là của người dùng chứ không phải của mình.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="70dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_khung_loi"
+    android:previewLayout="@layout/widget_khung_loi"
+    android:resizeMode="horizontal|vertical"
+    android:description="@string/widget_mo_ta"
+    android:widgetCategory="home_screen" />

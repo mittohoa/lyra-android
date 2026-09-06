@@ -108,6 +108,10 @@ private const val START_PANE = 1
 
 @Composable
 fun HomeScreen(
+    /** Trang mà lối tắt vừa yêu cầu mở; -1 nghĩa là mở bình thường. */
+    moTrang: Int,
+    /** Số lần đã yêu cầu — xem `MainActivity.lanYeuCau` để biết vì sao cần. */
+    lanMoTrang: Long,
     now: NowPlaying?,
     lyrics: Lyrics,
     loading: Boolean,
@@ -209,8 +213,23 @@ fun HomeScreen(
     var videoToanManHinh by remember { mutableStateOf(false) }
     var moCanGio by remember { mutableStateOf(false) }
 
-    val pager = rememberPagerState(initialPage = START_PANE, pageCount = { PANES.size })
+    val pager = rememberPagerState(
+        // Mở thẳng vào trang lối tắt xin, chứ không mở trang Bài rồi trượt
+        // sang: một cú trượt ngang ngay khi app vừa hiện lên đọc ra như app bị
+        // giật, và người bấm lối tắt "Tìm bài" thì đã biết mình muốn đi đâu.
+        initialPage = if (moTrang >= 0) moTrang else START_PANE,
+        pageCount = { PANES.size }
+    )
     val scope = rememberCoroutineScope()
+
+    // Lối tắt bấm trong lúc app ĐANG mở: lúc này `initialPage` ở trên đã dùng
+    // xong từ lâu, nên phải tự trượt sang. Có hoạt ảnh vì ở đây màn hình đang
+    // hiện sẵn — người dùng thấy mình đi từ đâu sang đâu.
+    LaunchedEffect(lanMoTrang) {
+        if (lanMoTrang > 0L && moTrang >= 0 && moTrang != pager.currentPage) {
+            pager.animateScrollToPage(moTrang)
+        }
+    }
 
     // Mau lay tu anh bia, chinh MOT LAN o day roi truyen xuong duoi ten
     // `accent`. Cac trang ben duoi khong phai biet hom nay dang la mat giay hay

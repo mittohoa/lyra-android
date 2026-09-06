@@ -65,9 +65,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AURA">
 
+        <!--
+          `singleTop` la vi LOI TAT.
+
+          Khong co no thi bam loi tat "Tim bai" trong luc app dang mo se DUNG
+          THEM mot ban MainActivity nua chong len ban cu: bam Back mot cai ra
+          mot cai y het, va toan bo trang thai man hinh cu (o tim dang go do,
+          trang dang xem) van nam do khong ai thay. `singleTop` dua Intent do
+          vao `onNewIntent` cua ban dang co - mot man hinh, mot trang thai.
+        -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:label="@string/app_name"
             android:supportsPictureInPicture="false"
             android:resizeableActivity="true"
@@ -76,7 +86,28 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/loi_tat" />
         </activity>
+
+        <!--
+          Bat/tat khung loi noi tu loi tat, KHONG mo app.
+
+          `Theme.NoDisplay` + `noHistory` + `excludeFromRecents`: khong ve gi,
+          khong de lai gi trong danh sach ung dung gan day. Nguoi dung bam loi
+          tat va thay khung loi hien len ngay tren app nhac ho dang mo - khong
+          co mot khung AURA nao nhap nhay o giua.
+        -->
+        <activity
+            android:name=".ui.LoiNoiActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:label="@string/tile_label" />
 
         <!--
           Neo cua ca app. Ta khong doc thong bao - chi can lop nay ton tai thi
@@ -109,6 +140,28 @@
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+
+        <!--
+          Widget khung loi tren man hinh chinh.
+
+          `exported=true` la bat buoc voi moi AppWidgetProvider: bo dung man
+          hinh chinh la mot app khac, va no phai goi duoc vao day.
+
+          Chi khai APPWIDGET_UPDATE. Ta KHONG dang ky nhan cac broadcast khac
+          (doi bai, doi trang thai phat) - widget duoc AURA tu day len tu tien
+          trinh cua chinh no, xem `Lyra.pushLineToWidget`. Mot broadcast cho
+          moi cau lo la nhieu lan danh thuc he thong hon can.
+        -->
+        <receiver
+            android:name=".widget.KhungLoiWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/khung_loi_widget" />
+        </receiver>
 
         <!--
           O Quick Settings. Nguoi dung phai tu keo no vao bang o - Android

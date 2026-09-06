@@ -36,6 +36,7 @@ import com.mittohoa.lyra.download.Downloads
 import com.mittohoa.lyra.player.Artwork
 import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.sources.Catalog
+import com.mittohoa.lyra.widget.KhungLoiWidget
 import com.mittohoa.lyra.data.ThuMucNhac
 import com.mittohoa.lyra.sources.LocalLibrary
 import com.mittohoa.lyra.sources.ThuVienNgoai
@@ -768,6 +769,19 @@ object Lyra {
     private var manHinhSang = true
 
     /**
+     * Bai va cau da dua len widget lan truoc.
+     *
+     * Cung ly do voi `cardLine`: moi lan day `RemoteViews` la mot lan vuot qua
+     * ranh gioi tien trinh, nen chi day khi chu doi that.
+     *
+     * Giu RIENG voi `cardLine` chu khong dung chung mot bien: the media chi cap
+     * nhat khi CHINH AURA phat, con widget bam theo ca nhac o app khac. Gop lam
+     * mot thi mot trong hai luon sai.
+     */
+    private var widgetBai: String? = null
+    private var widgetCau: String? = null
+
+    /**
      * Bao lâu nữa thì gọi nhịp lần sau.
      *
      * Màn hình sáng thì nhịp dày: khung lời nổi có quét sáng chạy trong câu,
@@ -809,6 +823,7 @@ object Lyra {
                 setTransport(n?.duration ?: 0L, n?.isPlaying == true)
             }
             pushLineToCard(position)
+            pushLineToWidget(position)
             appContext?.let { ngoDoanLap(it, position) }
 
             // Chay tiep chung nao con viec de lam. Truoc day nhip chi song theo
@@ -821,7 +836,9 @@ object Lyra {
             // Dang lap mot doan thi nhip phai chay du khung noi tat va du AURA
             // khong phai ben phat: cai quyet dinh la vi tri da toi cuoi doan
             // chua, va cau hoi do chi tra loi duoc bang cach hoi lien tuc.
-            if (overlay.isShowing || localPlayer?.isPlaying == true || _doanLap.value != null) {
+            if (overlay.isShowing || localPlayer?.isPlaying == true ||
+                _doanLap.value != null || widgetCanNhip()
+            ) {
                 handler.postDelayed(this, nhipToi(position))
             }
         }
@@ -927,6 +944,92 @@ object Lyra {
 
         cardLine = line
         Playback.showLyricLine(line)
+    }
+
+    /**
+     * Nguoi dung vua them hoac vua go mot widget.
+     *
+     * Goi tu `KhungLoiWidget.onUpdate`. Hai viec: quen so widget da dem, va BAT
+     * LAI NHIP. Viec thu hai moi la viec that - neu luc nay nhac dang phat o
+     * Zing ma khung loi noi dang tat thi nhip da dung tu lau, va khong con ai
+     * danh thuc no day nua; widget vua tha xuong se dung yen mai mai.
+     *
+     * Tien trinh vua bi danh thuc chi de nhan broadcast thi `appContext` con
+     * rong: luc do khong co nhac nao dang phat de ma bam theo, va khong lam gi
+     * la dung.
+     */
+    fun widgetDoi(context: Context) {
+        KhungLoiWidget.demLai()
+        if (appContext != null) startTick()
+    }
+
+    /**
+     * Nhip co phai chay tiep vi widget khong.
+     *
+     * BA dieu kien, thieu mot la sai:
+     *
+     *   - co widget tren man hinh chinh. Khong co thi khong ai xem.
+     *   - dang co nhac phat. Nhac tat roi ma van tick moi giay la dot pin de
+     *     ve lai dung mot cau da dung yen.
+     *   - man hinh dang sang. Man hinh tat thi widget cung khuat, y het ly do
+     *     khung noi ngung ve khi khoa may.
+     *
+     * Day la CHI PHI THAT cua widget: nhac phat o Zing ma khung noi dang tat
+     * thi truoc kia nhip dung han, gio no chay. Bang dung chi phi cua khung
+     * noi, va doi lai dung mot thu - cau dang hat tren man hinh chinh.
+     */
+    private fun widgetCanNhip(): Boolean {
+        if (!manHinhSang) return false
+        if (_now.value?.isPlaying != true) return false
+        val context = appContext ?: return false
+        return KhungLoiWidget.dangDung(context)
+    }
+
+    /**
+     * Dua cau dang hat len widget khung loi.
+     *
+     * Khac `pushLineToCard` o mot cho quan trong: cai kia chi lam khi CHINH
+     * AURA phat, con cai nay chay ca khi nhac o Zing hay YouTube Music. The
+     * media la cua ben dang phat nen ta khong ghi vao duoc; widget la cua
+     * AURA nen ghi duoc, va do la dung cho AURA co ich nhat.
+     */
+    private fun pushLineToWidget(position: Long) {
+        // Man hinh tat thi widget khuat - khong ve. Va vi ham nay thoat TRUOC
+        // khi dung den `widgetBai`/`widgetCau`, hai bien do van dung voi thu
+        // dang nam tren widget, nen luc man hinh sang lai, nhip dau tien tinh
+        // ra cau moi, thay khac, va day len ngay.
+        if (!manHinhSang) return
+        val context = appContext ?: return
+        if (!KhungLoiWidget.dangDung(context)) return
+
+        val n = _now.value
+        if (n == null || !n.isPlaying) {
+            widgetBai = null
+            widgetCau = null
+            KhungLoiWidget.dat(context, null, null, false)
+            return
+        }
+
+        val loi = lyricsRepoOrNull?.lyrics?.value
+        // Moc dang ngo thi khong dua gi len, cung ly do voi the media: tren man
+        // hinh chinh nguoi dung khong co cach nao doi chieu xem cau do co dung
+        // khong, nen mot cau sai o day dang tin hon han - va vi the tai hai hon.
+        val cau = if (loi == null || !loi.synced || loi.timingSuspect) null
+        else loi.lines.getOrNull(activeLineIndex(loi.lines, position, loi.offset))
+            ?.text?.takeIf { it.isNotBlank() }
+
+        val doiBai = n.title != widgetBai
+
+        // Dong trong giua hai doan thi GIU NGUYEN cau vua hat, khong tra widget
+        // ve trang. File .lrc nao cung co nhung dong trong nhu vay, va tra ve
+        // roi hien lai cu vai giay mot lan bien man hinh chinh thanh mot cho
+        // nhap nhay - trong khi cai nguoi ta muon chi la doc duoc cau vua nghe.
+        if (cau == null && !doiBai) return
+
+        widgetBai = n.title
+        widgetCau = cau
+
+        KhungLoiWidget.dat(context, n.title, cau, lyricsRepoOrNull?.loading?.value == true)
     }
 
     /**

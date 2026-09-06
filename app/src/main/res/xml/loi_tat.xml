@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lối tắt hiện ra khi nhấn giữ biểu tượng AURA.
+
+  HAI CÁI THÔI. Android bày tối đa bốn, nhưng một danh sách dài thì phải đọc mới
+  bấm được, mà đọc thì đã chậm hơn mở app rồi. Hai cái là hai thứ người ta làm
+  ngay khi vừa chạm vào máy: bật khung lời cho nhạc đang phát ở app khác, và đi
+  tìm một bài.
+
+  Khai TĨNH trong XML chứ không dựng động lúc chạy: cả hai đều đúng ở mọi lúc,
+  không phụ thuộc vào việc hôm nay đang nghe gì. Lối tắt động dành cho những thứ
+  đổi theo phiên — "bài vừa nghe" chẳng hạn — và AURA chưa có nhu cầu đó.
+
+  `targetPackage` đọc từ `@string/id_app` chứ KHÔNG viết cứng. Bản gỡ lỗi mang
+  đuôi `.debug`, và một lối tắt trỏ sai gói thì Android lặng lẽ không dựng nó —
+  không lỗi, không cảnh báo, chỉ là nhấn giữ mà chẳng thấy gì. Xem `build.gradle
+  .kts`, chuỗi đó do bản dựng sinh ra từ đúng một chỗ.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="loi_noi"
+        android:enabled="true"
+        android:icon="@drawable/ic_tile"
+        android:shortcutShortLabel="@string/tile_label"
+        android:shortcutLongLabel="@string/loi_tat_loi_noi_dai">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="@string/id_app"
+            android:targetClass="com.mittohoa.lyra.ui.LoiNoiActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="tim_bai"
+        android:enabled="true"
+        android:icon="@drawable/ic_tim"
+        android:shortcutShortLabel="@string/loi_tat_tim"
+        android:shortcutLongLabel="@string/loi_tat_tim_dai">
+        <!--
+          Nói "mở trang Tìm" bằng ACTION RIÊNG chứ không bằng một `extra`.
+
+          Thẻ `<extra>` trong tệp này gói giá trị vào một `PersistableBundle`, và
+          "0" viết trong XML tới nơi là một CHUỖI chứ không phải số — nên
+          `getIntExtra` đọc ra giá trị mặc định và lối tắt im lặng không làm gì.
+          Một tên hành động thì không có kiểu để mà sai.
+        -->
+        <intent
+            android:action="com.mittohoa.lyra.action.TIM"
+            android:targetPackage="@string/id_app"
+            android:targetClass="com.mittohoa.lyra.ui.MainActivity" />
+    </shortcut>
+</shortcuts>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Widget khung lời: câu đang hát, đặt to, trên màn hình chính.
+
+  VIẾT BẰNG XML CHỨ KHÔNG PHẢI COMPOSE. Cả app còn lại là Compose, nhưng widget
+  thì hệ thống vẽ trong tiến trình CỦA NÓ qua `RemoteViews`, và `RemoteViews`
+  chỉ nhận một nhúm view dựng sẵn. Glance dịch được Compose sang đó, nhưng nó
+  kéo theo cả một thư viện chỉ để bày ra hai dòng chữ.
+
+  Không có nút bấm nào. Widget này không phải bộ điều khiển nhạc thu nhỏ — thứ
+  đó thẻ media trên màn hình khoá đã làm, và làm tốt hơn. Nó chỉ làm đúng một
+  việc mà không widget nhạc nào làm: bày ra câu đang hát.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/khung_loi_goc"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:padding="16dp"
+    android:background="@drawable/nen_widget">
+
+    <!--
+      Tên bài, cỡ nhỏ, ở trên. Câu lời tự nó không nói đang bài nào — và một
+      câu chữ trôi nổi không rõ của bài gì thì đọc xong không biết để làm gì.
+    -->
+    <TextView
+        android:id="@+id/khung_loi_ten_bai"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="11sp"
+        android:letterSpacing="0.06"
+        android:textColor="@color/chu_widget_mo"
+        android:fontFamily="sans-serif-medium"
+        android:text="@string/widget_chua_co_nhac" />
+
+    <!--
+      Câu đang hát. `maxLines=4` chứ không phải 1: người ta thu nhỏ widget lại
+      thì bốn dòng không vừa và Android tự cắt, nhưng kéo rộng ra thì một câu
+      dài phải xuống dòng chứ không được cắt cụt giữa chừng.
+    -->
+    <TextView
+        android:id="@+id/khung_loi_cau"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:maxLines="4"
+        android:ellipsize="end"
+        android:textSize="19sp"
+        android:lineSpacingExtra="3dp"
+        android:textColor="@color/chu_widget"
+        android:text="@string/widget_moi_mo_nhac" />
+</LinearLayout>
