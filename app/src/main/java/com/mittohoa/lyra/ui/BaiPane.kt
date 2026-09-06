@@ -7,7 +7,6 @@ import androidx.compose.animation.core.tween
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,6 +46,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.scale
 import androidx.compose.foundation.Image
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mittohoa.lyra.data.LyricEffect
@@ -229,6 +230,17 @@ fun BaiPane(
         derivedStateOf { activeLineIndex(lyrics.lines, position.value, lyrics.offset) }
     }
 
+    Box(Modifier.fillMaxSize()) {
+        // MỘT nền liền mạch phía sau cả trang.
+        //
+        // Trước đây ba khối — dải ngữ cảnh, mặt lời, hàng điều khiển — đều nằm
+        // trên nền phẳng, nên mắt đọc ra ba vùng rời chứ không phải một trang.
+        // Zing và NCT đều giải bằng cùng một cách: lấy chính bìa album làm nền
+        // phủ kín, rồi phủ màu lên gần hết. Cái còn lại không phải một tấm ảnh
+        // mà là một vệt màu, và vệt ấy chạy suốt từ tiêu đề xuống tới nút bấm —
+        // không còn cạnh nào để mắt bám vào mà chia trang ra.
+        NenBia(artwork ?: now.artwork, Modifier.fillMaxSize())
+
     Column(Modifier.fillMaxSize()) {
         DaiNguCanh(
             now = now,
@@ -304,6 +316,24 @@ fun BaiPane(
                     )
                 }
             }
+
+            // Chữ MỜ DẦN vào nền trước khi tới hàng nút, thay cho một nét kẻ.
+            //
+            // Vẫn giải đúng bài toán mà nét kẻ sinh ra để giải: không có gì
+            // ngăn thì dòng lời cuối chạy thẳng vào thanh tua và mắt không biết
+            // chữ hết ở đâu. Nhưng một nét kẻ cắt màn hình thành hai mảnh, còn
+            // vệt mờ thì nói cùng một điều mà không dựng thêm cạnh nào — cả
+            // trang đọc liền một mạch từ tên bài xuống tới nút bấm.
+            //
+            // Chỉ có nền nên KHÔNG nuốt chạm: chạm vào dòng lời nằm dưới vệt
+            // này vẫn tới nơi. Xem `chanChamXuyen` để biết vì sao.
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(28.dp)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, mau.nen)))
+            )
         }
 
         if (luyenTap || doanLap != null) {
@@ -328,15 +358,9 @@ fun BaiPane(
         // đang đọc lời mà muốn tua lại một câu thì phải vuốt sang trang khác.
         // Cả Zing, NCT lẫn YouTube Music đều giữ điều khiển trong tầm tay khi
         // đọc lời — ba bố cục khác nhau, cùng một kết luận.
-        // Một nét kẻ tách phần đọc khỏi phần bấm. Không có nó thì dòng lời
-        // cuối cùng chạy thẳng vào thanh tua, và mắt không biết chữ hết ở đâu.
-        Box(
-            Modifier
-                .padding(horizontal = 26.dp)
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(mau.vien)
-        )
+        //
+        // Chỗ này TỪNG có một nét kẻ tách phần đọc khỏi phần bấm. Việc ấy giờ
+        // do vệt mờ ở đáy vùng lời lo — cùng công dụng, không dựng thêm cạnh.
         if (!chiXem) Column(Modifier.padding(start = 26.dp, end = 26.dp, top = 10.dp, bottom = 6.dp)) {
             Seek(
                 accent = accent,
@@ -361,6 +385,7 @@ fun BaiPane(
             }
         }
     }
+    }
 
     if (naming) {
         NameDialog(
@@ -373,6 +398,53 @@ fun BaiPane(
                 naming = false
             }
         )
+    }
+}
+
+/**
+ * Nền chung của cả trang Bài: chính bìa album, làm nhoè và phủ màu lên.
+ *
+ * LÀM NHOÈ BẰNG CÁCH THU ẢNH VỀ 40×40 RỒI KÉO GIÃN, không dùng `Modifier.blur`:
+ * hàm kia chỉ có từ Android 12, mà AURA chạy từ Android 8. Đây cũng đúng cách
+ * thẻ lời đang làm cho mẫu "Bìa mờ", nên hai chỗ nhìn ra cùng một chất.
+ *
+ * Phủ màu lên tới 86–100%: thứ cần ở đây là một VỆT MÀU liền mạch phía sau, chứ
+ * không phải một tấm ảnh đòi người ta nhìn. Để ảnh rõ hơn thì chữ khó đọc, mà
+ * chữ mới là thứ trang này bày ra.
+ *
+ * Đậm dần xuống đáy để hàng nút luôn nằm trên nền sạch, kể cả khi bìa sáng.
+ *
+ * Không có bìa thì chỉ còn nền phẳng — y như trước, không hỏng gì.
+ */
+@Composable
+private fun NenBia(bia: android.graphics.Bitmap?, modifier: Modifier = Modifier) {
+    val nen = mau.nen
+    val nhoe = remember(bia) {
+        bia?.let { runCatching { it.scale(40, 40, filter = true) }.getOrNull() }
+    }
+
+    Box(modifier.background(nen)) {
+        if (nhoe != null) {
+            Image(
+                bitmap = nhoe.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                nen.copy(alpha = 0.86f),
+                                nen.copy(alpha = 0.93f),
+                                nen
+                            )
+                        )
+                    )
+            )
+        }
     }
 }
 
@@ -405,9 +477,12 @@ private fun DaiNguCanh(
         Box(
             Modifier
                 .size(46.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(mau.nenChim)
-                .border(1.dp, mau.vien, RoundedCornerShape(3.dp)),
+                // Bo tròn hơn và BỎ VIỀN: ô bìa nhỏ trước đây là một hình vuông
+                // có nét bao, tức thêm một cạnh nữa trên màn hình vốn đang cố
+                // liền mạch. Không viền thì ảnh bìa tự nó là khối, còn bài chưa
+                // có bìa thì nền chìm đã đủ nói đây là một ô.
+                .clip(RoundedCornerShape(8.dp))
+                .background(mau.nenChim),
             contentAlignment = Alignment.Center
         ) {
             if (bia != null) {
