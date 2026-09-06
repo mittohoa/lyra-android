@@ -157,7 +157,10 @@ object Downloader {
         return taoTrongMediaStore(context, track, ten)?.let { ChoGhi(it, quaMediaStore = true) }
     }
 
-    private fun taoTrongThuMucDaTro(context: Context, ten: String): Uri? {
+    // `internal` de kiem duoc bang may that: hai ham nay chi co nghia khi co
+    // mot cay thu muc SAF that da duoc trao quyen, ma dieu do khong dung duoc
+    // tren may tinh. Xem `TaiVaoThuMucSafTest`.
+    internal fun taoTrongThuMucDaTro(context: Context, ten: String): Uri? {
         val goc = ThuMucNhac(context).danhSach().firstOrNull() ?: return null
         return try {
             val gocDoc = DocumentsContract.buildDocumentUriUsingTree(
@@ -179,7 +182,7 @@ object Downloader {
      * tên chứ không báo lỗi, và người dùng có một dãy thư mục gần giống nhau mà
      * không hiểu từ đâu ra.
      */
-    private fun timHoacTaoThuMuc(context: Context, cha: Uri): Uri? {
+    internal fun timHoacTaoThuMuc(context: Context, cha: Uri): Uri? {
         val chaId = DocumentsContract.getDocumentId(cha)
         val con = DocumentsContract.buildChildDocumentsUriUsingTree(cha, chaId)
         context.contentResolver.query(
@@ -230,7 +233,7 @@ object Downloader {
         else DocumentsContract.deleteDocument(context.contentResolver, cho.dich)
     }
 
-    private const val THU_MUC_TAI = "Lyra"
+    internal const val THU_MUC_TAI = "Lyra"
 
     /**
      * Nhay qua the ID3 cua nguon, neu co.

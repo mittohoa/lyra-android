@@ -265,18 +265,38 @@ object LocalLibrary {
      * So khong dau va khong phan biet hoa thuong: go "nang tho" phai ra
      * "Nàng Thơ". Day la cach nguoi Viet go tren dien thoai, va bat ho go dau
      * de tim mot bai trong may cua chinh ho la vo ly.
+     *
+     * KHOP CA ALBUM VA THU MUC, khong chi ten bai voi ca si. Tu khi danh sach
+     * chia nhom theo album (0.3.15), man hinh BAY RA ten album va ten thu muc
+     * nhu mot dau hieu de nhan ra nhac cua minh - roi go dung cai ten vua bay
+     * ra do vao o tim thi khong ra gi. Man hinh hua mot dang, o tim tra loi
+     * mot neo.
+     *
+     * `nhom` la album, thieu the album thi la ten thu muc - xem `Track.nhom`.
+     * So CA HAI chu khong chi `nhom`: mot bai co the vua thuoc album "Ru Ta"
+     * vua nam trong thu muc "Trinh Cong Son", va nguoi dung nho cai nao thi go
+     * cai do.
      */
     fun filter(library: List<Track>, query: String, limit: Int): List<Track> {
         val needle = normalizeForCompare(query)
         if (needle.isBlank()) return emptyList()
         return library.asSequence()
-            .filter {
-                normalizeForCompare(it.title).contains(needle) ||
-                    normalizeForCompare(it.artist).contains(needle)
-            }
+            .filter { khop(it, needle) }
             .take(limit)
             .toList()
     }
+
+    /**
+     * Mot bai co khop tu khoa DA CHUAN HOA nay khong.
+     *
+     * `internal` de kiem duoc bang may: bon truong nay de sot mot cai, va sot
+     * thi khong co gi bao - o tim van chay, chi la it ket qua hon dang le.
+     */
+    internal fun khop(bai: Track, needleDaChuanHoa: String): Boolean =
+        normalizeForCompare(bai.title).contains(needleDaChuanHoa) ||
+            normalizeForCompare(bai.artist).contains(needleDaChuanHoa) ||
+            normalizeForCompare(bai.album).contains(needleDaChuanHoa) ||
+            normalizeForCompare(bai.thuMuc).contains(needleDaChuanHoa)
 
     /**
      * Ti le khung hinh sau khi da tinh goc xoay.

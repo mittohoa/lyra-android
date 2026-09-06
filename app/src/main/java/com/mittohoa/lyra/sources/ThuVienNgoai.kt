@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.util.Base64
 import android.util.Log
+import com.mittohoa.lyra.data.DemTheNhac
 import com.mittohoa.lyra.data.ThuMucNhac
 import com.mittohoa.lyra.lyrics.normalizeForCompare
 import kotlinx.coroutines.Dispatchers
@@ -42,13 +43,34 @@ object ThuVienNgoai {
      * vẫn được đọc lại. Nhớ theo địa chỉ không thôi thì sửa tệp xong app vẫn
      * hiện thẻ cũ mãi.
      *
-     * Chỉ nằm trong bộ nhớ: tắt app là mất, và như thế là đủ. Cái cần chữa là
-     * việc quét lại nhiều lần TRONG một phiên.
+     * ĐƯỢC GHI XUỐNG ĐĨA, xem [DemTheNhac]. Bản đầu chỉ nằm trong RAM và ghi
+     * trong chú thích rằng "tắt app là mất, và như thế là đủ" — đủ cho việc quét
+     * lại nhiều lần trong một phiên, nhưng không đủ cho người có thư viện lớn:
+     * mỗi lần mở app họ vẫn ngồi nhìn màn hình trống để nhận đúng kết quả của
+     * hôm qua.
      */
     private val nho = object : LinkedHashMap<String, Track>(64, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Track>?) =
             size > tranDangDung * 2
     }
+
+    /**
+     * Đã nạp bản trên đĩa vào [nho] chưa.
+     *
+     * Nạp MỘT lần cho mỗi lần chạy app. `tatCa` bị gọi lại nhiều lần trong một
+     * phiên, mà đọc lại tệp JSON mỗi lần thì lại đúng thứ vừa bỏ công tránh.
+     */
+    @Volatile
+    private var daNapDia = false
+
+    /**
+     * Số bài đã đọc THẲNG TỪ TỆP trong lần quét này.
+     *
+     * Chỉ ghi đĩa khi số này lớn hơn 0. Mở app rồi không chép thêm nhạc thì mọi
+     * bài đều lấy từ đệm, không có gì mới để ghi — và ghi lại y nguyên vài trăm
+     * KB mỗi lần nạp thư viện là hao pin và hao đĩa mà không đổi được gì.
+     */
+    private var soBaiMoiDoc = 0
 
     /**
      * Kết quả một lần quét: các bài, và có phải đã dừng vì chạm trần không.
@@ -83,6 +105,9 @@ object ThuVienNgoai {
         tranDangDung = tran
         val ra = ArrayList<Track>(64)
 
+        napDia(context)
+        soBaiMoiDoc = 0
+
         for (goc in kho.danhSach()) {
             try {
                 quet(context, goc, DocumentsContract.getTreeDocumentId(goc), ra, 0, tran)
@@ -91,10 +116,45 @@ object ThuVienNgoai {
             }
             if (ra.size >= tran) break
         }
+        ghiDia(context)
+
         // Đầy đúng bằng trần thì coi như đã cắt. Có thể oan khi thư mục có đúng
         // chừng ấy bài, nhưng cái giá của việc báo oan là một dòng chữ thừa,
         // còn cái giá của việc im lặng là mất bài mà không ai biết.
         KetQuaQuet(ra, ra.size >= tran)
+    }
+
+    /**
+     * Nạp bản đệm trên đĩa vào bộ nhớ, một lần cho mỗi lần chạy app.
+     *
+     * Bản trên đĩa KHÔNG đè lên thứ đang có trong bộ nhớ (`putIfAbsent`): thứ
+     * trong bộ nhớ là của phiên này, tức mới hơn. Trường hợp hai bên khác nhau
+     * hiếm — cùng vân tay thì cùng nội dung — nhưng khi đã hiếm thì càng phải
+     * chọn sẵn bên nào thắng, chứ không để nó tuỳ thứ tự gọi.
+     */
+    private fun napDia(context: Context) {
+        if (daNapDia) return
+        daNapDia = true
+        try {
+            val tuDia = DemTheNhac(context).doc()
+            synchronized(nho) { for ((k, v) in tuDia) nho.putIfAbsent(k, v) }
+            Log.i(TAG, "Nap ${tuDia.size} the tu dia")
+        } catch (e: Exception) {
+            Log.w(TAG, "Khong nap duoc dem tren dia", e)
+        }
+    }
+
+    /**
+     * Ghi bộ đệm xuống đĩa, CHỈ KHI lần quét này có đọc thẻ mới.
+     *
+     * Không có bài nào mới thì nội dung ghi ra y hệt thứ đang nằm đó, và một
+     * lần ghi vài trăm KB cho mỗi lần nạp thư viện là hao mà không đổi được gì.
+     */
+    private fun ghiDia(context: Context) {
+        if (soBaiMoiDoc == 0) return
+        val ban = synchronized(nho) { LinkedHashMap(nho) }
+        DemTheNhac(context).ghi(ban)
+        Log.i(TAG, "Ghi ${ban.size} the xuong dia ($soBaiMoiDoc bai moi doc)")
     }
 
     /**
@@ -166,6 +226,7 @@ object ThuVienNgoai {
                 )
                 if (bai != null) {
                     synchronized(nho) { nho[khoa] = bai }
+                    soBaiMoiDoc++
                     ra.add(bai)
                 }
             }
