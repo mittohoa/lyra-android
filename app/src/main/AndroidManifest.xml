@@ -2,6 +2,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--
+      Nhin thay duoc cac app NHAC, chi de doc TEN cua chung.
+
+      Dai ngu canh ghi bai nay den tu dau. Voi nhac AURA tu phat thi biet san,
+      con nhac phat o app khac thi chi cam duoc ten goi - ma tu Android 11, hoi
+      ten hien thi cua mot goi khac se nem loi neu khong khai bao gi o day.
+
+      Khai theo INTENT chu khong dung `QUERY_ALL_PACKAGES`: cai kia mo ca may va
+      Play soi rat ky, con cai nay chi mo dung nhung app co dich vu duyet nhac -
+      tuc dung tap app ma AURA co the dang doc bai dang phat. Hep hon, va noi
+      thang duoc ly do.
+
+      App nao khong co dich vu do thi khong doc duoc ten, va luc do dai ngu canh
+      bo hang nguon di chu khong bay ra ten goi.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.media.browse.MediaBrowserService" />
+        </intent>
+    </queries>
+
+    <!--
       Ve de len app khac. Nguoi dung phai tu bat trong Cai dat Android; khai o
       day chi de he thong cho phep mo dung trang cai dat do.
     -->

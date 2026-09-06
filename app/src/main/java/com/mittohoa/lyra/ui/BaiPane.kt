@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -221,6 +222,7 @@ fun BaiPane(
     var xemBia by remember { mutableStateOf(false) }
     val doanLap by Lyra.doanLap.collectAsStateWithLifecycle()
     val nguonHangDoi by Lyra.nguonHangDoi.collectAsStateWithLifecycle()
+    val tenAppNguon = tenApp(now.packageName)
     val trangThaiGop by Lyra.gop.collectAsStateWithLifecycle()
     val tocDo by Lyra.tocDo.collectAsStateWithLifecycle()
 
@@ -245,6 +247,17 @@ fun BaiPane(
         DaiNguCanh(
             now = now,
             bia = artwork ?: now.artwork,
+            // CHỈ hiện nguồn khi nhạc đến từ app KHÁC.
+            //
+            // AURA tự phát thì người dùng vừa tự bấm bài đó trong chính app
+            // này — nói lại "Trong máy" là kể một điều họ vừa làm. Dòng nguồn
+            // chỉ đáng có mặt khi nó trả lời được một câu thật: bài đang phát ở
+            // đâu ra, khi nó không đến từ đây.
+            //
+            // Gọi `tenApp` VÔ ĐIỀU KIỆN rồi mới chọn, không gọi trong nhánh
+            // `if`: nó có `remember` bên trong, mà nhớ trong một nhánh thì đổi
+            // nhánh là mất chỗ nhớ.
+            nguon = if (Lyra.laLyraPhat()) null else tenAppNguon,
             accent = accent,
             xemBia = xemBia,
             onDoiMat = { xemBia = it },
@@ -402,6 +415,18 @@ fun BaiPane(
 }
 
 /**
+ * Độ đục của nền chip khi chip CHƯA được chọn.
+ *
+ * Nền chìm đặc biến mỗi chip thành một viên nút rời nổi trên nền — đúng thứ vừa
+ * bỏ công xoá đi ở chỗ khác. Để nó trong bớt thì vệt màu phía sau ăn xuyên qua,
+ * và hàng chip đọc ra như một phần của dải chứ không phải mấy vật thể đặt lên.
+ *
+ * Chip ĐANG chọn thì vẫn tô đặc màu nhấn: đó là chỗ duy nhất trên dải cần hét
+ * lên, và làm nó mờ đi thì không còn gì phân biệt được chọn với không chọn.
+ */
+private const val DUC_CHIP = 0.40f
+
+/**
  * Nền chung của cả trang Bài: chính bìa album, làm nhoè và phủ màu lên.
  *
  * LÀM NHOÈ BẰNG CÁCH THU ẢNH VỀ 40×40 RỒI KÉO GIÃN, không dùng `Modifier.blur`:
@@ -449,6 +474,28 @@ private fun NenBia(bia: android.graphics.Bitmap?, modifier: Modifier = Modifier)
 }
 
 /**
+ * Tên hiển thị của app đang phát, hoặc `null` khi hỏi không ra.
+ *
+ * Từ Android 11, hỏi tên của một gói khác sẽ ném lỗi nếu app không khai báo
+ * nhìn thấy gói đó. Manifest có một khối `<queries>` mở đúng nhóm app có dịch
+ * vụ duyệt nhạc — đủ cho Spotify, YouTube Music, Zing, NhacCuaTui.
+ *
+ * Hỏi không ra thì trả `null` chứ KHÔNG trả tên gói: dải ngữ cảnh bỏ hàng nguồn
+ * đi còn hơn bày ra `com.google.android.apps.youtube.music`.
+ */
+@Composable
+private fun tenApp(goi: String): String? {
+    if (goi.isBlank()) return null
+    val ngucanh = LocalContext.current
+    return remember(goi) {
+        runCatching {
+            val pm = ngucanh.packageManager
+            pm.getApplicationLabel(pm.getApplicationInfo(goi, 0)).toString()
+        }.getOrNull()
+    }
+}
+
+/**
  * Dải ngữ cảnh: bài nào, ai hát, và hai chip đổi mặt.
  *
  * Luôn có mặt, kể cả khi đang đọc lời. Trang Lời cũ không có gì nói nó đang ở
@@ -459,6 +506,8 @@ private fun NenBia(bia: android.graphics.Bitmap?, modifier: Modifier = Modifier)
 private fun DaiNguCanh(
     now: NowPlaying,
     bia: android.graphics.Bitmap?,
+    /** Bài này đến từ đâu — "Trong máy", "Zing MP3", hay tên app đang phát. */
+    nguon: String?,
     accent: Color,
     xemBia: Boolean,
     onDoiMat: (Boolean) -> Unit,
@@ -498,6 +547,27 @@ private fun DaiNguCanh(
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
+            // Ba tầng: nguồn trên, tên bài giữa, ca sĩ dưới.
+            //
+            // Nguồn là dòng nhỏ nhất và mờ nhất — nó trả lời một câu người ta
+            // chỉ hỏi khi thắc mắc ("bài này ở đâu ra?"), không phải thứ cần
+            // đọc. Đọc không ra tên app thì BỎ HẲN dòng này chứ không bày tên
+            // gói: `com.google.android.apps.youtube.music` không nói gì với ai.
+            if (!nguon.isNullOrBlank()) {
+                // Chữ THƯỜNG, không giãn, không đậm.
+                //
+                // Bản đầu viết hoa toàn bộ kèm giãn chữ — kiểu nhãn phân loại.
+                // Đặt kiểu ấy lên trên cùng thì nó hét to hơn cả tên bài, mà nó
+                // chỉ là câu trả lời cho một thắc mắc thỉnh thoảng. Ở đây thứ
+                // duy nhất được to tiếng là tên bài.
+                Text(
+                    nguon,
+                    color = mau.chuRatMo,
+                    fontSize = 11.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             Text(
                 now.title,
                 color = mau.chu,
@@ -505,15 +575,17 @@ private fun DaiNguCanh(
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                // CHẠY NGANG thay vì cắt bằng ba chấm. Tên bài Việt hay dài, và
+                // phần bị cắt thường là phần phân biệt — "… (Bản Acoustic)",
+                // "… ft. ai đó". Ba chấm giấu đúng chỗ người ta cần đọc; chạy
+                // ngang thì chậm hơn nhưng cuối cùng vẫn cho xem hết.
+                modifier = Modifier.basicMarquee()
             )
             if (now.artist.isNotEmpty()) {
                 Text(
-                    now.artist.uppercase(),
+                    now.artist,
                     color = mau.chuMo,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.4.sp,
+                    fontSize = 12.5.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -525,7 +597,7 @@ private fun DaiNguCanh(
                 Modifier
                     .size(34.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(if (dangLuyenTap) accent else mau.nenChim)
+                    .background(if (dangLuyenTap) accent else mau.nenChim.copy(alpha = DUC_CHIP))
                     .clickable(onClick = onLuyenTap),
                 contentAlignment = Alignment.Center
             ) {
@@ -543,7 +615,7 @@ private fun DaiNguCanh(
                 Modifier
                     .size(34.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(mau.nenChim)
+                    .background(mau.nenChim.copy(alpha = DUC_CHIP))
                     .clickable(onClick = onChiaSe),
                 contentAlignment = Alignment.Center
             ) {
@@ -562,7 +634,7 @@ private fun ChipMat(nhan: String, dangChon: Boolean, accent: Color, onClick: () 
     Box(
         Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (dangChon) accent else mau.nenChim)
+            .background(if (dangChon) accent else mau.nenChim.copy(alpha = DUC_CHIP))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
