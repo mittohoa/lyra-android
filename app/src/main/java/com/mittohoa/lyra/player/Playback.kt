@@ -12,6 +12,7 @@ import androidx.media3.common.MediaMetadata
 import android.view.SurfaceView
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import com.mittohoa.lyra.data.ChoNgheDo
 import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.sources.Track
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -95,12 +96,36 @@ object Playback {
         if (tracks.isEmpty()) return
         val index = startIndex.coerceIn(0, tracks.lastIndex)
         queue = tracks
+        val batDau = choNgheDo(context, tracks[index].toPlayable())
         run(context) {
             current = tracks[index].toPlayable()
-            setMediaItems(tracks.map { it.toPlayable().toMediaItem() }, index, 0L)
+            setMediaItems(tracks.map { it.toPlayable().toMediaItem() }, index, batDau)
             prepare()
             play()
         }
+    }
+
+    /**
+     * Cho vao `setMediaItems` chu KHONG `seekTo` sau khi da phat.
+     *
+     * `seekTo` sau khi `prepare` nghia la bo may phat da bat dau nap tu dau bai
+     * roi moi nhay - nguoi dung nghe mot nhip am thanh cua dau bai. Dua vao
+     * `setMediaItems` thi no nap thang tu dung cho do.
+     */
+    private fun choNgheDo(context: Context, bai: Playable): Long {
+        val daNho = ChoNgheDo(context).viTri(bai.uri)
+        return ChoNgheDo.choBatDau(daNho, bai.durationMs)
+    }
+
+    /**
+     * Nho chuc dang nghe toi dau cua bai dang phat.
+     *
+     * Goi tu nhip cua `Lyra` - o day khong co nhip rieng, va dung mot cai dong
+     * ho thu hai cho viec nay la them mot thu nua phai nho tat.
+     */
+    fun ghiChoNgheDo(context: Context, viTri: Long) {
+        val bai = currentTrack ?: return
+        ChoNgheDo(context).ghi(bai.uri, viTri, bai.durationMs, bai.kind == MediaKind.VIDEO)
     }
 
     /** Them mot bai vao cuoi hang doi, khong dung bai dang phat. */
@@ -116,10 +141,16 @@ object Playback {
         }
     }
 
-    fun skipToIndex(context: Context, index: Int) = run(context) {
-        if (index !in 0 until mediaItemCount) return@run
-        seekTo(index, 0L)
-        play()
+    fun skipToIndex(context: Context, index: Int) {
+        // Doc cho nghe do TRUOC khi vao `run`: khoi lenh trong `run` co the bi
+        // hoan lai toi luc noi xong bo may phat, ma doc mot tep JSON trong khoi
+        // do thi no chay tren luong chinh vao dung luc dang dung giao dien.
+        val batDau = queue.getOrNull(index)?.toPlayable()?.let { choNgheDo(context, it) } ?: 0L
+        run(context) {
+            if (index !in 0 until mediaItemCount) return@run
+            seekTo(index, batDau)
+            play()
+        }
     }
 
     fun next(context: Context) = run(context) { seekToNextMediaItem() }

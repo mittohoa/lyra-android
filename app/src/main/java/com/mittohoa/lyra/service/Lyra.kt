@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import com.mittohoa.lyra.data.LyricCache
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.LyricEffectPrefs
@@ -752,6 +753,14 @@ object Lyra {
     private const val TICK_NGU_MS = 1_000L
 
     /**
+     * Bao lau ghi lai cho dang nghe mot lan.
+     *
+     * Nam giay: du thua de khong lam ban dia, du day de mat nhieu nhat nam giay
+     * khi tien trinh bi giet dot ngot.
+     */
+    private const val GHI_CHO_MOI_MS = 5_000L
+
+    /**
      * Cau da dua len the media lan truoc.
      *
      * Giu lai de chi cap nhat khi DOI CAU. The media di qua he thong toi giao
@@ -825,6 +834,7 @@ object Lyra {
             }
             pushLineToCard(position)
             pushLineToWidget(position)
+            nhoChoNgheDo(position)
             appContext?.let { ngoDoanLap(it, position) }
 
             // Chay tiep chung nao con viec de lam. Truoc day nhip chi song theo
@@ -962,6 +972,31 @@ object Lyra {
     fun widgetDoi(context: Context) {
         KhungLoiWidget.demLai()
         if (appContext != null) startTick()
+    }
+
+    /** Lan ghi cho nghe do gan nhat, theo dong ho `elapsedRealtime`. */
+    private var lanGhiChoNgheDo = 0L
+
+    /**
+     * Nho dang nghe toi dau, vai giay mot lan.
+     *
+     * CHI KHI AURA TU PHAT. Nhac o Zing hay YouTube thi ben do giu cho cua ho,
+     * ma AURA cung khong tua duoc cho ho - nho ho mot con so roi khong bao gio
+     * dung duoc no la tu lua minh.
+     *
+     * GHI THUA, KHONG GHI THIEU. Nguoi dung tat app bang cach vuot no ra khoi
+     * danh sach gan day, hoac he thong giet tien trinh de lay bo nho - ca hai
+     * deu khong bao truoc. Neu doi toi luc "dung phat" moi ghi thi dung nhung
+     * lan do lai la nhung lan mat. Nam giay mot lan nghia la mat nhieu nhat nam
+     * giay, va cai gia la mot lan ghi tep vai KB moi nam giay trong luc phat.
+     */
+    private fun nhoChoNgheDo(position: Long) {
+        if (localPlayer?.isPlaying != true) return
+        val context = appContext ?: return
+        val gio = SystemClock.elapsedRealtime()
+        if (gio - lanGhiChoNgheDo < GHI_CHO_MOI_MS) return
+        lanGhiChoNgheDo = gio
+        Playback.ghiChoNgheDo(context, position)
     }
 
     /**
