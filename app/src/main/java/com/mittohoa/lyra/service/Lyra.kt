@@ -1410,9 +1410,26 @@ object Lyra {
      *
      * CHI cho thu AURA tu phat: bai phat o app khac thi AURA khong biet no doc
      * tep nao, ma cung khong co quyen hoi.
+     *
+     * CAU TREN DA DUNG TU DAU, MA MA THI KHONG LAM DUNG NHU VAY - va do la mot
+     * loi that, do duoc tren may:
+     *
+     *   phat mot video trong may (co tep .srt nam canh) -> mo YouTube -> dau
+     *   trang doi sang "YouTube / Luis Fonsi" DUNG, nhung khung loi van giu
+     *   phu de cua video cu, va khong mot lan tim loi nao chay.
+     *
+     * Vi `Playback.currentTrack` KHONG rong di khi AURA thoi phat - no giu lai
+     * bai cuoi cung bo may phat cua AURA nap. Nen ham nay van tra ve tep .lrc
+     * cua bai do, `LyricsRepository` thay co loi roi thi dung ngay tai day, va
+     * khong bao gio hoi toi lrclib. Nguoi dung nghe Despacito ma doc phu de cua
+     * mot video khac.
+     *
+     * `Playback.currentTrack != null` tra loi cau "AURA CO TUNG phat gi khong".
+     * Cau can hoi la "AURA CO DANG phat khong", va cau do do `_now` tra loi.
      */
     private suspend fun loiCanhTep(): Lyrics? {
         val ctx = appContext ?: return null
+        if (!laLyraPhat()) return null
         // Hoi bo may phat dang mo tep nao: PHAI o luong chinh. `MediaController`
         // kiem tra luong va nem `IllegalStateException` neu goi tu cho khac.
         val uri = Playback.currentTrack?.uri ?: return null
@@ -1427,9 +1444,15 @@ object Lyra {
      * Chi khi do moi co cho ma ghi tep .lrc nam canh - nhac phat tu Zing hay
      * tu app khac thi khong co tep nao tren dia ca. Bay ra mot loi moi khong
      * bam duoc con te hon la khong bay.
+     *
+     * Hoi CA `_now` chu khong chi `Playback.currentTrack`, cung ly do voi
+     * `loiCanhTep` o duoi: bai cuoi cung bo may phat cua AURA nap thi nam lai
+     * do mai, ke ca khi nhac da chuyen sang app khac. Thieu ve nay thi dang
+     * nghe Zing ma AURA van moi "Ghi loi ra tep .lrc nam canh bai nhac" - ghi
+     * canh tep nao thi khong ai biet.
      */
     fun laNhacTrongMay(): Boolean =
-        Playback.currentTrack?.uri?.startsWith("lyra://may/") == true
+        laLyraPhat() && Playback.currentTrack?.uri?.startsWith("lyra://may/") == true
 
     /**
      * Ghi loi dang hien ra tep .lrc nam canh tep nhac.
