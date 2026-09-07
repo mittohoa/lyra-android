@@ -1026,6 +1026,7 @@ object Lyra {
         // roi hien lai cu vai giay mot lan bien man hinh chinh thanh mot cho
         // nhap nhay - trong khi cai nguoi ta muon chi la doc duoc cau vua nghe.
         if (cau == null && !doiBai) return
+        Log.d(TAG, "widget: day '${n.title}' / '$cau'")
 
         widgetBai = n.title
         widgetCau = cau
@@ -1072,6 +1073,23 @@ object Lyra {
                 if (_gop.value != null) thoiGopLoi()
                 lyricsRepo.onNowPlaying(now)
                 overlay.update { setIdleText(idleText()) }
+
+                // BAT NHIP KHI APP KHAC BAT DAU PHAT.
+                //
+                // Truoc day nhip chi duoc danh thuc boi bon thu: bo may phat cua
+                // CHINH AURA chay, man hinh vua bat, khung loi noi vua bat, va
+                // widget vua duoc tha xuong. Khong co cai nao trong bon do noi
+                // "co app khac vua bat nhac".
+                //
+                // Do duoc tren may: tha widget xuong man hinh chinh, tat khung
+                // loi noi, roi mo YouTube - widget nam im o dong chu "Mo mot bai
+                // nhac de thay loi o day" suot ca bai. Dung cai viec no sinh ra
+                // de lam thi no khong lam duoc.
+                //
+                // `startTick` tu don lich cu truoc khi dat lich moi, va ban than
+                // `tick` tu quyet dinh co chay tiep khong - nen goi thua o day
+                // chi ton dung mot vong.
+                if (now?.isPlaying == true) startTick()
             }
         }
 
