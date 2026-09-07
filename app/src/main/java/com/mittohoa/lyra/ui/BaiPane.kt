@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
+import com.mittohoa.lyra.lyrics.tenBaiDeHien
 import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.media.NowPlaying
@@ -554,7 +555,10 @@ private fun tenApp(goi: String): String? {
 @Composable
 private fun KhoiDanhTinh(now: NowPlaying) {
     ChuChay(
-        chu = now.title,
+        // Bỏ đoạn lặp tên ca sĩ ở đầu tên bài — xem `tenBaiDeHien`. Dải ngữ
+        // cảnh ngay trên đã có tên ca sĩ rồi, nên để nguyên là in nó hai lần
+        // trong hai dòng liền nhau.
+        chu = tenBaiDeHien(now.artist, now.title),
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 26.dp, end = 26.dp, bottom = 4.dp)
@@ -1282,6 +1286,12 @@ private fun MatLoi(
             Notice(
                 accent = accent,
                 text = when {
+                    // ĐẶT TRÊN `timingSuspect`: hai cờ có thể cùng bật, mà "có
+                    // khi đây không phải bài của bạn" là tin nặng hơn "mốc có
+                    // thể lệch". Nói cái nhẹ rồi nuốt cái nặng là nói giảm đi.
+                    lyrics.khacCaSi ->
+                        "Lời này khớp theo tên bài chứ không khớp tên ca sĩ — có " +
+                            "thể là của bài khác. Không đúng thì tự nhập lại."
                     lyrics.timingSuspect ->
                         "Lời của bản thu khác nên mốc có thể lệch. Nhấn giữ câu đang " +
                             "hát để căn lại."

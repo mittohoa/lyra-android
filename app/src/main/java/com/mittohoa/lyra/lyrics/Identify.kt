@@ -273,3 +273,46 @@ fun titleSimilarity(a: String, b: String): Double {
     val coverB = shared.toDouble() / wb.size
     return 2 * coverA * coverB / (coverA + coverB)
 }
+
+/**
+ * Ten bai de HIEN RA, da bo doan lap lai ten ca si o dau.
+ *
+ * VI SAO CAN. Nhieu app - YouTube ro nhat - khai ten video lam ten bai va ten
+ * kenh lam ten ca si, ma ten video thi thuong da mang san ten ca si o dau:
+ *
+ *   artist = "Luis Fonsi"
+ *   title  = "Luis Fonsi - Despacito ft. Daddy Yankee"
+ *
+ * Ghep hai thu do lai theo kieu "ca si — ten bai" ra mot dong doc buon cuoi:
+ * "Luis Fonsi — Luis Fonsi - Despacito ft. Daddy Yankee". Da do duoc tren
+ * khung loi noi.
+ *
+ * CHI DE HIEN, KHONG dung cho viec di tim loi. `candidatesFrom` van an ten
+ * goc: no da co san quy tac tach dau "-" va ca phuong an dao chieu, va sua
+ * dau vao cua no la sua mot thu dang chay dung.
+ *
+ * Cat theo TEN DA CHUAN HOA roi anh nguoc ve chuoi goc, chu khong cat thang
+ * tren chuoi goc: "Sơn Tùng M-TP" va "son tung m-tp" phai cat duoc nhu nhau.
+ */
+fun tenBaiDeHien(artist: String, title: String): String {
+    if (artist.isBlank() || title.isBlank()) return title
+
+    val a = normalizeForCompare(artist)
+    val t = normalizeForCompare(title)
+    if (a.isBlank() || !t.startsWith(a)) return title
+
+    // Con lai dung bang rong nghia la ten bai CHINH LA ten ca si. Tra ve nguyen
+    // ten bai - cat het thi con mot dong trong, te hon han mot dong lap.
+    val con = t.removePrefix(a).trimStart(' ', '-', '–', '—', ':', '|', '.', ',')
+    if (con.isBlank()) return title
+
+    // Tim lai doan tuong ung trong chuoi GOC: dem lui tu cuoi cho toi khi phan
+    // duoi da chuan hoa khop voi `con`. Chuan hoa co the doi do dai (bo dau,
+    // gop khoang trang) nen khong the lay chi so tu chuoi da chuan hoa duoc.
+    for (i in title.indices) {
+        if (normalizeForCompare(title.substring(i)) == con) {
+            return title.substring(i).trimStart(' ', '-', '–', '—', ':', '|')
+        }
+    }
+    return title
+}

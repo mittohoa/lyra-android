@@ -41,7 +41,30 @@ data class Lyrics(
      * cuon, va noi ro la moc co the lech. Hien sai mot cach tu tin con te hon
      * hien that tha la khong chac.
      */
-    val timingSuspect: Boolean = false
+    val timingSuspect: Boolean = false,
+    /**
+     * Co the la loi cua MOT BAI KHAC, khong phai ban thu khac.
+     *
+     * Khac han `timingSuspect` o tren, va dung mot cau bao khac: `timingSuspect`
+     * la "dung bai, sai ban thu, moc lech"; con co nay la "co khi day khong phai
+     * bai cua ban".
+     *
+     * Bat len khi mot trong hai chuyen xay ra luc di tim:
+     *
+     *   - app doi chieu CHI BANG TEN BAI vi khong biet ca si la ai
+     *   - app co hoi kem ten ca si, nhung nguon tra ve ten ca si khac han
+     *
+     * VI SAO CAN. Co lan do duoc tren may: tep tag `Sacré Nom! - Hours` nhan
+     * lai loi cua `Bhaskar - Hours and Hours`, va dai bao van ghi phang mot cau
+     * "Loi tu lrclib" nhu moi lan khop dung. Cua chan duy nhat luc do la do
+     * giong nhau cua TEN BAI, con ten ca si thi khong ai so. Voi nhung ten bai
+     * chung chung - "Hours", "Home", "Yeu" - chuyen do khong hiem.
+     *
+     * KHONG loai bo ket qua, chi danh dau. Rat nhieu tep nhac tag sai hoac
+     * khong tag ca si, va voi chung thi doan theo ten bai la duong duy nhat
+     * con lai. Bo di thi nguoi dung mat loi that; danh dau thi ho tu biet.
+     */
+    val khacCaSi: Boolean = false
 ) {
     val isEmpty: Boolean get() = lines.isEmpty()
 

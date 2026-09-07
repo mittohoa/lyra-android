@@ -207,8 +207,14 @@ class LyricsRepository(
                     continue
                 }
 
-                if (hit.synced) return hit
-                if (plainFallback == null) plainFallback = hit
+                // Ten bai giong roi, con TEN CA SI thi sao. Cua chan o tren chi
+                // so ten bai, nen mot bai ten "Hours" van nhan duoc loi cua
+                // "Hours and Hours" cua mot nguoi hoan toan khac - da do duoc
+                // tren may. Xem `Lyrics.khacCaSi`.
+                val danhDau = hit.copy(khacCaSi = ngoKhacCaSi(c.artist, hit.matchedArtist))
+
+                if (danhDau.synced) return danhDau
+                if (plainFallback == null) plainFallback = danhDau
             }
         }
 
@@ -325,7 +331,10 @@ class LyricsRepository(
         offsets?.put(now.artist, now.title, 0)
     }
 
-    private companion object {
+    // `internal` chu khong `private`: `ngoKhacCaSi` ben duoi la mot menh de
+    // thuan tuy quyet dinh mot cau bao hien ra truoc mat nguoi dung, va no phai
+    // kiem duoc bang bai kiem. May thu con lai trong khoi nay deu la hang so.
+    internal companion object {
         const val TAG = "AuraLyrics"
 
         /** Do dai lech qua nguong nay thi coi la khac ban thu (mili-giay). */
@@ -353,5 +362,39 @@ class LyricsRepository(
          * mat han. Da gap that tren may.
          */
         const val MAX_CANDIDATES = 4
+
+        /**
+         * Ket qua nay co dang ngo la CUA MOT BAI KHAC khong.
+         *
+         * `daHoi` la ten ca si app dua cho nguon; `traVe` la ten ca si nguon dua
+         * lai. Hai chuyen dang ngo, va chi hai:
+         *
+         *   - `daHoi` rong: app khong biet ca si la ai nen chi doi chieu bang ten
+         *     bai. Voi mot cai ten chung chung thi do gan nhu la boc tham.
+         *   - hai ten deu co ma khong dinh gi toi nhau: app da noi ro dang tim
+         *     bai cua ai, nguon van dua ve bai cua nguoi khac.
+         *
+         * `traVe` rong thi KHONG ngo. Nhieu nguon khong tra ten ca si kem ket
+         * qua; im lang khong phai la mot bang chung chong lai chinh no.
+         *
+         * So bang `titleSimilarity` chu khong so bang `==`: ten ca si viet moi
+         * cho mot kieu - "Đen" / "Đen Vâu", "MTP" / "Sơn Tùng M-TP" - va bat be
+         * tung ky tu thi ca bao dong keu suot ngay, ma mot cai bao dong keu suot
+         * ngay thi khong ai doc nua.
+         *
+         * `internal` de kiem duoc bang bai kiem: day la mot menh de thuan tuy,
+         * va no quyet dinh mot cau bao hien ra truoc mat nguoi dung.
+         */
+        internal fun ngoKhacCaSi(daHoi: String?, traVe: String): Boolean {
+            if (traVe.isBlank()) return false
+            if (daHoi.isNullOrBlank()) return true
+            if (titleSimilarity(daHoi, traVe) >= MIN_SIMILARITY) return false
+            // Mot ben chua ben kia thi coi la cung nguoi: "Đen" nam trong
+            // "Đen Vâu", va ban hop tac thi ten dai them mot doan.
+            val a = normalizeForCompare(daHoi)
+            val b = normalizeForCompare(traVe)
+            if (a.isBlank() || b.isBlank()) return false
+            return !a.contains(b) && !b.contains(a)
+        }
     }
 }

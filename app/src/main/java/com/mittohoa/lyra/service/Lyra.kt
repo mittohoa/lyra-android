@@ -24,6 +24,7 @@ import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.R
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
+import com.mittohoa.lyra.lyrics.tenBaiDeHien
 import com.mittohoa.lyra.lyrics.LrcCanhTep
 import com.mittohoa.lyra.lyrics.LyricsRepository
 import com.mittohoa.lyra.media.MediaSessionWatcher
@@ -1029,7 +1030,13 @@ object Lyra {
         widgetBai = n.title
         widgetCau = cau
 
-        KhungLoiWidget.dat(context, n.title, cau, lyricsRepoOrNull?.loading?.value == true)
+        // Bo doan lap ten ca si o dau ten bai - xem `tenBaiDeHien`.
+        KhungLoiWidget.dat(
+            context,
+            tenBaiDeHien(n.artist, n.title),
+            cau,
+            lyricsRepoOrNull?.loading?.value == true
+        )
     }
 
     /**
@@ -1147,7 +1154,10 @@ object Lyra {
             // Rong = khung tu an. Khong co bai nao thi khong co loi nao, va
             // mot hop trong lo lung khong phuc vu ai.
             n == null -> ""
-            n.artist.isNotEmpty() -> "${n.artist} — ${n.title}"
+            // `tenBaiDeHien` bo doan lap ten ca si o dau ten bai. Thieu no thi
+            // nhac YouTube ra "Luis Fonsi — Luis Fonsi - Despacito ft. Daddy
+            // Yankee" - da do duoc tren khung noi.
+            n.artist.isNotEmpty() -> "${n.artist} — ${tenBaiDeHien(n.artist, n.title)}"
             else -> n.title
         }
     }
