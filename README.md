@@ -46,6 +46,8 @@ trên máy thật: gói thử không nằm trong `enabled_notification_listeners
 | Tự phát: tìm online, nhạc trong máy, hàng đợi | ✅ |
 | Danh sách phát | ✅ |
 | Lời trên thẻ màn hình khoá | ✅ |
+| **Widget khung lời** trên màn hình chính — câu đang hát, kéo rộng hẹp được | ✅ |
+| Lối tắt nhấn giữ biểu tượng: bật khung lời nổi, mở trang Tìm | ✅ |
 | Sáu hiệu ứng chữ, cho cả trang Lời lẫn khung nổi | ✅ |
 | Chia sẻ thẻ lời: sáu mẫu, lấy được nhiều dòng một lúc | ✅ |
 | Chia sẻ **video ngắn** — mỗi cảnh một tấm thẻ, không tiếng | ✅ |
@@ -53,6 +55,8 @@ trên máy thật: gói thử không nằm trong `enabled_notification_listeners
 | **Không tự quét máy** — chỉ đọc thư mục bạn chỉ định, nhạc lẫn video | ✅ |
 | Đọc được cả tệp danh mục hệ thống bỏ sót (`.nomedia`, đuôi lạ) | ✅ |
 | Đọc và ghi `.lrc` ngay trong thư mục đó | ✅ |
+| Thẻ nhạc đã đọc giữ qua các lần mở app — mở lần sau không quét lại | ✅ |
+| Ô tìm khớp cả tên album và tên thư mục, không chỉ tên bài | ✅ |
 | Tải nhạc kèm lời nhúng trong file | ✅ chỉ bản `sideload` |
 
 ---
@@ -332,11 +336,15 @@ media/      MediaSessionWatcher       bám các phiên media đang chạy
 lyrics/     Identify                  ← chuyển từ identify.ts bản Windows
             LrcParser                 ← chuyển từ lrc.ts
             LyricsRepository          điều phối nguồn, chấm điểm khớp tên
+            LrcCanhTep                đọc và ghi .lrc nằm cạnh tệp nhạc
+            LoiTrongTep               lời nhúng trong thẻ ID3
+            DocChuTuAnh SrtParser
 sources/    Catalog                   gộp các nguồn, trộn kết quả
             LrclibClient
             ZingClient                ký HMAC-SHA512
             NctClient                 lời mã hoá RC4
             LocalLibrary              nhạc trong máy qua MediaStore
+            ThuVienNgoai              quét thẳng thư mục người dùng trỏ (SAF)
 player/     LyraPlaybackService       Media3 MediaSessionService
             Playback                  hàng đợi, điều khiển
             StreamResolver            lấy đường phát ngay trước khi phát
@@ -345,11 +353,16 @@ translate/  OnDeviceTranslator        ML Kit, chạy trên máy
             TranslationRepository     chỉ dịch khi thật sự cần
 overlay/    OverlayView               View thuần, tự vẽ, có viền chữ
             OverlayHost               dựng cửa sổ, kéo thả, chạm xuyên qua
-data/       LyricCache OffsetStore ManualLyricStore
+widget/     KhungLoiWidget            câu đang hát trên màn hình chính
+share/      TheLoi VideoLoi MauThe    thẻ lời và video ngắn để chia sẻ
+data/       ThuMucNhac                các thư mục được phép đọc — cửa duy nhất
+            DemTheNhac                thẻ đã đọc, giữ qua các lần mở app
+            LyricCache OffsetStore ManualLyricStore SaoLuuLoi
             OverlayPrefs TranslatePrefs TranslationCache PlaylistStore
 download/   Downloads                 mỗi biến thể một bản (xem trên)
-ui/         MainActivity HomeScreen PlayerPane SearchPane
-            Playlists LyricEditor LyraMark
+ui/         MainActivity HomeScreen BaiPane SearchPane
+            LoiNoiActivity LoiTat     lối tắt nhấn giữ biểu tượng
+            Playlists LyricEditor CanGioManHinh TheLoiManHinh LyraMark
 ```
 
 ---
