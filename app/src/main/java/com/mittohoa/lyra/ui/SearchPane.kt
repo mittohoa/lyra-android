@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mittohoa.lyra.data.LanNghe
 import com.mittohoa.lyra.data.Playlist
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.sources.KieuXep
@@ -97,8 +98,17 @@ fun SearchPane(
     onDeletePlaylist: () -> Unit,
     downloads: Map<String, Lyra.Downloading>,
     onDownload: (Track) -> Unit,
-    onXemLoi: (Track) -> Unit
+    onXemLoi: (Track) -> Unit,
+    lichSu: List<LanNghe>,
+    /** Bấm vào một dòng lịch sử: phát lại, hoặc đi tìm nếu bài của app khác. */
+    onChonLichSu: (LanNghe) -> Unit,
+    onXoaMotLanNghe: (String) -> Unit,
+    onXoaLichSu: () -> Unit
 ) {
+    // Màn hình lịch sử PHỦ LÊN trang này, cùng lẽ với màn hình danh sách phát:
+    // mở ra là một việc ngắn — xem, bấm, rồi đóng.
+    var xemLichSu by remember { mutableStateOf(false) }
+
     val keyboard = LocalSoftwareKeyboardController.current
 
     // Dang ky o TANG NGOAI CUNG, khong trong nhanh `when` va khong sau lenh
@@ -116,6 +126,21 @@ fun SearchPane(
     // dựng — xem `NguonNgoai`. Bản Play tìm được nhưng không phát, nên chạm
     // vào kết quả là TRA LỜI chứ không phải phát.
     fun phatDuoc(t: Track) = t.source == MusicSource.LOCAL || NguonNgoai.PHAT_DUOC
+
+    if (xemLichSu) {
+        LichSuManHinh(
+            lichSu = lichSu,
+            accent = accent,
+            onChon = {
+                xemLichSu = false
+                onChonLichSu(it)
+            },
+            onXoaMot = onXoaMotLanNghe,
+            onXoaHet = onXoaLichSu,
+            onDong = { xemLichSu = false }
+        )
+        return
+    }
 
     if (openedPlaylist != null) {
         Column(Modifier.fillMaxSize()) {
@@ -186,7 +211,7 @@ fun SearchPane(
             // Phai dung TRUOC nhanh xin quyen: bam "Cho phep" luc nay khong
             // lam thu vien hien ra mot bai nao, va mot nut nhu the con te hon
             // khong co nut.
-            results.isEmpty() && !daChonThuMuc -> Center {
+            results.isEmpty() && !daChonThuMuc && lichSu.isEmpty() -> Center {
                 Ask(
                     title = if (query.isBlank()) "Nhạc trong máy" else "Chưa tìm được",
                     body = "AURA không tự quét máy bạn. Chỉ cho nó thư mục bạn để " +
@@ -202,7 +227,7 @@ fun SearchPane(
                 )
             }
 
-            results.isEmpty() && !canReadLibrary -> Center {
+            results.isEmpty() && !canReadLibrary && lichSu.isEmpty() -> Center {
                 Ask(
                     title = if (query.isBlank()) "Nhạc trong máy" else "Chưa tìm được",
                     body = if (coOnline) {
@@ -242,7 +267,7 @@ fun SearchPane(
                 )
             }
 
-            results.isEmpty() && library.isEmpty() && playlists.isEmpty() -> Center {
+            results.isEmpty() && library.isEmpty() && playlists.isEmpty() && lichSu.isEmpty() -> Center {
                 Text(
                     "Nghe gì hôm nay?",
                     color = mau.chuMo,
@@ -269,7 +294,41 @@ fun SearchPane(
                 Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 110.dp)
             ) {
+                // NGHE GẦN ĐÂY đứng TRÊN danh sách phát: nó đổi mỗi ngày, còn
+                // danh sách phát thì gần như đứng yên. Thứ thay đổi thường
+                // xuyên hơn xứng đáng nằm ở chỗ mắt chạm vào trước.
+                item {
+                    HangNgheGanDay(
+                        lichSu = lichSu,
+                        accent = accent,
+                        onChon = onChonLichSu,
+                        onXemHet = { xemLichSu = true }
+                    )
+                }
                 item { PlaylistRow(playlists, accent, onOpen = onOpenPlaylist) }
+
+                // LỐI VÀO THƯ VIỆN PHẢI CÒN Ở ĐÂY.
+                //
+                // Ba nhánh rỗng phía trên giờ nhường chỗ khi đã có lịch sử —
+                // nếu không thì người chỉ nghe nhạc ở app khác, không chỉ thư
+                // mục nào, sẽ không bao giờ thấy được lịch sử của mình. Nhưng
+                // nhường chỗ mà không dựng lại lối vào ở đây thì họ mất luôn
+                // đường mở thư viện, và đó là đổi một lỗi lấy một lỗi.
+                if (!daChonThuMuc || !canReadLibrary) item {
+                    Ask(
+                        title = "Nhạc trong máy",
+                        body = if (!daChonThuMuc) {
+                            "AURA không tự quét máy bạn. Chỉ cho nó thư mục bạn để " +
+                                "nhạc — nó chỉ đọc đúng trong đó."
+                        } else {
+                            "AURA chưa được phép đọc nhạc trong máy. Chỉ xin quyền đọc " +
+                                "NHẠC — không đụng tới ảnh, video hay tài liệu của bạn."
+                        },
+                        action = if (!daChonThuMuc) "Chọn thư mục" else "Cho phép",
+                        accent = accent,
+                        onAction = if (!daChonThuMuc) chonThuMuc else onAskLibrary
+                    )
+                }
                 // Khong co bai nao thi khong co gi de dat tieu de
                 if (library.isNotEmpty() || locLoai != LocLoai.TAT_CA) item {
                     Text(

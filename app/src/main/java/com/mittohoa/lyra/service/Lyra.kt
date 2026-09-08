@@ -5,6 +5,8 @@ import android.util.Log
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import com.mittohoa.lyra.data.LanNghe
+import com.mittohoa.lyra.data.LichSuNghe
 import com.mittohoa.lyra.data.LyricCache
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.LyricEffectPrefs
@@ -120,6 +122,7 @@ object Lyra {
     private var translationCache: TranslationCache? = null
     private var translatePrefs: TranslatePrefs? = null
     private var playlistStore: PlaylistStore? = null
+    private var lichSu: LichSuNghe? = null
     private var translationRepoOrNull: TranslationRepository? = null
     private var lyricsRepoOrNull: LyricsRepository? = null
 
@@ -506,6 +509,38 @@ object Lyra {
 
     private val _playlists = MutableStateFlow<List<Playlist>>(emptyList())
     val playlists: StateFlow<List<Playlist>> = _playlists.asStateFlow()
+
+    // ---- Lich su nghe ----
+
+    private val _lichSuNghe = MutableStateFlow<List<LanNghe>>(emptyList())
+    val lichSuNghe: StateFlow<List<LanNghe>> = _lichSuNghe.asStateFlow()
+
+    /** Xoa sach lich su. Man hinh phai hoi truoc - khong co duong hoan tac. */
+    fun xoaLichSu() {
+        lichSu?.xoaHet()
+    }
+
+    /** Xoa dung mot dong, cho luc nguoi dung chi muon giau mot bai. */
+    fun xoaMotLanNghe(khoa: String) {
+        lichSu?.xoa(khoa)
+    }
+
+    /**
+     * Nghe lai mot bai trong lich su. Tra `false` khi khong mo lai duoc.
+     *
+     * KHONG PHAT THANG TU DIA CHI DA LUU. Dia chi trong lich su co the tro toi
+     * mot tep da bi xoa, doi ten, hoac nam tren the nho da rut ra - va phat mot
+     * dia chi chet thi bo may phat bao mot loi kho hieu roi im. Tim lai trong
+     * thu vien dang co truoc, tim khong thay thi tra `false` de man hinh chuyen
+     * sang di TIM theo ten, mot duong con dan toi dau do.
+     */
+    fun ngheLai(context: Context, lan: LanNghe): Boolean {
+        if (lan.diaChi.isBlank()) return false
+        val i = _library.value.indexOfFirst { it.playbackUri == lan.diaChi }
+        if (i < 0) return false
+        playFromLibrary(context, i)
+        return true
+    }
 
     /**
      * Luu hang doi dang co thanh mot danh sach.
@@ -973,6 +1008,7 @@ object Lyra {
             pushLineToCard(position)
             pushLineToWidget(position)
             nhoChoNgheDo(position)
+            nhoLichSu()
             appContext?.let { ngoDoanLap(it, position) }
 
             // Chay tiep chung nao con viec de lam. Truoc day nhip chi song theo
@@ -1138,6 +1174,102 @@ object Lyra {
     }
 
     /**
+     * Bai dang duoc bam gio nghe.
+     *
+     * Giu ca ban tin chu khong chi khoa: luc quyet dinh ghi hay khong, bai da
+     * doi roi va `_now` da la bai SAU. Chi giu khoa thi toi luc ghi khong con
+     * ten, ca si hay do dai cua chinh bai vua nghe xong.
+     */
+    private var baiDangNghe: NowPlaying? = null
+
+    /** Dia chi phat cua bai dang bam gio, chot luc no bat dau. */
+    private var diaChiDangNghe = ""
+
+    /** Chinh AURA phat bai dang bam gio hay mot app khac. */
+    private var tuPhatBaiDangNghe = false
+
+    /** Da phat duoc bao lau cua bai nay, chi cong nhung quang dang phat that. */
+    private var daPhatMs = 0L
+
+    /**
+     * Luc bat dau quang dang phat hien tai, theo `elapsedRealtime`.
+     *
+     * 0 nghia la dang khong phat - nen khong co quang nao dang chay de cong.
+     */
+    private var mocPhat = 0L
+
+    /** Bai nay da vao lich su roi, khoi ghi lai moi lan goi. */
+    private var daVaoLichSu = false
+
+    /**
+     * Bam gio bai dang nghe, va ghi vao lich su khi da du lau.
+     *
+     * KHONG DUA VAO NHIP. Nhip chi song khi AURA tu phat, khi khung loi noi bat,
+     * hoac khi co widget - ma lich su thi phai ghi ca luc nhac chay o Zing hay
+     * YouTube voi ca ba thu do deu tat. Nen ham nay duoc goi tu CHINH DONG
+     * `_now`: ban tin media bao moi lan doi bai, bam phat, bam dung. Do la dung
+     * nhung luc con so nay can doi.
+     *
+     * DO BANG QUANG DANG PHAT, khong cong tung nhip. Ban tin media co the im
+     * lang suot ba phut giua bai, va ba phut do la ba phut nguoi ta thuc su
+     * dang nghe. Con luc bam tam dung thi quang do dong lai - nguoi dung tam
+     * dung roi di an com, quay lai bam tiep, va bua com khong duoc tinh la nghe.
+     *
+     * GHI CA NHAC CUA APP KHAC. Day la cho AURA lam duoc thu ma tung app rieng
+     * le khong lam: no dung ngoai va nghe ca hai, nen lich su o day la lich su
+     * cua NGUOI DUNG chu khong phai cua mot app.
+     */
+    private fun nhoLichSu() {
+        val now = _now.value
+        val gio = SystemClock.elapsedRealtime()
+
+        // Chot quang dang chay TRUOC moi viec khac: du sap doi bai hay sap dung,
+        // phan da nghe cua quang do van la da nghe.
+        if (mocPhat > 0L) {
+            daPhatMs += (gio - mocPhat).coerceAtLeast(0L)
+            mocPhat = 0L
+        }
+
+        // Xet ghi TRUOC KHI doi sang bai moi. Lan goi lam bai chay het la lan
+        // `_now` bao da sang bai sau, nen neu doi bien truoc roi moi xet thi bai
+        // vua nghe tron ven lai la bai duy nhat khong bao gio duoc ghi.
+        chotLichSu()
+
+        if (now?.key != baiDangNghe?.key) {
+            baiDangNghe = now
+            tuPhatBaiDangNghe = laLyraPhat()
+            diaChiDangNghe =
+                if (tuPhatBaiDangNghe) Playback.currentTrack?.uri.orEmpty() else ""
+            daPhatMs = 0L
+            daVaoLichSu = false
+        }
+
+        // Mo lai moc chi khi dang phat. Dang dung thi khong co quang nao chay.
+        if (now?.isPlaying == true) mocPhat = gio
+    }
+
+    /** Ghi bai dang bam gio vao lich su, neu da nghe du lau va chua ghi. */
+    private fun chotLichSu() {
+        if (daVaoLichSu) return
+        val bai = baiDangNghe ?: return
+        val kho = lichSu ?: return
+        if (!LichSuNghe.dangGhi(bai.duration, daPhatMs)) return
+        daVaoLichSu = true
+        kho.ghi(
+            LanNghe(
+                // Dia chi CHI co khi chinh AURA phat. Nhac o Zing hay YouTube
+                // thi AURA khong co duong nao mo lai duoc, va mot dong bam vao
+                // khong ra gi con te hon mot dong noi thang la chi de nho.
+                diaChi = diaChiDangNghe,
+                ten = bai.title,
+                caSi = bai.artist,
+                app = if (tuPhatBaiDangNghe) "" else bai.packageName,
+                luc = System.currentTimeMillis()
+            )
+        )
+    }
+
+    /**
      * Nhip co phai chay tiep vi widget khong.
      *
      * BA dieu kien, thieu mot la sai:
@@ -1263,6 +1395,12 @@ object Lyra {
                 // `tick` tu quyet dinh co chay tiep khong - nen goi thua o day
                 // chi ton dung mot vong.
                 if (now?.isPlaying == true) startTick()
+
+                // BAM GIO NGHE TU DAY chu khong tu nhip. Nhip chi song khi AURA
+                // tu phat, khi khung loi noi bat hoac khi co widget - ma lich su
+                // phai ghi ca luc nhac chay o app khac voi ca ba thu do deu tat.
+                // Dong nay thi doi bai nao, bam phat nao cung co mot nhip.
+                nhoLichSu()
             }
         }
 
@@ -1327,6 +1465,11 @@ object Lyra {
         if (playlistStore == null) {
             playlistStore = PlaylistStore(context.applicationContext).also {
                 scope.launch { it.playlists.collect { list -> _playlists.value = list } }
+            }
+        }
+        if (lichSu == null) {
+            lichSu = LichSuNghe(context.applicationContext).also {
+                scope.launch { it.lichSu.collect { ds -> _lichSuNghe.value = ds } }
             }
         }
     }

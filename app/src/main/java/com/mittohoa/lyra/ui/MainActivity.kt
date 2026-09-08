@@ -201,6 +201,7 @@ class MainActivity : ComponentActivity() {
             val locLoai by Lyra.locLoai.collectAsStateWithLifecycle()
             val daChonThuMuc by Lyra.coThuMuc.collectAsStateWithLifecycle()
             val playlists by Lyra.playlists.collectAsStateWithLifecycle()
+            val lichSu by Lyra.lichSuNghe.collectAsStateWithLifecycle()
             val downloads by Lyra.downloads.collectAsStateWithLifecycle()
             val banMoi by Lyra.banMoi.collectAsStateWithLifecycle()
             val capNhat by Lyra.capNhat.collectAsStateWithLifecycle()
@@ -322,6 +323,20 @@ class MainActivity : ComponentActivity() {
                 onLyricEffectChange = { Lyra.datHieuUng(this, it) },
                 onXemLoi = { Lyra.xemLoi(it) },
                 onLuuLoiDaCan = { Lyra.saveManualLyrics(it) },
+                lichSu = lichSu,
+                // Bai cua app khac thi khong co duong phat lai - chuyen sang di
+                // TIM theo ten. Cung the khi tep da bi xoa hay doi ten: `ngheLai`
+                // tra `false`, va mot o tim da dien san con hon mot cu bam khong
+                // ra gi.
+                onChonLichSu = { lan ->
+                    if (!Lyra.ngheLai(this, lan)) {
+                        searchQuery = listOf(lan.ten, lan.caSi)
+                            .filter { it.isNotBlank() }.joinToString(" ")
+                        Lyra.search(searchQuery)
+                    }
+                },
+                onXoaMotLanNghe = { Lyra.xoaMotLanNghe(it) },
+                onXoaLichSu = { Lyra.xoaLichSu() },
                 chuDe = chuDe,
                 onChuDeChange = {
                     chuDe = it

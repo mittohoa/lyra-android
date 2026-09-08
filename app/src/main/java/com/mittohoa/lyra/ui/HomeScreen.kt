@@ -66,6 +66,7 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.mittohoa.lyra.data.ChuDe
+import com.mittohoa.lyra.data.LanNghe
 import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.OverlayLook
@@ -189,7 +190,11 @@ fun HomeScreen(
     kieuChu: KieuChu,
     onKieuChuChange: (KieuChu) -> Unit,
     onXemLoi: (com.mittohoa.lyra.sources.Track) -> Unit,
-    onLuuLoiDaCan: (String) -> Unit
+    onLuuLoiDaCan: (String) -> Unit,
+    lichSu: List<LanNghe>,
+    onChonLichSu: (LanNghe) -> Unit,
+    onXoaMotLanNghe: (String) -> Unit,
+    onXoaLichSu: () -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -351,7 +356,11 @@ fun HomeScreen(
                         onXemLoi = {
                             onXemLoi(it)
                             scope.launch { pager.animateScrollToPage(1) }
-                        }
+                        },
+                        lichSu = lichSu,
+                        onChonLichSu = onChonLichSu,
+                        onXoaMotLanNghe = onXoaMotLanNghe,
+                        onXoaLichSu = onXoaLichSu
                     )
                     1 -> BaiPane(
                         now = now,
