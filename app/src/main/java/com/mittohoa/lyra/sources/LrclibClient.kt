@@ -69,17 +69,37 @@ object LrclibClient {
     }
 
     private fun search(artist: String, title: String): Lyrics? {
+        val hits = timTho(artist, title)
+        // Uu tien ban co moc thoi gian; khong co thi lay ban dau
+        return (hits.firstOrNull { !it.syncedLyrics.isNullOrBlank() } ?: hits.firstOrNull())
+            ?.toLyrics()
+    }
+
+    /**
+     * TAT CA cac ban loi tim duoc, de nguoi dung tu chon.
+     *
+     * `fetch` o tren tu chon mot ban roi vut phan con lai - dung cho viec hien
+     * loi tu dong, sai cho viec sua lai khi no chon nham. Ma no CO chon nham:
+     * cua chan duy nhat la do giong cua ten bai, nen mot bai ten "Hours" nhan
+     * duoc loi cua "Hours and Hours" cua mot nguoi hoan toan khac.
+     *
+     * Du lieu da nam san trong tay - LRCLIB tra ve ca danh sach trong MOT lan
+     * goi. Bay no ra khong ton them lan goi mang nao.
+     */
+    suspend fun danhSach(artist: String, title: String, tran: Int = 20): List<Lyrics> =
+        withContext(Dispatchers.IO) {
+            timTho(artist, title).take(tran).mapNotNull { it.toLyrics() }
+        }
+
+    private fun timTho(artist: String, title: String): List<Hit> {
         val query = listOf(artist, title).filter { it.isNotBlank() }.joinToString(" ")
-        if (query.isBlank()) return null
+        if (query.isBlank()) return emptyList()
 
         val url = "$BASE/search".toHttpUrl().newBuilder()
             .addQueryParameter("q", query)
             .build()
 
-        val hits = get<List<Hit>>(url.toString()).orEmpty()
-        // Uu tien ban co moc thoi gian; khong co thi lay ban dau
-        return (hits.firstOrNull { !it.syncedLyrics.isNullOrBlank() } ?: hits.firstOrNull())
-            ?.toLyrics()
+        return get<List<Hit>>(url.toString()).orEmpty()
     }
 
     private inline fun <reified T> get(url: String): T? = try {

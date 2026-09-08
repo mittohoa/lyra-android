@@ -45,7 +45,14 @@ class LyricsRepository(
      * bai dang phat co phai nhac trong may khong, va tep nao. Kho loi khong can
      * biet chuyen do.
      */
-    private val lrcCanhTep: (suspend () -> Lyrics?)? = null
+    private val lrcCanhTep: (suspend () -> Lyrics?)? = null,
+    /**
+     * Ban loi nguoi dung tu chon trong danh sach ung vien.
+     *
+     * Cung mot lop voi `manual` nhung khac thu muc: hai thu deu la lua chon cua
+     * nguoi dung va deu thang moi nguon mang, chi khac o cau bao hien ra.
+     */
+    private val chon: ManualLyricStore? = null
 ) {
 
     /** Bai dang phat, giu lai de con nho do lech theo dung bai. */
@@ -97,6 +104,17 @@ class LyricsRepository(
             val tuNhap = withContext(Dispatchers.IO) { manual?.get(now.artist, now.title) }
             if (tuNhap != null) {
                 _lyrics.value = dress(parseLrc(tuNhap, from = "tự nhập"), now)
+                _loading.value = false
+                return@launch
+            }
+
+            // Ban loi NGUOI DUNG DA CHON, ngay sau loi tu nhap va tren tat ca
+            // moi thu khac. Ho da mo danh sach ra va chi vao dung mot ban - do
+            // la mot cau tra loi ro rang cho cau hoi "bai nay lay loi o dau",
+            // va khong mot lan tra mang nao duoc phep noi lai.
+            val daChon = withContext(Dispatchers.IO) { chon?.get(now.artist, now.title) }
+            if (daChon != null) {
+                _lyrics.value = dress(parseLrc(daChon, from = "bạn chọn"), now)
                 _loading.value = false
                 return@launch
             }
@@ -155,6 +173,48 @@ class LyricsRepository(
      */
     suspend fun lookup(artist: String, title: String, durationMs: Long): Lyrics? =
         resolve(artist, title, durationMs)
+
+    /**
+     * Cac ban loi khac cho bai dang phat, de nguoi dung tu chon.
+     *
+     * HOI LAI MANG chu khong dung lai may phuong an da thu luc tim tu dong: lan
+     * do app chi giu MOT ban roi vut phan con lai, va bay gio can dung phan con
+     * lai ay. Mot lan goi mang khi nguoi dung CHU DONG mo danh sach ra thi khong
+     * ai coi la ton.
+     *
+     * Tim bang ten bai va ten ca si NHU APP DA HIEU, khong bang phuong an doan
+     * mo: nguoi dung mo danh sach nay ra chinh vi ho thay ket qua tu dong sai,
+     * nen dua ho ket qua cua cung mot phep doan la vo ich.
+     */
+    suspend fun ungVien(): List<Lyrics> {
+        val now = current ?: return emptyList()
+        return LrclibClient.danhSach(now.artist, now.title)
+    }
+
+    /**
+     * Nguoi dung chon mot ban trong danh sach.
+     *
+     * Ghi xuong dia roi HIEN NGAY, khong doi lan doi bai sau: ho vua bam vao
+     * mot ban loi, thu phai doi la loi tren man hinh chu khong phai mot dong
+     * bao rang lan sau se doi.
+     */
+    fun chonBan(ban: Lyrics) {
+        val now = current ?: return
+        val tho = thanhLrc(ban)
+        if (tho.isBlank()) return
+        chon?.put(now.artist, now.title, tho)
+        _lyrics.value = dress(ban.copy(from = "bạn chọn", khacCaSi = false), now)
+        _loading.value = false
+        Log.i(TAG, "Nguoi dung chon: '${ban.matchedArtist}' - '${ban.matchedTitle}'")
+    }
+
+    /** Bo ban da chon, quay lai de app tu tim. */
+    fun boBanDaChon() {
+        val now = current ?: return
+        chon?.remove(now.artist, now.title)
+        resolvedKey = null
+        onNowPlaying(now)
+    }
 
     private suspend fun resolve(now: NowPlaying): Lyrics? =
         resolve(now.artist, now.title, now.duration, now.album)
@@ -312,16 +372,7 @@ class LyricsRepository(
 
         // Chua nhap thi mo san bang loi dang co, de nguoi dung SUA thay vi go
         // lai tu dau - phan lon truong hop chi sai vai dong
-        val lyrics = _lyrics.value
-        if (lyrics.isEmpty) return ""
-        return lyrics.lines.joinToString("\n") { line ->
-            if (lyrics.synced) "[%02d:%02d.%02d]%s".format(
-                line.time / 60_000,
-                (line.time / 1000) % 60,
-                (line.time % 1000) / 10,
-                line.text
-            ) else line.text
-        }
+        return thanhLrc(_lyrics.value)
     }
 
     /** Bo do lech da chinh, tra ve dung moc goc cua nguon. */
@@ -385,6 +436,28 @@ class LyricsRepository(
          * `internal` de kiem duoc bang bai kiem: day la mot menh de thuan tuy,
          * va no quyet dinh mot cau bao hien ra truoc mat nguoi dung.
          */
+        /**
+         * Doi mot ban loi thanh chuoi `.lrc` de cat di.
+         *
+         * Cat lai CHUOI chu khong cat doi tuong da doc: kho loi giu chuoi tho,
+         * va `parseLrc` chay lai moi lan doc ra. Nho chuoi thi ban da chon van
+         * doc duoc dung nhu vay o cac ban sau, ke ca khi cach doc co doi.
+         *
+         * Chua co moc thoi gian thi ghi chu tron - dung mot moc gia vao cho no
+         * "trong giong loi that" la bia ra du lieu khong ai do duoc.
+         */
+        internal fun thanhLrc(lyrics: Lyrics): String {
+            if (lyrics.isEmpty) return ""
+            return lyrics.lines.joinToString("\n") { line ->
+                if (lyrics.synced) "[%02d:%02d.%02d]%s".format(
+                    line.time / 60_000,
+                    (line.time / 1000) % 60,
+                    (line.time % 1000) / 10,
+                    line.text
+                ) else line.text
+            }
+        }
+
         internal fun ngoKhacCaSi(daHoi: String?, traVe: String): Boolean {
             if (traVe.isBlank()) return false
             if (daHoi.isNullOrBlank()) return true

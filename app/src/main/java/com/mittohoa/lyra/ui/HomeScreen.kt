@@ -212,6 +212,7 @@ fun HomeScreen(
     // CA man hinh, ma o trong trang thi no chi phu duoc mot trang cua bo vuot.
     var videoToanManHinh by remember { mutableStateOf(false) }
     var moCanGio by remember { mutableStateOf(false) }
+    var moChonBanLoi by remember { mutableStateOf(false) }
 
     val pager = rememberPagerState(
         // Mở thẳng vào trang lối tắt xin, chứ không mở trang Bài rồi trượt
@@ -372,7 +373,8 @@ fun HomeScreen(
                         onChiaSeCau = { cauChiaSe = it.coerceAtLeast(0) },
                         onToanManHinh = { videoToanManHinh = true },
                         toanManHinh = videoToanManHinh,
-                        onCanGio = { moCanGio = true }
+                        onCanGio = { moCanGio = true },
+                        onChonBanLoi = { moChonBanLoi = true }
                     )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
@@ -416,6 +418,17 @@ fun HomeScreen(
                     moCanGio = false
                 },
                 onDong = { moCanGio = false }
+            )
+        }
+
+        if (moChonBanLoi && now != null) {
+            ChonBanLoi(
+                accent = mucMau,
+                tenBai = now.title,
+                caSi = now.artist,
+                doDai = now.duration,
+                dangDungBanChon = lyrics.from == "bạn chọn",
+                onXong = { moChonBanLoi = false }
             )
         }
 

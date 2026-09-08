@@ -20,9 +20,20 @@ import java.security.MessageDigest
  * sau mo ra sua con thay dung cai minh da dan. Doc thanh dong la viec cua
  * `parseLrc`, va no chay lai moi lan.
  */
-class ManualLyricStore(context: Context) {
+class ManualLyricStore(
+    context: Context,
+    /**
+     * Thu muc chua cac ban loi.
+     *
+     * Co tham so de dung LAI ca lop nay cho "ban loi nguoi dung tu chon" - xem
+     * `LyricsRepository`. Hai kho giong nhau tung chi tiet: cung cach bam khoa,
+     * cung uu tien hon moi nguon mang, cung khong bao gio bi xoa tu dong. Khac
+     * duy nhat la cau bao hien ra man hinh, ma cau do do ben goi dat.
+     */
+    thuMuc: String = "manual-lyrics"
+) {
 
-    private val dir = File(context.filesDir, "manual-lyrics").apply { mkdirs() }
+    private val dir = File(context.filesDir, thuMuc).apply { mkdirs() }
 
     /**
      * Bang ten: khoa bam -> nghe si + ten bai.

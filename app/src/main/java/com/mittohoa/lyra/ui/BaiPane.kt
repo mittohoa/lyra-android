@@ -145,6 +145,8 @@ fun BaiPane(
     /** Mở màn hình thẻ lời ở câu này. -1 nghĩa là chưa có câu nào đang hát. */
     onChiaSeCau: (Int) -> Unit,
     onCanGio: () -> Unit,
+    /** Mở màn hình chọn bản lời khác. */
+    onChonBanLoi: () -> Unit,
     /** Mở video ra toàn màn hình. Chỉ có nghĩa khi bài đang phát là video. */
     onToanManHinh: () -> Unit,
     /**
@@ -344,7 +346,8 @@ fun BaiPane(
                 gop = trangThaiGop,
                 onGop = { Lyra.gopLoiChoLrclib() },
                 onThoiGop = { Lyra.thoiGopLoi() },
-                onCanGio = onCanGio
+                onCanGio = onCanGio,
+                onChonBanLoi = onChonBanLoi
             )
 
             // Chữ MỜ DẦN vào nền trước khi tới hàng nút, thay cho một nét kẻ.
@@ -1138,7 +1141,8 @@ private fun MatLoi(
     gop: Lyra.TrangThaiGop?,
     onGop: () -> Unit,
     onThoiGop: () -> Unit,
-    onCanGio: () -> Unit
+    onCanGio: () -> Unit,
+    onChonBanLoi: () -> Unit
 ) {
     // Mốc đang ngờ thì KHÔNG tô sáng và KHÔNG tự cuộn. Tô sáng nhầm một dòng
     // suốt cả bài còn tệ hơn là không tô gì.
@@ -1268,6 +1272,17 @@ private fun MatLoi(
     // và con số nói dối.
     val nhacChuaCanGio = !lyrics.synced && lyrics.lines.isNotEmpty()
     val nhacGopLrclib = lyrics.from == "tự nhập" || gop != null
+    // Mời chọn bản khác khi lời đến TỪ MẠNG, và cả khi họ ĐÃ chọn một bản.
+    //
+    // Vế thứ hai không phải cho đẹp: chọn xong thì lối vào biến mất, và lúc đó
+    // không còn đường nào để đổi bản khác hay bỏ chọn — người dùng bị khoá vào
+    // đúng cái họ vừa chọn, kể cả khi chọn nhầm.
+    //
+    // Lời tự nhập và lời nằm cạnh tệp nhạc thì KHÔNG mời: cả hai đều là thứ
+    // người dùng tự đặt bằng tay ở chỗ khác, và mời họ thay bằng một bản tải
+    // về là đề nghị vứt công của chính họ.
+    val nhacChonBan = lyrics.lines.isNotEmpty() &&
+        lyrics.from != "tự nhập" && !LrcCanhTep.laTepCanh(lyrics.from)
     // Chỉ mời ghi tệp khi đang phát nhạc TRONG MÁY: nhạc từ Zing hay app khác
     // thì không có tệp nào trên đĩa để mà ghi cạnh. Và chỉ mời khi lời KHÔNG
     // PHẢI vừa đọc lên từ chính tệp đó — ghi lại đúng cái mình vừa đọc ra là
@@ -1277,7 +1292,9 @@ private fun MatLoi(
     val nhacDich = translation is TranslationState.NeedsModel ||
         translation is TranslationState.Failed ||
         translation == TranslationState.Working
-    val soNhac = 1 + listOf(nhacChuaCanGio, nhacGopLrclib, nhacGhiTep, baoKhongTua, nhacDich)
+    val soNhac = 1 + listOf(
+        nhacChuaCanGio, nhacChonBan, nhacGopLrclib, nhacGhiTep, baoKhongTua, nhacDich
+    )
         .count { it }
 
     Column(Modifier.fillMaxSize()) {
@@ -1291,13 +1308,17 @@ private fun MatLoi(
                     // thể lệch". Nói cái nhẹ rồi nuốt cái nặng là nói giảm đi.
                     lyrics.khacCaSi ->
                         "Lời này khớp theo tên bài chứ không khớp tên ca sĩ — có " +
-                            "thể là của bài khác. Không đúng thì tự nhập lại."
+                            "thể là của bài khác. Bấm “Chọn bản” bên dưới để đổi."
                     lyrics.timingSuspect ->
                         "Lời của bản thu khác nên mốc có thể lệch. Nhấn giữ câu đang " +
                             "hát để căn lại."
                     lyrics.offset != 0L ->
                         "Đã căn lệch " + offsetLabel(lyrics.offset) + ". Bấm để bỏ."
                     lyrics.from == "tự nhập" -> "Lời bạn tự nhập."
+                    // Nhánh riêng chứ không để rơi xuống "Lời từ ${from}." bên
+                    // dưới: câu đó ghép ra "Lời từ bạn chọn." — đọc lên như thể
+                    // "bạn chọn" là tên một cái kho lời nào đó.
+                    lyrics.from == "bạn chọn" -> "Bản lời bạn đã chọn cho bài này."
                     else -> "Lời từ " + lyrics.from + "."
                 },
                 onClick = if (lyrics.offset != 0L) onClearOffset else null,
@@ -1310,6 +1331,26 @@ private fun MatLoi(
             // Chưa căn thì AURA chỉ hiện được một khối chữ: không tô sáng câu đang
             // hát, không khung lời nổi chạy theo, không lặp A–B, không thẻ lời. Gần
             // hết những gì app làm đều đứng trên chỗ có mốc thời gian.
+            // Đường SỬA khi app đưa nhầm lời. Bản 0.3.25 mới chỉ nói ra là có
+            // thể nhầm rồi để đấy — người dùng chỉ còn cách tự gõ lại cả bài.
+            // Dữ liệu để sửa đã nằm sẵn trong tay: kho lời trả về cả danh sách
+            // trong một lần gọi, app chọn một bản rồi vứt phần còn lại.
+            if (nhacChonBan) {
+                Notice(
+                    accent = accent,
+                    text = when {
+                        lyrics.from == "bạn chọn" ->
+                            "Chọn nhầm? Mở lại danh sách để đổi bản khác hoặc bỏ chọn."
+                        lyrics.khacCaSi ->
+                            "Không đúng bài? Xem các bản lời khác rồi tự chọn."
+                        else ->
+                            "Lời không khớp bản thu bạn đang nghe? Chọn bản khác."
+                    },
+                    action = if (lyrics.from == "bạn chọn") "Đổi bản" else "Chọn bản",
+                    onAction = onChonBanLoi
+                )
+            }
+
             if (nhacChuaCanGio) {
                 Notice(
                     accent = accent,

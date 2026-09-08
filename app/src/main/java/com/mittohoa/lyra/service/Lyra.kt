@@ -111,6 +111,7 @@ object Lyra {
     private var cache: LyricCache? = null
     private var offsets: OffsetStore? = null
     private var manual: ManualLyricStore? = null
+    private var banDaChon: ManualLyricStore? = null
     private var overlayPrefs: OverlayPrefs? = null
     private var translationCache: TranslationCache? = null
     private var translatePrefs: TranslatePrefs? = null
@@ -120,7 +121,7 @@ object Lyra {
 
     private val lyricsRepo: LyricsRepository
         get() = lyricsRepoOrNull
-            ?: LyricsRepository(scope, cache, offsets, manual, ::loiCanhTep)
+            ?: LyricsRepository(scope, cache, offsets, manual, ::loiCanhTep, banDaChon)
                 .also { lyricsRepoOrNull = it }
 
     private val translationRepo: TranslationRepository
@@ -1180,6 +1181,9 @@ object Lyra {
         if (cache == null) cache = LyricCache(context.applicationContext)
         if (offsets == null) offsets = OffsetStore(context.applicationContext)
         if (manual == null) manual = ManualLyricStore(context.applicationContext)
+        if (banDaChon == null) {
+            banDaChon = ManualLyricStore(context.applicationContext, "loi-da-chon")
+        }
         if (translationCache == null) translationCache = TranslationCache(context.applicationContext)
         if (translatePrefs == null) translatePrefs = TranslatePrefs(context.applicationContext)
         if (playlistStore == null) {
@@ -1439,6 +1443,25 @@ object Lyra {
      * Chỉ chạy khi người dùng bấm. Đây là đăng lên một kho công cộng ai cũng
      * đọc được và không rút lại được — không bao giờ được là mặc định.
      */
+    /**
+     * Cac ban loi khac cho bai dang phat.
+     *
+     * Tra ve `null` khi hoi khong duoc - mat mang, may chu im. Khac han danh
+     * sach RONG, va man hinh phai noi hai chuyen do bang hai cau khac nhau:
+     * "khong tim thay ban nao" va "khong hoi duoc" doi hoi nguoi dung lam hai
+     * viec khac nhau.
+     */
+    suspend fun banLoiKhac(): List<Lyrics>? = try {
+        lyricsRepo.ungVien()
+    } catch (e: Exception) {
+        Log.w(TAG, "Khong lay duoc danh sach ban loi", e)
+        null
+    }
+
+    fun chonBanLoi(ban: Lyrics) = lyricsRepo.chonBan(ban)
+
+    fun boBanLoiDaChon() = lyricsRepo.boBanDaChon()
+
     fun gopLoiChoLrclib() {
         if (gopJob?.isActive == true) return
         val n = _now.value ?: return
