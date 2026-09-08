@@ -222,7 +222,8 @@ object ThuVienNgoai {
                 }
 
                 val bai = docMotBai(
-                    context, DocumentsContract.buildDocumentUriUsingTree(goc, id), ten, loaiBai
+                    context, DocumentsContract.buildDocumentUriUsingTree(goc, id), ten, loaiBai,
+                    c.getLongAn(doiCot)
                 )
                 if (bai != null) {
                     synchronized(nho) { nho[khoa] = bai }
@@ -266,7 +267,9 @@ object ThuVienNgoai {
         context: Context,
         uri: Uri,
         tenTep: String,
-        loaiDoan: MediaKind
+        loaiDoan: MediaKind,
+        /** Gio tep sua lan cuoi, mili-giay. 0 khi trinh cung cap tep khong noi. */
+        gioSua: Long
     ): Track? {
         val doc = MediaMetadataRetriever()
         return try {
@@ -320,6 +323,7 @@ object ThuVienNgoai {
                 // can than nhat lai la nhung dia mat thu tu.
                 soThuTu = doc.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
                     ?.substringBefore('/')?.trim()?.toIntOrNull()?.coerceAtLeast(0) ?: 0,
+                moiNhat = gioSua,
                 // Ảnh đại diện nằm trong CHÍNH tệp, không phải một tệp ảnh
                 // riêng: nhạc thì là bìa trong thẻ, phim thì là một khung hình.
                 // Đánh dấu bằng tiền tố để `Artwork` đi thẳng đường đúng, khỏi
@@ -385,6 +389,49 @@ object ThuVienNgoai {
      * `log n` lần, mà mỗi lần so bằng `Collator` là một lượt phân tích chuỗi
      * lại từ đầu. Dựng khoá trước là đổi việc đó lấy đúng một lượt cho mỗi bài.
      */
+    /**
+     * Xếp thư viện theo một kiểu người dùng chọn.
+     *
+     * `ALBUM` là kiểu mặc định và là kiểu DUY NHẤT có dòng tiêu đề nhóm — nó
+     * xếp theo (album, số thứ tự bài), tức thứ tự của chính cái đĩa. Ba kiểu
+     * còn lại là danh sách phẳng: chèn tiêu đề nhóm vào một danh sách xếp theo
+     * tên bài thì gần như mỗi bài một tiêu đề.
+     *
+     * Nhạc luôn đứng trước video, ở mọi kiểu. Hai loại này người ta tìm theo
+     * hai cách khác nhau, và trộn lẫn thì cả hai đều khó tìm.
+     */
+    fun sapXep(bai: List<Track>, kieu: KieuXep): List<Track> {
+        val nhac = bai.filter { it.kind == MediaKind.AUDIO }
+        val phim = bai.filter { it.kind == MediaKind.VIDEO }
+        return xep(nhac, kieu) + xep(phim, kieu)
+    }
+
+    private fun xep(bai: List<Track>, kieu: KieuXep): List<Track> {
+        if (bai.size < 2) return bai
+        if (kieu == KieuXep.ALBUM) return xepTheoTen(bai)
+        if (kieu == KieuXep.MOI_THEM) {
+            // Không biết giờ sửa thì xuống cuối, đừng lên đầu: một tệp thiếu
+            // dữ liệu không có nghĩa nó vừa được thêm vào.
+            return bai.sortedWith(compareByDescending { it.moiNhat })
+        }
+        val luat = Collator.getInstance(Locale.forLanguageTag("vi-VN"))
+        // Dựng khoá so chữ MỘT LẦN cho mỗi bài — cùng lý do với `xepTheoTen`:
+        // gọi `Collator.compare` trong bộ so sánh là dựng lại khoá ở mỗi lần so.
+        return when (kieu) {
+            KieuXep.TEN_BAI -> bai
+                .map { luat.getCollationKey(it.title) to it }
+                .sortedBy { it.first }
+                .map { it.second }
+            // Trong một ca sĩ thì vẫn xếp theo tên bài: một danh sách gom đúng
+            // ca sĩ lại nhưng bên trong lộn xộn thì mới đi được nửa đường.
+            KieuXep.CA_SI -> bai
+                .map { Triple(luat.getCollationKey(it.artist), luat.getCollationKey(it.title), it) }
+                .sortedWith(compareBy({ it.first }, { it.second }))
+                .map { it.third }
+            else -> bai
+        }
+    }
+
     private fun xepTheoTen(bai: List<Track>): List<Track> {
         if (bai.size < 2) return bai
         val luat = Collator.getInstance(Locale.forLanguageTag("vi-VN"))
@@ -651,4 +698,51 @@ object ThuVienNgoai {
      */
     const val KHUNG_TRONG_TEP = "khung-trong-tep:"
     private const val TAG = "AuraThuVienNgoai"
+}
+
+/**
+ * Cách xếp thư viện trong máy.
+ *
+ * Bốn kiểu, không hơn. Mỗi kiểu thêm vào là một dòng nữa trong hàng chọn mà
+ * người dùng phải đọc qua, và ba kiểu dưới đây đã phủ hết cách người ta thật sự
+ * đi tìm một bài trong máy mình.
+ */
+enum class KieuXep(val nhan: String) {
+    /**
+     * Theo album, và trong album thì theo số thứ tự bài.
+     *
+     * Mặc định, vì đây là cách bộ nhạc được xếp SẴN: thứ tự của một đĩa là một
+     * phần của tác phẩm. Cũng là kiểu duy nhất có dòng tiêu đề nhóm.
+     */
+    ALBUM("Album"),
+    TEN_BAI("Tên bài"),
+    CA_SI("Ca sĩ"),
+
+    /**
+     * Mới thêm trước.
+     *
+     * Đây là kiểu trả lời đúng câu hỏi hay gặp nhất với một thư viện lớn: "bài
+     * mình vừa chép vào đâu rồi". Xếp theo bảng chữ cái thì bài mới nằm lẫn đâu
+     * đó giữa hai nghìn bài cũ.
+     */
+    MOI_THEM("Mới thêm")
+}
+
+/**
+ * Lọc thư viện theo loại.
+ *
+ * Nhạc và phim người ta tìm theo hai tâm thế khác nhau — một bên đang muốn
+ * nghe, một bên đang muốn xem — nên cho tách hẳn ra là đáng, dù danh sách vốn
+ * đã để nhạc trước phim.
+ */
+enum class LocLoai(val nhan: String) {
+    TAT_CA("Tất cả"),
+    NHAC("Nhạc"),
+    VIDEO("Video");
+
+    fun hop(bai: Track): Boolean = when (this) {
+        TAT_CA -> true
+        NHAC -> bai.kind == MediaKind.AUDIO
+        VIDEO -> bai.kind == MediaKind.VIDEO
+    }
 }

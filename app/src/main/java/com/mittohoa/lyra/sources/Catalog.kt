@@ -61,6 +61,15 @@ data class Track(
      * Xem `ThuVienNgoai.xepTheoTen`.
      */
     val soThuTu: Int = 0,
+    /**
+     * Gio tep duoc sua lan cuoi, mili-giay. 0 khi khong biet.
+     *
+     * De xep "moi them truoc". Lay GIO SUA chu khong phai gio them vao danh
+     * muc: tep chep tu may tinh sang giu nguyen gio sua cua ban goc, con gio
+     * them vao danh muc thi la gio dien thoai quet thay no - va mot lan quet
+     * lai ca thu vien se dat tat ca ve cung mot gio, tuc mat sach thu tu.
+     */
+    val moiNhat: Long = 0,
     val durationMs: Long = 0,
     /**
      * KHONG luu xuong dia: duong phat cua ca hai nguon online deu co han, va

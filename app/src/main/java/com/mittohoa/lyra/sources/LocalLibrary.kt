@@ -52,7 +52,8 @@ object LocalLibrary {
         MediaStore.Audio.Media.ALBUM_ID,
         MediaStore.Audio.Media.TRACK,
         MediaStore.Audio.Media.DURATION,
-        MediaStore.Audio.Media.DATA
+        MediaStore.Audio.Media.DATA,
+        MediaStore.Audio.Media.DATE_MODIFIED
     )
 
     /**
@@ -156,7 +157,8 @@ object LocalLibrary {
                     MediaStore.Video.Media.WIDTH,
                     MediaStore.Video.Media.HEIGHT,
                     MediaStore.Video.Media.ORIENTATION,
-                    MediaStore.Video.Media.DATA
+                    MediaStore.Video.Media.DATA,
+                    MediaStore.Video.Media.DATE_MODIFIED
                 ),
                 loc?.first,
                 loc?.second,
@@ -169,6 +171,7 @@ object LocalLibrary {
                 val wCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.WIDTH)
                 val hCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.HEIGHT)
                 val xoayCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.ORIENTATION)
+                val gioCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_MODIFIED)
                 val duongCol = c.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
 
                 while (c.moveToNext()) {
@@ -189,6 +192,7 @@ object LocalLibrary {
                             // noi duoc no den tu dau.
                             thuMuc = tenThuMuc(c.getString(duongCol)),
                             durationMs = c.getLong(durationCol),
+                            moiNhat = c.getLong(gioCol) * 1000L,
                             streamUrl = videoUri(id),
                             kind = MediaKind.VIDEO,
                             tiLe = tiLeKhungHinh(
@@ -226,6 +230,7 @@ object LocalLibrary {
                 val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                 val duongCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                 val thuTuCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+                val gioCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
 
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idCol)
@@ -244,6 +249,8 @@ object LocalLibrary {
                             album = if (tenAlbum == MediaStore.UNKNOWN_STRING) "" else tenAlbum,
                             thuMuc = tenThuMuc(cursor.getString(duongCol)),
                             soThuTu = soThuTuBai(cursor.getInt(thuTuCol)),
+                            // MediaStore ghi GIAY, phan con lai cua app dung mili-giay.
+                            moiNhat = cursor.getLong(gioCol) * 1000L,
                             durationMs = cursor.getLong(durationCol),
                             streamUrl = trackUri(id)
                         )

@@ -114,9 +114,25 @@ class ThuMucNhac(context: Context) {
         }
     }
 
+    // ---- Cach xep va bo loc cua danh sach trong may ----
+    //
+    // Nam chung o day chu khong mo mot kho thiet lap thu hai: ca ba deu la
+    // "nguoi dung muon nhin thu vien trong may kieu nao", va mot tep thiet lap
+    // rieng cho hai chuoi thi dat hon cai no goi ra.
+
+    fun kieuXep(): String? = prefs.getString(KEY_XEP, null)
+
+    fun datKieuXep(ten: String) = prefs.edit().putString(KEY_XEP, ten).apply()
+
+    fun locLoai(): String? = prefs.getString(KEY_LOC, null)
+
+    fun datLocLoai(ten: String) = prefs.edit().putString(KEY_LOC, ten).apply()
+
     private companion object {
         const val KEY = "cac-thu-muc"
         const val KEY_TRAN = "tran-so-bai"
+        const val KEY_XEP = "kieu-xep"
+        const val KEY_LOC = "loc-loai"
 
         /** Cũng là bước nâng mỗi lần bấm — xem `nangTran`. */
         const val TRAN_MAC_DINH = 2000

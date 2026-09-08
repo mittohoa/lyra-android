@@ -73,6 +73,8 @@ import com.mittohoa.lyra.lyrics.LyricLine
 import com.mittohoa.lyra.lyrics.Lyrics
 import com.mittohoa.lyra.lyrics.activeLineIndex
 import com.mittohoa.lyra.media.NowPlaying
+import com.mittohoa.lyra.sources.KieuXep
+import com.mittohoa.lyra.sources.LocLoai
 import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.sources.Track
@@ -156,6 +158,10 @@ fun HomeScreen(
     onToggleShuffle: () -> Unit,
     onCycleRepeat: () -> Unit,
     library: List<Track>,
+    kieuXep: KieuXep,
+    locLoai: LocLoai,
+    onDoiKieuXep: (KieuXep) -> Unit,
+    onDoiLocLoai: (LocLoai) -> Unit,
     canReadLibrary: Boolean,
     /** Nguoi dung da chi cho AURA thu muc nao chua - xem `Lyra.coThuMuc`. */
     daChonThuMuc: Boolean,
@@ -323,6 +329,10 @@ fun HomeScreen(
                         onPlay = onPlayResult,
                         onEnqueue = onEnqueue,
                         library = library,
+                        kieuXep = kieuXep,
+                        locLoai = locLoai,
+                        onDoiKieuXep = onDoiKieuXep,
+                        onDoiLocLoai = onDoiLocLoai,
                         canReadLibrary = canReadLibrary,
                         daChonThuMuc = daChonThuMuc,
                         onAskLibrary = onAskLibrary,

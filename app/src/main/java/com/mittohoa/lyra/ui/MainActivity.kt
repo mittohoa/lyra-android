@@ -197,6 +197,8 @@ class MainActivity : ComponentActivity() {
             val shuffle by Lyra.shuffle.collectAsStateWithLifecycle()
             val repeat by Lyra.repeat.collectAsStateWithLifecycle()
             val library by Lyra.library.collectAsStateWithLifecycle()
+            val kieuXep by Lyra.kieuXep.collectAsStateWithLifecycle()
+            val locLoai by Lyra.locLoai.collectAsStateWithLifecycle()
             val daChonThuMuc by Lyra.coThuMuc.collectAsStateWithLifecycle()
             val playlists by Lyra.playlists.collectAsStateWithLifecycle()
             val downloads by Lyra.downloads.collectAsStateWithLifecycle()
@@ -295,6 +297,10 @@ class MainActivity : ComponentActivity() {
                 onToggleShuffle = { Lyra.toggleShuffle(this) },
                 onCycleRepeat = { Lyra.cycleRepeat(this) },
                 library = library,
+                kieuXep = kieuXep,
+                locLoai = locLoai,
+                onDoiKieuXep = { Lyra.datKieuXep(this, it) },
+                onDoiLocLoai = { Lyra.datLocLoai(this, it) },
                 canReadLibrary = canReadLibrary,
                 daChonThuMuc = daChonThuMuc,
                 onAskLibrary = { askAudio.launch(quyenThuVien) },

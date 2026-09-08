@@ -2,6 +2,8 @@ package com.mittohoa.lyra.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mittohoa.lyra.data.Playlist
 import com.mittohoa.lyra.service.Lyra
+import com.mittohoa.lyra.sources.KieuXep
+import com.mittohoa.lyra.sources.LocLoai
 import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.sources.MusicSource
 import com.mittohoa.lyra.sources.NguonNgoai
@@ -69,6 +73,10 @@ fun SearchPane(
     onPlay: (Int) -> Unit,
     onEnqueue: (Track) -> Unit,
     library: List<Track>,
+    kieuXep: KieuXep,
+    locLoai: LocLoai,
+    onDoiKieuXep: (KieuXep) -> Unit,
+    onDoiLocLoai: (LocLoai) -> Unit,
     canReadLibrary: Boolean,
     /**
      * Nguoi dung da chi cho AURA thu muc nao chua.
@@ -100,7 +108,9 @@ fun SearchPane(
 
     // Dung o TANG NGOAI CUNG, khong trong nhanh `when`: `remember` gan vao vi
     // tri trong cay dung, ma vi tri do doi theo nhanh nao dang chay.
-    val dongThuVien = remember(library) { dungDongThuVien(library) }
+    val dongThuVien = remember(library, kieuXep) {
+        dungDongThuVien(library, gomNhom = kieuXep == KieuXep.ALBUM)
+    }
 
     // Nhạc trong máy thì bản nào cũng phát được. Nhạc ở Zing/NCT thì tuỳ bản
     // dựng — xem `NguonNgoai`. Bản Play tìm được nhưng không phát, nên chạm
@@ -261,7 +271,7 @@ fun SearchPane(
             ) {
                 item { PlaylistRow(playlists, accent, onOpen = onOpenPlaylist) }
                 // Khong co bai nao thi khong co gi de dat tieu de
-                if (library.isNotEmpty()) item {
+                if (library.isNotEmpty() || locLoai != LocLoai.TAT_CA) item {
                     Text(
                         demThuVien(library),
                         color = mau.chuRatMo,
@@ -269,6 +279,15 @@ fun SearchPane(
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 24.dp, top = 6.dp, bottom = 6.dp)
                     )
+                    // HÀNG CHỌN chỉ hiện khi thư viện đủ lớn để cần tới nó.
+                    //
+                    // Mười bài thì cuộn một cái là hết, và một hàng nút để sắp
+                    // xếp mười bài chỉ là một hàng chữ nữa phải đọc qua. Trần
+                    // quét là hai nghìn bài, và ở quãng đó thì thứ tự mới là
+                    // thứ quyết định có tìm ra bài hay không.
+                    if (library.size >= NGUONG_HANG_CHON || locLoai != LocLoai.TAT_CA) {
+                        HangChon(kieuXep, locLoai, accent, onDoiKieuXep, onDoiLocLoai)
+                    }
                 }
                 itemsIndexed(
                     dongThuVien,
@@ -563,7 +582,11 @@ private sealed interface DongThuVien {
  * ra moi lan nhan nhom doi, chu khong tu gom: gom o day nghia la doi thu tu ve
  * so voi thu tu that, va the la chi so tro sai bai.
  */
-private fun dungDongThuVien(library: List<Track>): List<DongThuVien> {
+private fun dungDongThuVien(library: List<Track>, gomNhom: Boolean): List<DongThuVien> {
+    // CHI kieu xep theo album moi chen tieu de nhom. Xep theo ten bai roi chen
+    // tieu de theo album thi gan nhu moi bai mot tieu de - danh sach dai gap doi
+    // ma khong noi them duoc gi.
+    if (!gomNhom) return library.indices.map { DongThuVien.Bai(it) }
     if (library.isEmpty()) return emptyList()
     val ra = ArrayList<DongThuVien>(library.size + 8)
     var truoc: String? = null
@@ -594,5 +617,82 @@ private fun demThuVien(library: List<Track>): String {
         append("Trong máy")
         if (nhac > 0) append(" · ").append(nhac).append(" bài")
         if (video > 0) append(" · ").append(video).append(" video")
+    }
+}
+
+/**
+ * Dưới ngưỡng này thì không bày hàng chọn ra.
+ *
+ * Mười lăm bài thì cuộn một cái là hết, và một hàng nút để sắp xếp mười lăm bài
+ * chỉ là một hàng chữ nữa phải đọc qua. Trần quét là hai nghìn bài — ở quãng đó
+ * thứ tự mới là thứ quyết định có tìm ra bài hay không.
+ */
+private const val NGUONG_HANG_CHON = 15
+
+/**
+ * Hàng chọn cách xếp và bộ lọc, ngay trên danh sách trong máy.
+ *
+ * CUỘN NGANG được, chứ không gói vào một hộp thoại. Bốn cách xếp cộng ba bộ lọc
+ * là bảy viên nút; nhét vào một menu thì mỗi lần đổi là hai lần chạm và một lần
+ * chờ hộp thoại, mà đổi cách xếp là việc người ta làm rồi đổi lại ngay khi thấy
+ * không hợp.
+ *
+ * Bộ lọc đứng TRƯỚC cách xếp: lọc thu hẹp danh sách, xếp chỉ đổi thứ tự — và
+ * người ta gần như luôn nghĩ "mình đang tìm video" trước khi nghĩ "xếp thế nào".
+ */
+@Composable
+private fun HangChon(
+    kieuXep: KieuXep,
+    locLoai: LocLoai,
+    accent: Color,
+    onDoiKieuXep: (KieuXep) -> Unit,
+    onDoiLocLoai: (LocLoai) -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(start = 22.dp, end = 22.dp, top = 2.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        LocLoai.entries.forEach { loai ->
+            VienChon(loai.nhan, loai == locLoai, accent) { onDoiLocLoai(loai) }
+            Spacer(Modifier.width(7.dp))
+        }
+
+        // Vạch ngăn thay cho một khoảng trắng: hai nhóm này trả lời hai câu hỏi
+        // khác nhau, và để chúng chạy liền nhau thì cả bảy viên đọc ra như một
+        // dãy lựa chọn loại trừ nhau.
+        Box(
+            Modifier
+                .padding(horizontal = 5.dp)
+                .width(1.dp)
+                .height(18.dp)
+                .background(mau.vien)
+        )
+        Spacer(Modifier.width(7.dp))
+
+        KieuXep.entries.forEach { kieu ->
+            VienChon(kieu.nhan, kieu == kieuXep, accent) { onDoiKieuXep(kieu) }
+            Spacer(Modifier.width(7.dp))
+        }
+    }
+}
+
+@Composable
+private fun VienChon(nhan: String, dangChon: Boolean, accent: Color, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (dangChon) accent else mau.nenChim)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 13.dp, vertical = 6.dp)
+    ) {
+        Text(
+            nhan,
+            color = if (dangChon) Color.White else mau.chuMo,
+            fontSize = 12.5.sp,
+            fontWeight = if (dangChon) FontWeight.SemiBold else FontWeight.Normal
+        )
     }
 }

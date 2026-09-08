@@ -38,6 +38,8 @@ import com.mittohoa.lyra.download.Downloads
 import com.mittohoa.lyra.player.Artwork
 import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.sources.Catalog
+import com.mittohoa.lyra.sources.KieuXep
+import com.mittohoa.lyra.sources.LocLoai
 import com.mittohoa.lyra.widget.KhungLoiWidget
 import com.mittohoa.lyra.data.ThuMucNhac
 import com.mittohoa.lyra.sources.LocalLibrary
@@ -602,6 +604,14 @@ object Lyra {
         val thuMuc = withContext(Dispatchers.IO) { kho.danhSach() }
         _coThuMuc.value = thuMuc.isNotEmpty()
 
+        // Doc lai lua chon da luu. `enumValueOf` NEM khi ten khong con - ban cu
+        // ghi mot kieu xep ma ban nay da bo di thi app sap ngay luc mo. Ten bi
+        // bo di thi quay ve mac dinh, va do la dieu duy nhat dung.
+        _kieuXep.value = runCatching { kho.kieuXep()?.let { enumValueOf<KieuXep>(it) } }
+            .getOrNull() ?: KieuXep.ALBUM
+        _locLoai.value = runCatching { kho.locLoai()?.let { enumValueOf<LocLoai>(it) } }
+            .getOrNull() ?: LocLoai.TAT_CA
+
         // KHONG TU QUET GI CA. Chua chon thu muc thi thu vien rong, va AURA
         // khong doc mot dong nao cua danh muc he thong.
         //
@@ -611,6 +621,7 @@ object Lyra {
         // doc gi cho toi khi duoc chi dich danh thi cai ho trao la mot thu muc
         // CU THE, khong phai ca chiec dien thoai.
         if (thuMuc.isEmpty()) {
+            thuVienTho = emptyList()
             _library.value = emptyList()
             _chamTranThuMuc.value = false
             Catalog.library = emptyList()
@@ -631,8 +642,8 @@ object Lyra {
         val tuTro = ThuVienNgoai.tatCa(app)
         _chamTranThuMuc.value = tuTro.chamTran
         val found = ThuVienNgoai.gop(danhMuc, tuTro.bai)
-        _library.value = found
-        Catalog.library = found
+        thuVienTho = found
+        dungLaiThuVien()
         Log.i(
             TAG,
             "Thu vien: ${danhMuc.size} tu danh muc he thong, " +
@@ -643,6 +654,55 @@ object Lyra {
                 // "da doc toi tran roi dung".
                 (if (tuTro.chamTran) " - DUNG O TRAN ${kho.tranSoBai()} BAI" else "")
         )
+    }
+
+    /**
+     * Thu vien NGUYEN BAN, truoc khi loc va xep.
+     *
+     * Giu rieng de doi cach xep khong phai quet lai dia. Voi hai nghin bai thi
+     * mot lan quet la vai giay dung hinh, ma nguoi dung doi cach xep chi de
+     * nhin cung ngan ay bai theo thu tu khac.
+     */
+    private var thuVienTho: List<Track> = emptyList()
+
+    private val _kieuXep = MutableStateFlow(KieuXep.ALBUM)
+    val kieuXep: StateFlow<KieuXep> = _kieuXep.asStateFlow()
+
+    private val _locLoai = MutableStateFlow(LocLoai.TAT_CA)
+    val locLoai: StateFlow<LocLoai> = _locLoai.asStateFlow()
+
+    /**
+     * Loc roi xep lai tu ban nguyen, KHONG doc lai dia.
+     *
+     * `_library` la danh sach DANG HIEN RA, va do la co y: man hinh xep hang doi
+     * tu chinh no bang CHI SO. Neu man hinh tu xep lay mot thu tu khac roi dua
+     * chi so cua thu tu do xuong day, thi bam vao bai thu ba se phat mot bai
+     * khac han - va cang lech nhieu khi nguoi dung doi cach xep.
+     */
+    private fun dungLaiThuVien() {
+        val ra = ThuVienNgoai.sapXep(
+            thuVienTho.filter { _locLoai.value.hop(it) },
+            _kieuXep.value
+        )
+        _library.value = ra
+        // `Catalog.library` la thu bo tim doi chieu, khong phai thu de hien ra -
+        // no phai la BAN DAY DU, khong dinh gi toi bo loc cua man hinh. Loc o
+        // day nghia la go mot bo loc hien thi ma lam hong ca o tim.
+        Catalog.library = thuVienTho
+    }
+
+    fun datKieuXep(context: Context, kieu: KieuXep) {
+        if (_kieuXep.value == kieu) return
+        _kieuXep.value = kieu
+        ThuMucNhac(context).datKieuXep(kieu.name)
+        dungLaiThuVien()
+    }
+
+    fun datLocLoai(context: Context, loc: LocLoai) {
+        if (_locLoai.value == loc) return
+        _locLoai.value = loc
+        ThuMucNhac(context).datLocLoai(loc.name)
+        dungLaiThuVien()
     }
 
     /** Phat ca thu vien tu mot bai. */
