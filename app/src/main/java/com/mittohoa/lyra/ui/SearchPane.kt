@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -120,6 +121,28 @@ fun SearchPane(
     // tri trong cay dung, ma vi tri do doi theo nhanh nao dang chay.
     val dongThuVien = remember(library, kieuXep) {
         dungDongThuVien(library, gomNhom = kieuXep == KieuXep.ALBUM)
+    }
+
+    val trangThaiDs = rememberLazyListState()
+
+    // BÀI ĐẦU TIÊN VÀO LỊCH SỬ THÌ PHẢI KÉO DANH SÁCH VỀ ĐẦU.
+    //
+    // Đo được trên máy, và nguyên nhân không nằm ở chỗ dễ đoán: dữ liệu tới
+    // nơi, `SearchPane` dựng lại, mục "Nghe gần đây" có thật trong danh sách —
+    // mà màn hình không đổi gì. `LazyColumn` GIỮ NGUYÊN VỊ TRÍ CUỘN THEO KHOÁ
+    // của mục đang đứng đầu khung nhìn. Chèn một mục mới lên trước mục ấy thì
+    // nó cuộn xuống đúng một mục để giữ mục cũ ở nguyên chỗ — và mục vừa chèn
+    // nằm ngay phía trên mép khung, không ai thấy. Vuốt lên một cái là hiện,
+    // nên rất dễ tưởng là dữ liệu chưa tới.
+    //
+    // Cách này đúng chứ không phải mẹo: hành vi neo ấy sinh ra để danh sách
+    // đang đọc dở không nhảy lung tung khi có mục mới. Chỉ kéo về đầu khi người
+    // dùng ĐANG Ở ĐẦU — đang cuộn giữa thư viện mà bị giật về đầu trang thì đó
+    // mới là mất chỗ đang đọc.
+    LaunchedEffect(lichSu.isEmpty()) {
+        if (lichSu.isNotEmpty() && trangThaiDs.firstVisibleItemIndex <= 1) {
+            trangThaiDs.scrollToItem(0)
+        }
     }
 
     // Nhạc trong máy thì bản nào cũng phát được. Nhạc ở Zing/NCT thì tuỳ bản
@@ -291,13 +314,22 @@ fun SearchPane(
             }
 
             results.isEmpty() -> LazyColumn(
-                Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
+                state = trangThaiDs,
                 contentPadding = PaddingValues(bottom = 110.dp)
             ) {
                 // NGHE GẦN ĐÂY đứng TRÊN danh sách phát: nó đổi mỗi ngày, còn
                 // danh sách phát thì gần như đứng yên. Thứ thay đổi thường
                 // xuyên hơn xứng đáng nằm ở chỗ mắt chạm vào trước.
-                item {
+                //
+                // ĐIỀU KIỆN Ở NGOÀI `item`, KHÔNG Ở TRONG, và có `key`.
+                //
+                // `item { }` luôn dựng rồi để hàm bên trong tự thoát sớm khi
+                // rỗng thì `LazyColumn` vẫn đếm một mục cao 0 điểm ảnh, và mọi
+                // chỗ neo vị trí cuộn đều tính lệch đi một. Chuyện màn hình
+                // không hiện hàng này lúc có bài đầu tiên thì do neo cuộn, xem
+                // `trangThaiDs` ở trên — nhưng một mục rỗng vẫn là một mục thừa.
+                if (lichSu.isNotEmpty()) item(key = "ganday") {
                     HangNgheGanDay(
                         lichSu = lichSu,
                         accent = accent,
@@ -305,7 +337,9 @@ fun SearchPane(
                         onXemHet = { xemLichSu = true }
                     )
                 }
-                item { PlaylistRow(playlists, accent, onOpen = onOpenPlaylist) }
+                if (playlists.isNotEmpty()) item(key = "dsphat") {
+                    PlaylistRow(playlists, accent, onOpen = onOpenPlaylist)
+                }
 
                 // LỐI VÀO THƯ VIỆN PHẢI CÒN Ở ĐÂY.
                 //
@@ -314,7 +348,7 @@ fun SearchPane(
                 // mục nào, sẽ không bao giờ thấy được lịch sử của mình. Nhưng
                 // nhường chỗ mà không dựng lại lối vào ở đây thì họ mất luôn
                 // đường mở thư viện, và đó là đổi một lỗi lấy một lỗi.
-                if (!daChonThuMuc || !canReadLibrary) item {
+                if (!daChonThuMuc || !canReadLibrary) item(key = "moLib") {
                     Ask(
                         title = "Nhạc trong máy",
                         body = if (!daChonThuMuc) {
@@ -330,7 +364,7 @@ fun SearchPane(
                     )
                 }
                 // Khong co bai nao thi khong co gi de dat tieu de
-                if (library.isNotEmpty() || locLoai != LocLoai.TAT_CA) item {
+                if (library.isNotEmpty() || locLoai != LocLoai.TAT_CA) item(key = "demXep") {
                     Text(
                         demThuVien(library),
                         color = mau.chuRatMo,
