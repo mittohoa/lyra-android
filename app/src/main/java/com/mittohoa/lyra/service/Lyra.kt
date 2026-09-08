@@ -41,6 +41,8 @@ import com.mittohoa.lyra.sources.Catalog
 import com.mittohoa.lyra.sources.KieuXep
 import com.mittohoa.lyra.sources.LocLoai
 import com.mittohoa.lyra.widget.KhungLoiWidget
+import com.mittohoa.lyra.data.SuaThe
+import com.mittohoa.lyra.data.TheSua
 import com.mittohoa.lyra.data.ThuMucNhac
 import com.mittohoa.lyra.sources.LocalLibrary
 import com.mittohoa.lyra.sources.ThuVienNgoai
@@ -680,15 +682,90 @@ object Lyra {
      * khac han - va cang lech nhieu khi nguoi dung doi cach xep.
      */
     private fun dungLaiThuVien() {
+        // Áp bảng sửa thẻ TRƯỚC khi lọc và xếp. Sửa xong mà vẫn xếp theo thẻ
+        // gốc thì bài vừa đổi album vẫn nằm ở nhóm cũ, và người dùng tưởng bản
+        // sửa không ăn.
+        val daSua = apThe(thuVienTho)
         val ra = ThuVienNgoai.sapXep(
-            thuVienTho.filter { _locLoai.value.hop(it) },
+            daSua.filter { _locLoai.value.hop(it) },
             _kieuXep.value
         )
         _library.value = ra
         // `Catalog.library` la thu bo tim doi chieu, khong phai thu de hien ra -
         // no phai la BAN DAY DU, khong dinh gi toi bo loc cua man hinh. Loc o
         // day nghia la go mot bo loc hien thi ma lam hong ca o tim.
-        Catalog.library = thuVienTho
+        //
+        // Nhung VAN AP BANG SUA: nguoi dung sua ten mot bai roi go dung cai ten
+        // vua sua vao o tim ma khong ra gi thi ho ket luan bang sua khong an.
+        Catalog.library = daSua
+    }
+
+    /**
+     * Ap bang sua the len danh sach bai.
+     *
+     * Doc bang MOT LAN cho ca luot chu khong hoi tung bai: ham nay chay lai moi
+     * lan doi cach xep, va mo mot tep JSON cho moi bai trong hai nghin bai la
+     * dung kieu lang phi ma cho nay sinh ra de tranh.
+     *
+     * Bang rong thi tra ve NGUYEN danh sach cu, khong dung lai mot danh sach
+     * moi y het: phan lon nguoi dung khong sua the bai nao ca.
+     */
+    private fun apThe(bai: List<Track>): List<Track> {
+        val kho = suaThe ?: return bai
+        val bang = kho.tatCa()
+        if (bang.isEmpty()) return bai
+        return bai.map { t ->
+            val s = bang[t.playbackUri] ?: return@map t
+            t.copy(
+                title = s.title.ifBlank { t.title },
+                artist = s.artist.ifBlank { t.artist },
+                album = s.album.ifBlank { t.album },
+                soThuTu = if (s.soThuTu >= 0) s.soThuTu else t.soThuTu
+            )
+        }
+    }
+
+    private var suaThe: SuaThe? = null
+
+    /**
+     * Bai trong thu vien, NGUYEN BAN - chua ap bang sua the.
+     *
+     * Man hinh sua the phai bay ra the THAT trong tep de nguoi dung con doi
+     * chieu. Lay tu `_library` hay tu hang doi thi ca hai deu da mang ban sua
+     * roi, va o "the trong tep" se hien lai chinh cai nguoi dung vua go vao -
+     * mot cai guong, khong phai mot manh moi.
+     */
+    fun baiTho(khoa: String): Track? = thuVienTho.firstOrNull { it.playbackUri == khoa }
+
+    /** Thẻ người dùng đã sửa cho bài này, hoặc rỗng. */
+    fun theDaSua(context: Context, khoa: String): TheSua {
+        val kho = suaThe ?: SuaThe(context.applicationContext).also { suaThe = it }
+        return kho.cua(khoa) ?: TheSua()
+    }
+
+    /**
+     * Sửa thẻ một bài, rồi dựng lại thư viện ngay.
+     *
+     * Không quét lại đĩa: bảng sửa nằm chồng lên bản nguyên đã giữ sẵn, nên
+     * người dùng bấm Lưu là thấy tên mới ngay chứ không phải chờ một vòng quét.
+     */
+    fun datTheSua(context: Context, khoa: String, sua: TheSua) {
+        val kho = suaThe ?: SuaThe(context.applicationContext).also { suaThe = it }
+        kho.dat(khoa, sua)
+        dungLaiThuVien()
+
+        // ÁP LUÔN CHO BÀI ĐANG PHÁT, không đợi lần phát sau.
+        //
+        // Người dùng sửa thẻ CHÍNH VÌ lời không tìm ra, và họ sửa trong lúc bài
+        // đó đang chạy. Chỉ đổi mỗi danh sách thì màn hình vẫn treo cái tên sai
+        // và vẫn không có lời — đúng cái họ vừa bỏ công đi sửa.
+        //
+        // Đổi mô tả trong hàng đợi rồi đọc lại bài đang phát: `_now` mang tên
+        // mới, khoá của nó đổi theo, và kho lời tự đi tìm lại một vòng.
+        _library.value.firstOrNull { it.playbackUri == khoa }?.let { moi ->
+            if (Playback.suaBaiTrongHangDoi(khoa, moi)) refreshLocalNow()
+        }
+        Log.i(TAG, "Sua the cho $khoa")
     }
 
     fun datKieuXep(context: Context, kieu: KieuXep) {
@@ -1241,6 +1318,7 @@ object Lyra {
         if (cache == null) cache = LyricCache(context.applicationContext)
         if (offsets == null) offsets = OffsetStore(context.applicationContext)
         if (manual == null) manual = ManualLyricStore(context.applicationContext)
+        if (suaThe == null) suaThe = SuaThe(context.applicationContext)
         if (banDaChon == null) {
             banDaChon = ManualLyricStore(context.applicationContext, "loi-da-chon")
         }

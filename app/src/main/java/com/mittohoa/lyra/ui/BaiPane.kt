@@ -145,6 +145,8 @@ fun BaiPane(
     /** Mở màn hình thẻ lời ở câu này. -1 nghĩa là chưa có câu nào đang hát. */
     onChiaSeCau: (Int) -> Unit,
     onCanGio: () -> Unit,
+    /** Mở màn hình sửa thẻ cho bài đang phát. */
+    onSuaThe: () -> Unit,
     /** Mở màn hình chọn bản lời khác. */
     onChonBanLoi: () -> Unit,
     /** Mở video ra toàn màn hình. Chỉ có nghĩa khi bài đang phát là video. */
@@ -347,7 +349,8 @@ fun BaiPane(
                 onGop = { Lyra.gopLoiChoLrclib() },
                 onThoiGop = { Lyra.thoiGopLoi() },
                 onCanGio = onCanGio,
-                onChonBanLoi = onChonBanLoi
+                onChonBanLoi = onChonBanLoi,
+                onSuaThe = onSuaThe
             )
 
             // Chữ MỜ DẦN vào nền trước khi tới hàng nút, thay cho một nét kẻ.
@@ -1142,7 +1145,8 @@ private fun MatLoi(
     onGop: () -> Unit,
     onThoiGop: () -> Unit,
     onCanGio: () -> Unit,
-    onChonBanLoi: () -> Unit
+    onChonBanLoi: () -> Unit,
+    onSuaThe: () -> Unit
 ) {
     // Mốc đang ngờ thì KHÔNG tô sáng và KHÔNG tự cuộn. Tô sáng nhầm một dòng
     // suốt cả bài còn tệ hơn là không tô gì.
@@ -1257,6 +1261,26 @@ private fun MatLoi(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
+
+                        // ĐƯỜNG SỬA THẺ PHẢI CÓ Ở ĐÂY, không chỉ trong dải lời
+                        // nhắc — nhánh này thoát sớm trước cả dải đó.
+                        //
+                        // Và đây đúng là chỗ cần nó nhất: mọi nguồn lời đều tìm
+                        // theo tên bài với tên ca sĩ, nên một tệp thẻ trống thì
+                        // "chưa tìm thấy lời" là kết quả tất yếu — mà lối thoát
+                        // duy nhất bày ra lại là gõ tay cả bài.
+                        if (Lyra.laNhacTrongMay()) {
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Thẻ bài này trống hoặc sai? Sửa thẻ",
+                                color = mau.chuMo,
+                                fontSize = 13.5.sp,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable(onClick = onSuaThe)
+                                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -1289,11 +1313,18 @@ private fun MatLoi(
     // một nút bấm xong không đổi gì.
     val nhacGhiTep = Lyra.laNhacTrongMay() && lyrics.lines.isNotEmpty() &&
         !LrcCanhTep.laTepCanh(lyrics.from)
+    // Mời sửa thẻ khi đang phát nhạc TRONG MÁY. Nhạc ở Zing hay YouTube thì thẻ
+    // là của bên đó, AURA không có tệp nào để mà gắn một bản sửa lên.
+    //
+    // KHÔNG treo vào việc có lời hay không: thẻ sai chính là lý do hay gặp nhất
+    // khiến không tìm ra lời, nên chỗ cần nó nhất lại đúng là chỗ chưa có lời.
+    val nhacSuaThe = Lyra.laNhacTrongMay()
     val nhacDich = translation is TranslationState.NeedsModel ||
         translation is TranslationState.Failed ||
         translation == TranslationState.Working
     val soNhac = 1 + listOf(
-        nhacChuaCanGio, nhacChonBan, nhacGopLrclib, nhacGhiTep, baoKhongTua, nhacDich
+        nhacChuaCanGio, nhacChonBan, nhacGopLrclib, nhacGhiTep, nhacSuaThe,
+        baoKhongTua, nhacDich
     )
         .count { it }
 
@@ -1454,6 +1485,19 @@ private fun MatLoi(
                             }
                         }
                     }
+                )
+            }
+
+            // Thẻ sai là lý do hay gặp nhất khiến không tìm ra lời — nguồn nào
+            // cũng tìm theo tên bài và tên ca sĩ, mà rất nhiều tệp ghi sai hoặc
+            // bỏ trống hai thứ đó. Nên đường sửa đặt ngay cạnh chỗ báo lời.
+            if (nhacSuaThe) {
+                Notice(
+                    accent = accent,
+                    text = "Tên bài hoặc tên ca sĩ sai? Sửa lại thẻ — tìm lời cũng " +
+                        "theo hai thứ đó.",
+                    action = "Sửa thẻ",
+                    onAction = onSuaThe
                 )
             }
 

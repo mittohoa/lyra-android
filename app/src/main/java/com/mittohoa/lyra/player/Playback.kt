@@ -202,6 +202,31 @@ object Playback {
         run(context) { if (tu < mediaItemCount && den < mediaItemCount) moveMediaItem(tu, den) }
     }
 
+    /**
+     * Thay mo ta cua mot bai DANG NAM TRONG HANG DOI.
+     *
+     * Dung khi nguoi dung vua sua the. Khong dung toi bo giai ma: dia chi phat
+     * khong doi, chi may dong chu doi - nap lai la ngat tieng nhac giua chung
+     * cho mot viec khong lien quan gi toi tieng nhac.
+     *
+     * Tra ve `true` khi co doi that, de ben goi biet co can lam moi phan mo ta
+     * dang hien ra hay khong.
+     */
+    fun suaBaiTrongHangDoi(khoa: String, moi: Track): Boolean {
+        val ds = queue.toMutableList()
+        var doi = false
+        ds.forEachIndexed { i, t ->
+            if (t.playbackUri == khoa) {
+                ds[i] = moi
+                doi = true
+            }
+        }
+        if (!doi) return false
+        queue = ds
+        if (current?.uri == moi.toPlayable().uri) current = moi.toPlayable()
+        return true
+    }
+
     fun removeFromQueue(context: Context, index: Int) {
         queue = queue.filterIndexed { i, _ -> i != index }
         run(context) { if (index in 0 until mediaItemCount) removeMediaItem(index) }

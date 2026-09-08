@@ -44,6 +44,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
@@ -213,6 +214,7 @@ fun HomeScreen(
     // một trang pager không hứa hẹn gì về việc xếp chồng nhiều con. Ở đây thì
     // nó là con của một `Box` thật, và `Box` thì xếp chồng theo đúng thứ tự.
     var cauChiaSe by remember { mutableIntStateOf(-1) }
+    var moSuaThe by remember { mutableStateOf(false) }
 
     // Video toan man hinh. Giu o day chu khong trong BaiPane: no phai phu len
     // CA man hinh, ma o trong trang thi no chi phu duoc mot trang cua bo vuot.
@@ -384,7 +386,8 @@ fun HomeScreen(
                         onToanManHinh = { videoToanManHinh = true },
                         toanManHinh = videoToanManHinh,
                         onCanGio = { moCanGio = true },
-                        onChonBanLoi = { moChonBanLoi = true }
+                        onChonBanLoi = { moChonBanLoi = true },
+                        onSuaThe = { moSuaThe = true }
                     )
                     else -> TunePane(
                         canDrawOverlay = canDrawOverlay,
@@ -439,6 +442,24 @@ fun HomeScreen(
                 doDai = now.duration,
                 dangDungBanChon = lyrics.from == "bạn chọn",
                 onXong = { moChonBanLoi = false }
+            )
+        }
+
+        // Lay ban NGUYEN tu thu vien, khong lay tu hang doi: bai trong hang doi
+        // da mang ban sua roi, nen o "the trong tep" se hien lai chinh cai nguoi
+        // dung vua go vao - mot cai guong, khong phai mot manh moi.
+        val baiDangSua = queue.getOrNull(queueIndex)?.let { Lyra.baiTho(it.playbackUri) ?: it }
+        if (moSuaThe && baiDangSua != null) {
+            val ngu = LocalContext.current
+            SuaTheManHinh(
+                bai = baiDangSua,
+                banDau = Lyra.theDaSua(ngu, baiDangSua.playbackUri),
+                accent = mucMau,
+                onLuu = {
+                    Lyra.datTheSua(ngu, baiDangSua.playbackUri, it)
+                    moSuaThe = false
+                },
+                onDong = { moSuaThe = false }
             )
         }
 
