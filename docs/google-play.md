@@ -128,21 +128,25 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.11 — sửa chỗ ghi lời ra tệp .lrc.
+Bản 0.3.26 — nghe gần đây, và trang Bài gọn lại.
 
-• Android chỉ cho ghi .lrc vào Music, Movies, Download và Documents; bài nằm chỗ khác thì AURA mời bạn chọn chỗ mà lưu, thay vì báo "Permission denied" rồi thôi
-• Tệp lưu ra giữ đúng đuôi .lrc, không còn bị thêm .txt
-• Lời đọc từ thẻ trong tệp nhạc vẫn mời ghi ra .lrc — bản 0.3.8 lỡ giấu mất nút này
+• Nghe gần đây: xem lại mình đã nghe gì, kể cả nhạc phát ở app khác. Xoá được bất cứ lúc nào
+• Nghe dở tới đâu, lần sau mở lại từ đó — với video và bài dài
+• Chọn bản lời khác khi AURA lấy nhầm lời, và sửa tên bài / ca sĩ ngay trong app
+• Sắp xếp và lọc thư viện: theo album, tên bài, ca sĩ, mới thêm; lọc riêng nhạc hoặc video
+• Trang Bài bỏ chồng ô lời nhắc, dồn vào mục "Việc khác" — chỗ đọc lời rộng gấp ba
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.11 — fixes for writing lyrics out to a .lrc file.
+Version 0.3.26 — recently played, and a tidier song page.
 
-• Android only allows .lrc in Music, Movies, Download and Documents; for songs elsewhere AURA offers to save where you choose instead of just reporting "Permission denied"
-• Saved files keep the .lrc name; no more .txt tacked on the end
-• Lyrics read from the file's own tags still offer the write button — 0.3.8 hid it by mistake
+• Recently played: what you listened to, including music played in other apps. Clear it whenever you like
+• Picks up where you stopped — video and long recordings
+• Pick different lyrics when AURA gets it wrong; fix a song's title or artist in-app
+• Sort and filter your library: album, title, artist, recently added; music or video only
+• The song page folds its notices into an "Other" menu — three times the room for lyrics
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
