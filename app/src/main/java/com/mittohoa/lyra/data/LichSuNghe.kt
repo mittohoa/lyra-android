@@ -102,6 +102,45 @@ class LichSuNghe(context: Context) {
         ghiDia(moi)
     }
 
+    /**
+     * Trộn một mớ lần nghe từ tệp sao lưu vào kho đang có.
+     *
+     * TRỘN CHỨ KHÔNG GHI ĐÈ. Khôi phục trên một máy đã nghe được vài tuần mà
+     * xoá sạch rồi chép tệp vào thì bản sao lưu — thứ sinh ra để CỨU dữ liệu —
+     * lại là thứ làm mất dữ liệu. Nên bên nào cũng giữ, và bài trùng thì lấy
+     * lần nghe MỚI HƠN: hai máy cùng nghe một bài thì lần gần nhất mới là câu
+     * trả lời đúng cho "tôi nghe nó lúc nào".
+     *
+     * Đếm `daCo` là số dòng trong tệp đã có sẵn trên máy với thời điểm mới hơn
+     * hoặc bằng — tức là những dòng không đổi được gì. Màn hình cần con số ấy
+     * để nói thật thay vì báo "xong" cho một việc chẳng thay đổi gì.
+     */
+    fun gop(cac: List<LanNghe>): SaoLuuLichSu.KetQua {
+        if (cac.isEmpty()) return SaoLuuLichSu.KetQua(0, 0, 0)
+
+        val theoKhoa = LinkedHashMap<String, LanNghe>()
+        for (l in _lichSu.value) theoKhoa[l.khoa] = l
+
+        var them = 0
+        var daCo = 0
+        for (l in cac) {
+            if (l.ten.isBlank() && l.caSi.isBlank()) continue
+            val cu = theoKhoa[l.khoa]
+            if (cu != null && cu.luc >= l.luc) {
+                daCo++
+                continue
+            }
+            theoKhoa[l.khoa] = l
+            them++
+        }
+        if (them == 0) return SaoLuuLichSu.KetQua(0, daCo, 0)
+
+        val moi = theoKhoa.values.sortedByDescending { it.luc }.take(TRAN)
+        _lichSu.value = moi
+        ghiDia(moi)
+        return SaoLuuLichSu.KetQua(them, daCo, 0)
+    }
+
     /** Xoá sạch. Không có bước hoàn tác — bên gọi phải hỏi trước. */
     fun xoaHet() {
         _lichSu.value = emptyList()

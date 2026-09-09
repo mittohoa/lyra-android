@@ -141,7 +141,7 @@ internal fun SaoLuuLoiMuc(accent: Color) {
 
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Nut(
+            NutManhSaoLuu(
                 nhan = "Sao lưu ra tệp",
                 bat = soBai > 0,
                 accent = accent,
@@ -150,7 +150,7 @@ internal fun SaoLuuLoiMuc(accent: Color) {
                 bao = null
                 ghi.launch("lyra-loi-" + homNay() + ".txt")
             }
-            Nut(
+            NutManhSaoLuu(
                 nhan = "Khôi phục",
                 bat = true,
                 accent = accent,
@@ -175,8 +175,13 @@ internal fun SaoLuuLoiMuc(accent: Color) {
     }
 }
 
+/**
+ * Nut manh cho hai muc sao luu. Dung chung chu khong chep doi: hai muc nam
+ * lien nhau tren cung mot trang, va hai cai nut khac nhau vai diem anh o do lo
+ * ra ngay.
+ */
 @Composable
-private fun Nut(
+internal fun NutManhSaoLuu(
     nhan: String,
     bat: Boolean,
     accent: Color,

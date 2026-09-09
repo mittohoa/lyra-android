@@ -11,6 +11,7 @@ import com.mittohoa.lyra.data.LyricCache
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.LyricEffectPrefs
 import com.mittohoa.lyra.data.ManualLyricStore
+import com.mittohoa.lyra.data.SaoLuuLichSu
 import com.mittohoa.lyra.data.SaoLuuLoi
 import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.data.Playlist
@@ -520,6 +521,33 @@ object Lyra {
         lichSu?.xoaHet()
     }
 
+    /**
+     * Kho lich su, dung ngay ca khi `chuanBi` chua chay.
+     *
+     * Man hinh Chinh mo duoc truoc khi mot bai nao duoc phat, va luc do
+     * `chuanBi` co the chua tao kho. Doi kho co san moi cho sao luu thi nut
+     * "Sao luu" ngoi im khong ly do.
+     */
+    private fun khoLichSu(context: Context): LichSuNghe =
+        lichSu ?: LichSuNghe(context.applicationContext).also { kho ->
+            lichSu = kho
+            scope.launch { kho.lichSu.collect { ds -> _lichSuNghe.value = ds } }
+        }
+
+    /** Bao nhieu lan nghe dang giu. */
+    fun demLichSu(context: Context): Int = khoLichSu(context).lichSu.value.size
+
+    /** Toan bo lich su, da xep sang dang tep sao luu. */
+    fun xuatLichSu(context: Context): String =
+        SaoLuuLichSu.xuat(khoLichSu(context).lichSu.value)
+
+    /** Doc mot tep sao luu vao kho. Tron chu khong ghi de - xem `LichSuNghe.gop`. */
+    fun nhapLichSu(context: Context, raw: String): SaoLuuLichSu.KetQua {
+        val cac = SaoLuuLichSu.nhap(raw)
+        if (cac.isEmpty()) return SaoLuuLichSu.KetQua(0, 0, 1)
+        return khoLichSu(context).gop(cac)
+    }
+
     /** Xoa dung mot dong, cho luc nguoi dung chi muon giau mot bai. */
     fun xoaMotLanNghe(khoa: String) {
         lichSu?.xoa(khoa)
@@ -536,7 +564,28 @@ object Lyra {
      */
     fun ngheLai(context: Context, lan: LanNghe): Boolean {
         if (lan.diaChi.isBlank()) return false
-        val i = _library.value.indexOfFirst { it.playbackUri == lan.diaChi }
+        val thu = _library.value
+
+        var i = thu.indexOfFirst { it.playbackUri == lan.diaChi }
+
+        // KHONG TIM THAY DIA CHI THI TIM THEO TEN BAI VA CA SI.
+        //
+        // Do duoc tren may that: CUNG MOT TEP mang hai dia chi khac nhau tuy
+        // duong quet ra no - `lyra://may/<so>` khi doc qua MediaStore, va
+        // `lyra://may/saf-<...>` khi doc thang tu thu muc nguoi dung chi. Nen
+        // mot dong lich su chep tu may khac sang, hoac ghi tu truoc khi doi
+        // duong quet, tro toi mot dia chi khong con ai nhan.
+        //
+        // Dia chi chi la CHO DE, con ten bai voi ca si moi la bai hat. Doi
+        // duong quet thi cho de doi, bai hat thi khong.
+        //
+        // Van uu tien dia chi: hai ban thu am cung ten cung ca si nam trong hai
+        // thu muc khac nhau la chuyen co that, va dia chi la thu duy nhat phan
+        // biet duoc chung.
+        if (i < 0 && lan.ten.isNotBlank()) {
+            i = thu.indexOfFirst { it.title == lan.ten && it.artist == lan.caSi }
+        }
+
         if (i < 0) return false
         playFromLibrary(context, i)
         return true
@@ -1467,11 +1516,10 @@ object Lyra {
                 scope.launch { it.playlists.collect { list -> _playlists.value = list } }
             }
         }
-        if (lichSu == null) {
-            lichSu = LichSuNghe(context.applicationContext).also {
-                scope.launch { it.lichSu.collect { ds -> _lichSuNghe.value = ds } }
-            }
-        }
+        // Qua `khoLichSu` chu khong tu dung kho o day: man hinh Chinh co the da
+        // tao kho truoc khi `chuanBi` chay, va dung hai kho cho mot tep tren dia
+        // thi ben nay ghi de mat ban cua ben kia.
+        khoLichSu(context)
     }
 
     /**

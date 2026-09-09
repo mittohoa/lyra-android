@@ -1247,6 +1247,17 @@ internal fun TunePane(
             SaoLuuLoiMuc(accent)
         }
 
+        // Ngay duoi muc loi tu nhap: hai muc lam cung mot viec - dua du lieu
+        // rieng cua app ra mot tep de no song lau hon lan cai dat nay. De canh
+        // nhau thi nguoi di tim mot cai se thay ca hai.
+        Muc(
+            tieuDe = "Lịch sử nghe",
+            accent = accent,
+            tomTat = "Sao lưu và khôi phục danh sách bài bạn đã nghe"
+        ) {
+            SaoLuuLichSuMuc(accent)
+        }
+
         Muc(
             tieuDe = "Ô bật nhanh và tắt nhanh",
             accent = accent,
