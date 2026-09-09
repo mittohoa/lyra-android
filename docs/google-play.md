@@ -128,21 +128,21 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.26 — nghe gần đây, và trang Bài gọn lại.
+Bản 0.3.27 — nghe gần đây, và trang Bài gọn lại.
 
-• Nghe gần đây: xem lại mình đã nghe gì, kể cả nhạc phát ở app khác. Xoá được bất cứ lúc nào
-• Nghe dở tới đâu, lần sau mở lại từ đó — với video và bài dài
-• Chọn bản lời khác khi AURA lấy nhầm lời, và sửa tên bài / ca sĩ ngay trong app
-• Sắp xếp và lọc thư viện: theo album, tên bài, ca sĩ, mới thêm; lọc riêng nhạc hoặc video
-• Trang Bài bỏ chồng ô lời nhắc, dồn vào mục "Việc khác" — chỗ đọc lời rộng gấp ba
+• Nghe gần đây: xem lại mình đã nghe gì, kể cả nhạc ở app khác. Sao lưu ra tệp, xoá lúc nào cũng được
+• Nghe dở tới đâu, lần sau mở lại từ đó — video và bài dài
+• Chọn bản lời khác khi AURA lấy nhầm; sửa tên bài / ca sĩ trong app
+• Sắp xếp và lọc thư viện: album, tên bài, ca sĩ, mới thêm; nhạc hoặc video
+• Trang Bài dồn ô lời nhắc vào mục "Việc khác" — chỗ đọc lời rộng gấp ba
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.26 — recently played, and a tidier song page.
+Version 0.3.27 — recently played, and a tidier song page.
 
-• Recently played: what you listened to, including music played in other apps. Clear it whenever you like
+• Recently played: what you listened to, including music in other apps. Back it up to a file, clear it any time
 • Picks up where you stopped — video and long recordings
 • Pick different lyrics when AURA gets it wrong; fix a song's title or artist in-app
 • Sort and filter your library: album, title, artist, recently added; music or video only
