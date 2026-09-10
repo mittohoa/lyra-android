@@ -128,17 +128,21 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.31 — sửa một lỗi hiển thị trên widget.
+Bản 0.3.32 — sao lưu gộp một tệp, hình trong hình, và Android Auto.
 
-• Bài không tìm ra lời thì widget đứng mãi ở "Đang tìm lời…", trong khi màn hình app đã ghi đúng là không có. Giờ hai chỗ nói cùng một chuyện
+• Một nút sao lưu duy nhất, gói cả lời tự nhập, lịch sử nghe và yêu thích. Tệp sao lưu cũ vẫn khôi phục được
+• Xem video rồi rời app thì hình thu nhỏ về góc màn hình, không mất
+• Duyệt và phát nhạc trong máy từ Android Auto (mới, chưa kiểm trên đầu máy thật)
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.31 — fixes one thing the widget showed wrong.
+Version 0.3.32 — one backup file, picture-in-picture, and Android Auto.
 
-• When a song had no lyrics, the widget stayed on "Looking for lyrics…" forever, while the app screen already said there were none. Both now say the same thing
+• A single backup button covering your typed lyrics, listening history and favourites. Older backup files still restore
+• Leave the app while watching a video and it shrinks into a corner instead of stopping
+• Browse and play your local music from Android Auto (new, not yet tested on a real head unit)
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
