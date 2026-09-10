@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Khai bao cho Android Auto.
+
+  CHI `media`, khong khai `notification` hay gi khac. AURA trong xe lam dung
+  mot viec: phat nhac trong may. Khai them mot loai nao nua la hua mot thu
+  khong co, ma trong xe thi mot loi hua hong ton hon han - nguoi ta dang lai.
+
+  Khong co day thi Android Auto khong bay AURA ra, du dich vu phat da dung cay
+  duyet: `MediaBrowserService` mo cua, con tep nay moi la loi moi.
+-->
+<automotiveApp>
+    <uses name="media" />
+</automotiveApp>

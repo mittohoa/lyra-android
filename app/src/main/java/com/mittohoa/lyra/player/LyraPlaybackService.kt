@@ -3,6 +3,7 @@ package com.mittohoa.lyra.player
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
+import androidx.media3.common.MediaItem
 import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.datasource.DefaultDataSource
@@ -10,8 +11,13 @@ import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.mp3.Mp3Extractor
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionResult
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.ui.MainActivity
 
@@ -31,9 +37,9 @@ import com.mittohoa.lyra.ui.MainActivity
  * khien am thanh. Tu lam lai nhung thu do la tu chuoc lay bay loi cua nguoi
  * khac da sua xong.
  */
-class LyraPlaybackService : MediaSessionService() {
+class LyraPlaybackService : MediaLibraryService() {
 
-    private var session: MediaSession? = null
+    private var session: MediaLibraryService.MediaLibrarySession? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -75,7 +81,7 @@ class LyraPlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .build()
 
-        session = MediaSession.Builder(this, player)
+        session = MediaLibrarySession.Builder(this, player, CayCuaAura())
             .setSessionActivity(openApp())
             .build()
 
@@ -92,6 +98,121 @@ class LyraPlaybackService : MediaSessionService() {
     )
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = session
+
+    /**
+     * Cay duyet ma Android Auto doc.
+     *
+     * Manifest KHAI `MediaBrowserService` tu lau, ma dich vu lai la
+     * `MediaSessionService` - thu khong co cay duyet nao. Auto vi vay thay AURA
+     * trong danh sach, ket noi duoc, roi mo ra mot thu vien trong. Khai mot thu
+     * ma khong lam thi te hon khong khai.
+     *
+     * Moi ham deu tra ve mot `Future` da xong san: du lieu nam san trong bo nho
+     * cua `Lyra`, khong co lan doc dia hay goi mang nao. Day mot viec da xong
+     * qua mot luong khac chi them mot nhip cho khong duoc gi.
+     */
+    private inner class CayCuaAura : MediaLibrarySession.Callback {
+
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: MediaLibraryService.LibraryParams?
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            // HAI CAU HOI KHAC NHAU, tra loi khac nhau.
+            //
+            // `isRecent` la khay media cua he thong do xem co gi de nghe tiep
+            // khong - no hoi sau moi lan khoi dong lai may, de bay ra mot nut
+            // nghe tiep truoc ca khi nguoi dung mo app. Cho do chi du bay MOT
+            // bai; tra ca cay thu vien vao day la tra lam mot cau hoi khac.
+            //
+            // Chua nghe bai nao thi noi thang la khong co, chu khong tra mot
+            // goc rong: mot nut "nghe tiep" bam vao khong ra gi con te hon
+            // khong co nut.
+            if (params?.isRecent == true) {
+                if (CayDuyet.ngheTiep() == null) {
+                    return Futures.immediateFuture(
+                        LibraryResult.ofError(LibraryResult.RESULT_ERROR_NOT_SUPPORTED)
+                    )
+                }
+                return Futures.immediateFuture(
+                    LibraryResult.ofItem(CayDuyet.gocNgheTiep(), params)
+                )
+            }
+            return Futures.immediateFuture(LibraryResult.ofItem(CayDuyet.goc(), params))
+        }
+
+        override fun onGetChildren(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            ma: String,
+            trang: Int,
+            soMoiTrang: Int,
+            params: MediaLibraryService.LibraryParams?
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            // Cat trang DUNG nhu dau may hoi. Tra ca hai nghin bai mot luot thi
+            // ban tin qua ranh gioi tien trinh phinh to, va Android cat thang
+            // ban tin qua lon - mat sach chu khong phai cham.
+            val het = CayDuyet.con(ma)
+            val tu = (trang * soMoiTrang).coerceAtMost(het.size)
+            val den = (tu + soMoiTrang).coerceAtMost(het.size)
+            return Futures.immediateFuture(
+                LibraryResult.ofItemList(ImmutableList.copyOf(het.subList(tu, den)), params)
+            )
+        }
+
+        override fun onGetItem(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            ma: String
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            val muc = CayDuyet.mot(ma)
+                ?: return Futures.immediateFuture(LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE))
+            return Futures.immediateFuture(LibraryResult.ofItem(muc, null))
+        }
+
+        /**
+         * Dau may gui mot bai de phat.
+         *
+         * Dung mot bai roi im KHONG phai thu nguoi ta muon: cham mot bai la
+         * "phat tu day tro di", giong het trong app. Nen tra ve ca nhanh chua
+         * no kem cho bat dau.
+         *
+         * Bai khong con trong thu vien - tep da xoa, the nho da rut - thi tra
+         * lai dung danh sach dau may gui, de bo phat bao mot loi binh thuong
+         * thay vi ta tu dung mot hang doi rong roi im lang.
+         */
+        override fun onSetMediaItems(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            cacMuc: List<MediaItem>,
+            viTri: Int,
+            moc: Long
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            // CHI CAN THIEP VAO LENH TU BEN NGOAI.
+            //
+            // Chinh AURA cung dat hang doi qua duong nay, va hang doi cua no
+            // da dung san - co dia chi phat, co cau dang hat gan vao phan mo
+            // ta. Dung lai bang cay duyet la vut het nhung thu do di.
+            //
+            // Dam phai that khi thu tren may: nhac nap vao roi dung ngay,
+            // khong bao loi gi, vi muc dung lai khong co dia chi de mo.
+            if (controller.packageName == packageName) {
+                return Futures.immediateFuture(
+                    MediaSession.MediaItemsWithStartPosition(cacMuc, viTri, moc)
+                )
+            }
+
+            val ma = cacMuc.firstOrNull()?.mediaId
+            val doi = ma?.let { CayDuyet.hangDoiCho(it) }
+                ?: return Futures.immediateFuture(
+                    MediaSession.MediaItemsWithStartPosition(cacMuc, viTri, moc)
+                )
+            val (ds, i) = doi
+            return Futures.immediateFuture(
+                MediaSession.MediaItemsWithStartPosition(ds.map { CayDuyet.bai(it) }, i, 0L)
+            )
+        }
+    }
 
     /**
      * Nguoi dung vuot bo app khoi danh sach gan day.

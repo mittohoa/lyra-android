@@ -136,6 +136,15 @@
         </service>
 
         <!--
+          Khai cho Android Auto biet AURA la mot app nhac. Phai nam trong
+          `<application>`, khong nam trong `<service>` - Auto doc o cap
+          application chu khong doi tung dich vu.
+        -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
+        <!--
           Bo may phat cua chinh AURA.
 
           `exported=true` la BAT BUOC voi MediaSessionService: he thong, Android
@@ -147,6 +156,7 @@
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
                 <action android:name="androidx.media3.session.MediaSessionService" />
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
