@@ -1245,23 +1245,17 @@ internal fun TunePane(
             ThuMucNhacMuc(accent)
         }
 
+        // MỘT MỤC, KHÔNG PHẢI HAI.
+        //
+        // Trước đây lời tự nhập và lịch sử nghe mỗi thứ một mục riêng, mà yêu
+        // thích với cân bằng âm thì không có mục nào — bốn kho dữ liệu, hai
+        // nút, và không chỗ nào nói ra hai kho còn lại đang không được sao lưu.
         Muc(
-            tieuDe = "Lời tự nhập",
+            tieuDe = "Sao lưu và khôi phục",
             accent = accent,
-            tomTat = "Sao lưu và khôi phục lời bạn tự gõ hoặc tự căn giờ"
+            tomTat = "Lời tự nhập, lịch sử nghe, yêu thích — gói trong một tệp"
         ) {
-            SaoLuuLoiMuc(accent)
-        }
-
-        // Ngay duoi muc loi tu nhap: hai muc lam cung mot viec - dua du lieu
-        // rieng cua app ra mot tep de no song lau hon lan cai dat nay. De canh
-        // nhau thi nguoi di tim mot cai se thay ca hai.
-        Muc(
-            tieuDe = "Lịch sử nghe",
-            accent = accent,
-            tomTat = "Sao lưu và khôi phục danh sách bài bạn đã nghe"
-        ) {
-            SaoLuuLichSuMuc(accent)
+            SaoLuuTatCaMuc(accent)
         }
 
         // Đặt NGAY DƯỚI mục thư mục quét và mấy mục sao lưu: cả ba đều nói về

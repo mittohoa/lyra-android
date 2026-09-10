@@ -73,13 +73,24 @@
           mot cai y het, va toan bo trang thai man hinh cu (o tim dang go do,
           trang dang xem) van nam do khong ai thay. `singleTop` dua Intent do
           vao `onNewIntent` cua ban dang co - mot man hinh, mot trang thai.
+
+          HINH TRONG HINH cho video (`supportsPictureInPicture`).
+
+          Truoc day dat "false" - khong kem ly do nao, tuc la no tat theo mac
+          dinh chu khong phai co ai can nhac roi quyet. Ma AURA quet ca thu muc
+          phim va phat video that, nen roi app la mat hinh: dung thu co ban
+          nhat ma mot trinh xem video phai co.
+
+          `configChanges` da co `screenSize` va `screenLayout`, nen vao ra cua
+          so nho khong dung lai Activity - khong co chung thi moi lan thu nho
+          la mot lan dung lai bo phat va hinh nhay den mot nhip.
         -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:label="@string/app_name"
-            android:supportsPictureInPicture="false"
+            android:supportsPictureInPicture="true"
             android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode">
             <intent-filter>

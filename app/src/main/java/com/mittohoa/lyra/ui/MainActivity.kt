@@ -1,5 +1,8 @@
 package com.mittohoa.lyra.ui
 
+import android.app.PictureInPictureParams
+import android.content.res.Configuration
+import android.util.Rational
 import android.content.Intent
 import android.net.Uri
 import android.Manifest
@@ -41,6 +44,7 @@ import com.mittohoa.lyra.data.ChuDe
 import com.mittohoa.lyra.data.ChuDePrefs
 import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.service.Lyra
+import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.service.LyraTileService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -55,6 +59,79 @@ import kotlinx.coroutines.isActive
 internal const val ACTION_TIM = "com.mittohoa.lyra.action.TIM"
 
 class MainActivity : ComponentActivity() {
+
+    // ---- Hinh trong hinh ----
+
+    /**
+     * Dang o trong cua so nho hay khong.
+     *
+     * Giu bang `mutableStateOf` chu khong bang mot dong chay: no doi dung hai
+     * lan moi lan vao ra, va he thong bao bang mot loi goi thang vao Activity.
+     */
+    private var trongPiP by mutableStateOf(false)
+
+    /**
+     * Ti le khung cua so nho, lay tu chinh video dang phat.
+     *
+     * Chan trong khoang he thong nhan: Android tu choi ti le manh hon 1:2.39
+     * hoac bet hon 2.39:1, va tu choi bang mot ngoai le lam sap app chu khong
+     * phai bang mot cua so xau. Dien thoai quay doc ra 9:16 van lot, nhung mot
+     * tep hong khai ti le vo ly thi khong.
+     */
+    private fun tiLePiP(): Rational {
+        val bai = Lyra.queue.value.getOrNull(Lyra.queueIndex.value)
+        val t = bai?.tiLe?.takeIf { it.isFinite() && it > 0f } ?: (16f / 9f)
+        val an = t.coerceIn(1f / 2.39f, 2.39f)
+        return Rational((an * 1000).toInt(), 1000)
+    }
+
+    /** Dang phat mot VIDEO hay khong - dieu kien duy nhat de co cua so nho. */
+    private fun dangXemVideo(): Boolean {
+        if (Lyra.now.value?.isPlaying != true) return false
+        return Lyra.queue.value.getOrNull(Lyra.queueIndex.value)?.kind == MediaKind.VIDEO
+    }
+
+    /**
+     * Bao truoc cho he thong biet co nen tu thu nho khi nguoi dung vuot ra
+     * khong.
+     *
+     * Tu Android 12 co `setAutoEnterEnabled`, va no la duong DUY NHAT bat duoc
+     * cua so nho khi nguoi dung vuot len de ve man hinh chinh bang cu chi -
+     * `onUserLeaveHint` khong duoc goi cho cu chi do. May cu hon thi chi con
+     * `onUserLeaveHint`, va do la ly do giu ca hai duong.
+     */
+    private fun capNhatPiP() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        runCatching {
+            setPictureInPictureParams(
+                PictureInPictureParams.Builder()
+                    .setAspectRatio(tiLePiP())
+                    .setAutoEnterEnabled(dangXemVideo())
+                    .build()
+            )
+        }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // Tu Android 12 he thong tu lo bang `setAutoEnterEnabled`; goi them o
+        // day la thu nho HAI lan cho cung mot cu vuot.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return
+        if (!dangXemVideo()) return
+        runCatching {
+            enterPictureInPictureMode(
+                PictureInPictureParams.Builder().setAspectRatio(tiLePiP()).build()
+            )
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        trong: Boolean,
+        cauHinh: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(trong, cauHinh)
+        trongPiP = trong
+    }
 
     /**
      * Trang thai hai quyen, giu o day chu KHONG hoi lai trong than composable.
@@ -239,6 +316,28 @@ class MainActivity : ComponentActivity() {
                 // chon "Phong may" muon.
                 LocalTextStyle provides TextStyle(fontFamily = boChuDung.giaoDien)
             ) {
+            // Bao cho he thong biet co nen tu thu nho khi nguoi dung vuot ra.
+            // Doi moi lan bai doi hoac dung/phat doi - do dung la hai luc cau
+            // tra loi doi.
+            LaunchedEffect(now, queueIndex, queue) { capNhatPiP() }
+
+            // TRONG CUA SO NHO THI CHI CO HINH.
+            //
+            // Cua so nho be bang mot phan sau man hinh; nhet ca trang Bai vao
+            // do thi khong doc duoc chu nao, ma cai nguoi ta giu lai khi thu
+            // nho la HINH chu khong phai giao dien.
+            //
+            // Doi CA CAY chu khong che mot lop len tren: `ManHinhVideo` gan
+            // be mat ve cua no vao bo phat, va hai o hinh cung song mot luc thi
+            // hai ben gianh nhau mot be mat. Doi cay thi luon chi co mot.
+            //
+            // Doi lai, trang thai rieng cua `HomeScreen` mat khi thoat cua so
+            // nho - trang dang xem tro ve trang Bai. Chap nhan duoc, va gan nhu
+            // luon dung: thoat cua so nho tuc la quay lai xem video, ma video
+            // thi nam o trang Bai.
+            if (trongPiP) {
+                ManHinhVideo(dangPhat = now?.isPlaying == true)
+            } else {
             HomeScreen(
                 moTrang = trangLoiTat,
                 lanMoTrang = lanYeuCau,
@@ -376,6 +475,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             )
+            }
 
             // Go xong ngung mot chut la tu tim, khoi phai bam phim tim
             DebouncedSearch(searchQuery) { Lyra.search(it) }

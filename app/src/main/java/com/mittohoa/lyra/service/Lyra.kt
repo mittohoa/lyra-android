@@ -13,6 +13,7 @@ import com.mittohoa.lyra.data.LyricEffectPrefs
 import com.mittohoa.lyra.data.ManualLyricStore
 import com.mittohoa.lyra.data.SaoLuuLichSu
 import com.mittohoa.lyra.data.SaoLuuLoi
+import com.mittohoa.lyra.data.SaoLuuTatCa
 import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.data.Playlist
 import com.mittohoa.lyra.data.PlaylistStore
@@ -658,6 +659,97 @@ object Lyra {
         val cac = SaoLuuLichSu.nhap(raw)
         if (cac.isEmpty()) return SaoLuuLichSu.KetQua(0, 0, 1)
         return khoLichSu(context).gop(cac)
+    }
+
+    // ---- Sao luu GOP: moi thu nguoi dung tu tao, mot tep ----
+
+    /** Bao nhieu bai yeu thich, bao nhieu lan nghe, bao nhieu bai loi tu nhap. */
+    data class DemSaoLuu(val loi: Int, val nghe: Int, val thich: Int)
+
+    fun demSaoLuu(context: Context): DemSaoLuu {
+        chuanBi(context)
+        return DemSaoLuu(
+            loi = khoLoi(context).demBai(),
+            nghe = khoLichSu(context).lichSu.value.size,
+            thich = khoYeu(context).bo.value.size
+        )
+    }
+
+    fun xuatTatCa(context: Context): String {
+        chuanBi(context)
+        val cb = boCanBang(context)
+        return SaoLuuTatCa.xuat(
+            loi = xuatLoiTuNhap(context),
+            nghe = xuatLichSu(context),
+            thich = khoYeu(context).bo.value,
+            // Chi ghi phan can bang am khi may THAT SU co no. Ghi mot lua chon
+            // doc ra tu mot bo khong ton tai la ghi mot con so bia.
+            canBang = if (cb.coDung) SaoLuuTatCa.CanBang(cb.dangBat, cb.mauDangChon) else null
+        )
+    }
+
+    /**
+     * Doc mot tep sao luu, KIEU NAO CUNG NHAN.
+     *
+     * Tep gop thi mo tung phan; tep chi co loi hoac chi co lich su - thu da nam
+     * trong may nguoi dung tu may ban truoc - thi van doc duoc. Ra mot dinh dang
+     * moi roi bo roi tep cu thi dung vao luc nguoi ta can khoi phuc nhat lai la
+     * luc app noi khong doc duoc.
+     */
+    fun nhapTatCa(context: Context, raw: String): SaoLuuTatCa.KetQua {
+        chuanBi(context)
+        return when (SaoLuuTatCa.loai(raw)) {
+            SaoLuuTatCa.Loai.CHI_LOI ->
+                SaoLuuTatCa.KetQua(loi = nhapLoiTuNhap(context, raw))
+
+            SaoLuuTatCa.Loai.CHI_NGHE ->
+                SaoLuuTatCa.KetQua(nghe = nhapLichSu(context, raw))
+
+            SaoLuuTatCa.Loai.KHONG_BIET -> SaoLuuTatCa.KetQua(hong = true)
+
+            SaoLuuTatCa.Loai.TAT_CA -> {
+                val phan = SaoLuuTatCa.tach(raw)
+                val loi = phan[SaoLuuTatCa.PHAN_LOI]
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { nhapLoiTuNhap(context, it) }
+                    ?: SaoLuuLoi.KetQua(0, 0, 0)
+                val nghe = phan[SaoLuuTatCa.PHAN_NGHE]
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { nhapLichSu(context, it) }
+                    ?: SaoLuuLichSu.KetQua(0, 0, 0)
+
+                // Yeu thich: THEM vao chu khong thay the, cung le voi lich su.
+                // Khoi phuc tren mot may da danh dau vai bai ma xoa sach di thi
+                // ban sao luu lai la thu lam mat du lieu.
+                var themThich = 0
+                phan[SaoLuuTatCa.PHAN_THICH]?.let { p ->
+                    val kho = khoYeu(context)
+                    for (dc in SaoLuuTatCa.docThich(p)) {
+                        if (!kho.co(dc)) {
+                            kho.doi(dc)
+                            themThich++
+                        }
+                    }
+                }
+
+                var coCanBang = false
+                phan[SaoLuuTatCa.PHAN_CANBANG]?.let { p ->
+                    SaoLuuTatCa.docCanBang(p)?.let { cb ->
+                        val bo = boCanBang(context)
+                        // May nay khong co can bang am thi bo qua, khong bao
+                        // hong: tep van dung, chi la phan cuoi khong ap duoc.
+                        if (bo.coDung) {
+                            bo.datMau(cb.mau)
+                            bo.datBat(cb.bat)
+                            _nhipCanBang.value++
+                            coCanBang = true
+                        }
+                    }
+                }
+
+                SaoLuuTatCa.KetQua(loi, nghe, themThich, coCanBang)
+            }
+        }
     }
 
     /** Xoa dung mot dong, cho luc nguoi dung chi muon giau mot bai. */

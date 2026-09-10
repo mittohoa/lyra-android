@@ -11,7 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -30,32 +29,33 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Sao lưu và khôi phục lịch sử nghe.
+ * Sao lưu và khôi phục MỌI THỨ người dùng tự tạo, trong một tệp.
  *
- * VÌ SAO CẦN, và vì sao nó khác mục lời tự nhập ngay bên trên: lời gõ tay thì
- * mất rồi vẫn gõ lại được — mất công, nhưng làm lại được. Còn "tháng trước tôi
- * nghe những gì" thì không có cách nào dựng lại. Không nhớ thì thôi, và không
- * ai nhớ hộ. Đây là dữ liệu duy nhất trong AURA mà mất là mất hẳn.
+ * VÌ SAO GỘP LÀM MỘT. Trước đây lời tự nhập và lịch sử nghe mỗi thứ một mục
+ * riêng, mỗi mục một nút — mà yêu thích và cân bằng âm thì chẳng có mục nào.
+ * Bốn kho dữ liệu, hai nút, và không chỗ nào nói ra hai kho còn lại đang không
+ * được sao lưu. Ai cũng sẽ bấm hai cái rồi tưởng đã xong, tới lúc đổi máy mới
+ * biết mất gì.
  *
- * Dùng BỘ CHỌN TỆP CỦA HỆ THỐNG, cùng lẽ với [SaoLuuLoiMuc]: người dùng chọn
- * chỗ để, AURA không xin thêm quyền nào, và tệp nằm ngoài vùng app nên gỡ app
- * đi nó vẫn còn. Một bản sao lưu bị xoá cùng lúc với thứ nó đang sao lưu thì
- * không phải bản sao lưu.
+ * Một tệp, một nút, và dòng đếm nói rõ trong đó có gì.
  *
- * NÓI TRƯỚC LÀ TỆP NÀY RIÊNG TƯ. Nó ghi lại bạn đã nghe gì và lúc nào — thứ
- * riêng tư hơn hẳn mọi tệp khác app này tạo ra. Người dùng phải biết điều đó
- * TRƯỚC KHI bấm lưu, chứ không phải sau khi đã gửi tệp cho ai đó.
+ * TỆP SAO LƯU CŨ VẪN KHÔI PHỤC ĐƯỢC — xem `Lyra.nhapTatCa`. Ra một định dạng
+ * mới rồi bỏ rơi tệp cũ thì đúng vào lúc người ta cần khôi phục nhất lại là
+ * lúc app nói không đọc được.
  */
 @Composable
-internal fun SaoLuuLichSuMuc(accent: Color) {
+internal fun SaoLuuTatCaMuc(accent: Color) {
     val mau = LocalBangMau.current
     val context = LocalContext.current
 
-    var soLan by remember { mutableIntStateOf(0) }
+    var dem by remember { mutableStateOf(Lyra.DemSaoLuu(0, 0, 0)) }
     var bao by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) { soLan = withContext(Dispatchers.IO) { Lyra.demLichSu(context) } }
+    // Đếm là đọc đĩa nên đẩy sang luồng nền: trang Chỉnh mở ra không được khựng.
+    LaunchedEffect(bao) {
+        dem = withContext(Dispatchers.IO) { Lyra.demSaoLuu(context) }
+    }
 
     val ghi = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
@@ -64,11 +64,11 @@ internal fun SaoLuuLichSuMuc(accent: Color) {
         scope.launch {
             bao = withContext(Dispatchers.IO) {
                 try {
-                    val chu = Lyra.xuatLichSu(context)
+                    val chu = Lyra.xuatTatCa(context)
                     context.contentResolver.openOutputStream(uri)?.use {
                         it.write(chu.toByteArray())
                     } ?: error("không mở được tệp")
-                    "Đã lưu $soLan lần nghe ra tệp."
+                    "Đã lưu ra tệp."
                 } catch (e: Exception) {
                     "Không ghi được tệp: ${e.message ?: "lỗi không rõ"}"
                 }
@@ -92,22 +92,16 @@ internal fun SaoLuuLichSuMuc(accent: Color) {
                 return@launch
             }
 
-            val kq = withContext(Dispatchers.IO) { Lyra.nhapLichSu(context, chu) }
-            soLan = withContext(Dispatchers.IO) { Lyra.demLichSu(context) }
-            bao = when {
-                kq.hong > 0 -> "Tệp này không phải bản sao lưu lịch sử của AURA."
-                kq.them == 0 && kq.daCo > 0 ->
-                    "${kq.daCo} lần nghe trong tệp đều đã có sẵn trên máy."
-                kq.daCo > 0 -> "Thêm ${kq.them} lần nghe. ${kq.daCo} lần đã có sẵn."
-                else -> "Đã khôi phục ${kq.them} lần nghe."
-            }
+            val kq = withContext(Dispatchers.IO) { Lyra.nhapTatCa(context, chu) }
+            bao = if (kq.hong) "Tệp này không phải bản sao lưu của AURA."
+            else keChiTiet(kq)
         }
     }
 
     Column {
         Text(
-            if (soLan == 0) "Chưa ghi lại lần nghe nào."
-            else "Đang giữ $soLan lần nghe gần đây.",
+            "Đang giữ ${dem.loi} bài lời tự nhập, ${dem.nghe} lần nghe, " +
+                "${dem.thich} bài yêu thích.",
             color = mau.chuMo,
             fontSize = 14.sp,
             lineHeight = 20.sp
@@ -119,9 +113,9 @@ internal fun SaoLuuLichSuMuc(accent: Color) {
 
         Spacer(Modifier.height(10.dp))
         Text(
-            "Lời bạn gõ tay mất rồi thì gõ lại được. Còn tháng trước bạn nghe " +
-                "những gì thì không dựng lại được bằng cách nào — gỡ app hoặc " +
-                "đổi máy là mất hẳn.",
+            "Tất cả nằm trong bộ nhớ riêng của AURA: gỡ app hoặc đổi máy là mất " +
+                "hết. Lời gõ tay thì gõ lại được, còn tháng trước bạn nghe những " +
+                "gì thì không dựng lại được bằng cách nào.",
             color = mau.chuRatMo,
             fontSize = 13.sp,
             lineHeight = 19.sp
@@ -131,12 +125,12 @@ internal fun SaoLuuLichSuMuc(accent: Color) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             NutManhSaoLuu(
                 nhan = "Sao lưu ra tệp",
-                bat = soLan > 0,
+                bat = dem.loi > 0 || dem.nghe > 0 || dem.thich > 0,
                 accent = accent,
                 modifier = Modifier.weight(1f)
             ) {
                 bao = null
-                ghi.launch("aura-nghe-" + homNayNghe() + ".txt")
+                ghi.launch("aura-sao-luu-" + homNayTatCa() + ".txt")
             }
             NutManhSaoLuu(
                 nhan = "Khôi phục",
@@ -145,23 +139,40 @@ internal fun SaoLuuLichSuMuc(accent: Color) {
                 modifier = Modifier.weight(1f)
             ) {
                 bao = null
-                // Nhieu may gan cho tep .txt kieu MIME khac nhau - xem ghi chu
-                // cung cho trong `SaoLuuLoiMuc`.
+                // Nhieu may gan cho tep .txt kieu MIME khac nhau — xem ghi chú
+                // cùng chỗ trong `SaoLuuLoiMuc` đời trước.
                 doc.launch(arrayOf("text/plain", "text/*", "application/octet-stream"))
             }
         }
 
         Spacer(Modifier.height(12.dp))
         Text(
-            "Khôi phục là TRỘN, không xoá cái đang có: bài trùng thì giữ lần " +
-                "nghe gần nhất. Tệp lưu ra ghi rõ bạn nghe gì lúc nào — cất nó " +
-                "như một thứ riêng tư.",
+            "Khôi phục là TRỘN, không xoá cái đang có. Tệp sao lưu cũ chỉ có " +
+                "lời hoặc chỉ có lịch sử vẫn đọc được. Tệp lưu ra ghi rõ bạn " +
+                "nghe gì lúc nào — cất nó như một thứ riêng tư.",
             color = mau.chuRatMo,
-            fontSize = 13.sp,
-            lineHeight = 19.sp
+            fontSize = 12.5.sp,
+            lineHeight = 18.sp
         )
     }
 }
 
-private fun homNayNghe(): String =
+/**
+ * Kể ra từng con số thay vì báo "xong".
+ *
+ * Khôi phục xong mà chỉ thấy chữ "xong" thì không biết tệp ấy có đúng tệp mình
+ * tìm không — mà đó lại là điều duy nhất muốn biết ở đúng lúc ấy.
+ */
+private fun keChiTiet(kq: com.mittohoa.lyra.data.SaoLuuTatCa.KetQua): String {
+    val phan = buildList {
+        if (kq.loi.them > 0) add("${kq.loi.them} bài lời")
+        if (kq.nghe.them > 0) add("${kq.nghe.them} lần nghe")
+        if (kq.thich > 0) add("${kq.thich} bài yêu thích")
+        if (kq.coCanBang) add("lựa chọn cân bằng âm")
+    }
+    if (phan.isEmpty()) return "Tệp đọc được, nhưng mọi thứ trong đó máy đã có sẵn."
+    return "Đã khôi phục " + phan.joinToString(", ") + "."
+}
+
+private fun homNayTatCa(): String =
     SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
