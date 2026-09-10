@@ -194,7 +194,9 @@ fun HomeScreen(
     lichSu: List<LanNghe>,
     onChonLichSu: (LanNghe) -> Unit,
     onXoaMotLanNghe: (String) -> Unit,
-    onXoaLichSu: () -> Unit
+    onXoaLichSu: () -> Unit,
+    ketQuaLoi: List<Lyra.BaiKhopLoi>,
+    onPhatBaiKhopLoi: (com.mittohoa.lyra.sources.Track) -> Unit
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -360,7 +362,9 @@ fun HomeScreen(
                         lichSu = lichSu,
                         onChonLichSu = onChonLichSu,
                         onXoaMotLanNghe = onXoaMotLanNghe,
-                        onXoaLichSu = onXoaLichSu
+                        onXoaLichSu = onXoaLichSu,
+                        ketQuaLoi = ketQuaLoi,
+                        onPhatBaiKhopLoi = onPhatBaiKhopLoi
                     )
                     1 -> BaiPane(
                         now = now,

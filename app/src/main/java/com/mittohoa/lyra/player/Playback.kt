@@ -243,6 +243,9 @@ object Playback {
         if (isPlaying) pause() else play()
     }
 
+    /** Dừng, không phải bật/tắt: hẹn giờ tắt nhạc chỉ có một chiều. */
+    fun pause(context: Context) = run(context) { if (isPlaying) pause() }
+
     fun seekTo(context: Context, positionMs: Long) = run(context) { seekTo(positionMs) }
 
     /**

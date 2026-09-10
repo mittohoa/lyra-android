@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +42,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mittohoa.lyra.data.LanNghe
@@ -104,7 +107,9 @@ fun SearchPane(
     /** Bấm vào một dòng lịch sử: phát lại, hoặc đi tìm nếu bài của app khác. */
     onChonLichSu: (LanNghe) -> Unit,
     onXoaMotLanNghe: (String) -> Unit,
-    onXoaLichSu: () -> Unit
+    onXoaLichSu: () -> Unit,
+    ketQuaLoi: List<Lyra.BaiKhopLoi>,
+    onPhatBaiKhopLoi: (Track) -> Unit
 ) {
     // Màn hình lịch sử PHỦ LÊN trang này, cùng lẽ với màn hình danh sách phát:
     // mở ra là một việc ngắn — xem, bấm, rồi đóng.
@@ -268,7 +273,7 @@ fun SearchPane(
                 )
             }
 
-            results.isEmpty() && query.isNotBlank() && !searching -> Center {
+            results.isEmpty() && query.isNotBlank() && !searching && ketQuaLoi.isEmpty() -> Center {
                 Text(
                     "Không tìm thấy bài nào",
                     color = mau.chuMo,
@@ -288,6 +293,16 @@ fun SearchPane(
                     color = mau.chuRatMo,
                     fontSize = 14.sp
                 )
+            }
+
+            // KHỚP LỜI MÀ KHÔNG KHỚP TÊN thì bày riêng phần lời, không rơi
+            // xuống nhánh thư viện bên dưới. Đang tìm một chuỗi mà màn hình trả
+            // về cả thư viện thì đó là câu trả lời cho một câu hỏi không ai hỏi.
+            results.isEmpty() && query.isNotBlank() && ketQuaLoi.isNotEmpty() -> LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 110.dp)
+            ) {
+                khopLoi(ketQuaLoi, accent, playingUri, onPhat = onPhatBaiKhopLoi)
             }
 
             results.isEmpty() && library.isEmpty() && playlists.isEmpty() && lichSu.isEmpty() -> Center {
@@ -425,7 +440,25 @@ fun SearchPane(
                 Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 110.dp)
             ) {
-                itemsIndexed(results, key = { _, t -> t.playbackUri }) { i, track ->
+                // TRONG MÁY TRƯỚC, KHỚP LỜI, RỒI MỚI TỚI ONLINE.
+                //
+                // Đo được trên máy: gõ "goi ten em" thì Zing với NhacCuaTui trả
+                // về hơn hai chục bài trùng tên, và phần khớp lời — đúng một
+                // bài, khớp chính xác, nằm sẵn trong máy — bị đẩy xuống dưới
+                // MƯỜI cú vuốt. Một tính năng nằm ở chỗ đó thì coi như không có.
+                //
+                // Thứ tự này nói được thành một câu: cái đang nằm trong máy
+                // đứng trước cái phải đi tải. Bài trong máy bấm là nghe được
+                // ngay, còn kết quả online là một phỏng đoán theo tên — mà ở
+                // bản Play thì chúng còn không phát được.
+                //
+                // Giữ CHỈ SỐ GỐC khi tách hai nhóm: `onPlay(i)` xếp cả danh
+                // sách kết quả thành hàng đợi từ bài thứ `i`, nên một chỉ số
+                // đánh lại theo nhóm sẽ phát nhầm bài.
+                val trongMay = results.withIndex().filter { it.value.source == MusicSource.LOCAL }
+                val online = results.withIndex().filter { it.value.source != MusicSource.LOCAL }
+
+                items(trongMay, key = { it.value.playbackUri }) { (i, track) ->
                     TrackRow(
                         track = track,
                         accent = accent,
@@ -439,7 +472,93 @@ fun SearchPane(
                         onDownload = { onDownload(track) }
                     )
                 }
+
+                khopLoi(ketQuaLoi, accent, playingUri, onPhat = onPhatBaiKhopLoi)
+
+                items(online, key = { it.value.playbackUri }) { (i, track) ->
+                    TrackRow(
+                        track = track,
+                        accent = accent,
+                        playing = track.playbackUri == playingUri,
+                        onPlay = {
+                            if (phatDuoc(track)) onPlay(i) else onXemLoi(track)
+                        },
+                        chiXemLoi = !phatDuoc(track),
+                        onEnqueue = { onEnqueue(track) },
+                        download = downloads[track.playbackUri],
+                        onDownload = { onDownload(track) }
+                    )
+                }
+
             }
+        }
+    }
+}
+
+/**
+ * Phần "Tìm thấy trong lời", xếp SAU phần khớp theo tên.
+ *
+ * Gõ vào ô tìm thì ý gần như luôn là tìm một cái TÊN. Khớp theo lời là câu trả
+ * lời cho một câu hỏi khác — "bài nào có câu này" — nên nó là phần bổ sung, đặt
+ * dưới, chứ không được phép đẩy thứ người ta đang tìm xuống.
+ *
+ * Mỗi dòng bày ĐÚNG CÂU ĐÃ KHỚP chứ không chỉ tên bài. Không có câu đó thì kết
+ * quả trông y hệt một kết quả khớp tên, và người dùng không hiểu vì sao một bài
+ * chẳng liên quan gì tới chữ mình gõ lại nằm ở đây.
+ */
+private fun LazyListScope.khopLoi(
+    ketQua: List<Lyra.BaiKhopLoi>,
+    accent: Color,
+    playingUri: String?,
+    onPhat: (Track) -> Unit
+) {
+    if (ketQua.isEmpty()) return
+
+    item(key = "loi:tieude") {
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 18.dp, bottom = 6.dp)) {
+            Text(
+                "Tìm thấy trong lời  ·  ${ketQua.size} bài",
+                color = mau.chuRatMo,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(3.dp))
+            // NÓI RA GIỚI HẠN ngay tại chỗ. Kho lời chỉ có lời của những bài đã
+            // từng mở, nên một thư viện lớn mà mới nghe vài bài thì chỗ này gần
+            // như trống. Không nói thì người dùng tìm một bài họ biết chắc là
+            // có lời, không ra, và kết luận app hỏng.
+            Text(
+                "Chỉ tìm trong lời AURA đã tải về hoặc bạn tự nhập.",
+                color = mau.chuRatMo,
+                fontSize = 11.5.sp
+            )
+        }
+    }
+
+    items(ketQua, key = { "loi:" + it.bai.playbackUri }) { k ->
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clickable { onPhat(k.bai) }
+                .padding(start = 24.dp, end = 24.dp, top = 9.dp, bottom = 9.dp)
+        ) {
+            Text(
+                "“" + k.cau.trim() + "”",
+                color = mau.chu,
+                fontFamily = boChu.loi,
+                fontSize = 16.sp,
+                lineHeight = 23.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                listOf(k.bai.title, k.bai.artist).filter { it.isNotBlank() }.joinToString("  ·  "),
+                color = if (k.bai.playbackUri == playingUri) accent else mau.chuRatMo,
+                fontSize = 12.5.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

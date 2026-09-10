@@ -120,6 +120,57 @@ class LyricCache(context: Context) {
         )
     }
 
+    /** Một bản ghi có chứa chuỗi đang tìm, kèm đúng câu khớp. */
+    data class DongKhop(val khoa: String, val cau: String)
+
+    /**
+     * Khoá của một bài, để bên ngoài đối chiếu với kết quả [timTrongLoi].
+     *
+     * `internal` chứ không công khai: đây là chi tiết bên trong của kho, mở ra
+     * chỉ vì việc tìm ngược cần một cách nối bài trong thư viện với bản ghi
+     * trong kho, mà băm tên là cách nối duy nhất kho này có.
+     */
+    internal fun khoaCua(artist: String, title: String): String = keyOf(artist, title)
+
+    /**
+     * Tìm một chuỗi trong toàn bộ lời đã tải về.
+     *
+     * VÌ SAO Ở ĐÂY. Ô tìm của app khớp tên bài, ca sĩ, album và thư mục — không
+     * khớp LỜI. Với một app lấy lời làm trung tâm thì "bài nào có câu này" là
+     * câu hỏi tự nhiên nhất, mà lại là câu duy nhất nó không trả lời được. Lời
+     * thì đã nằm sẵn trong máy rồi; chỉ là chưa ai tra ngược.
+     *
+     * CHỈ TÌM TRONG LỜI ĐÃ TẢI VỀ, và màn hình phải nói ra điều đó. Kho này chỉ
+     * có lời của những bài đã từng mở; một thư viện năm trăm bài mà mới nghe
+     * hai mươi thì chỉ hai mươi bài ấy tìm được. Không nói trước thì người dùng
+     * tìm một bài họ biết chắc là có lời, không ra, và kết luận là app hỏng.
+     *
+     * Đọc cả thư mục mỗi lần tìm chứ không dựng chỉ mục: trần là 400 bản ghi
+     * vài KB một cái, và việc này chạy ở luồng nền sau một nhịp ngừng gõ. Một
+     * chỉ mục thì phải dựng lại mỗi lần kho đổi, và sai chỉ mục là sai lặng lẽ.
+     */
+    fun timTrongLoi(needle: String): List<DongKhop> {
+        val kim = normalizeForCompare(needle)
+        if (kim.isBlank()) return emptyList()
+
+        val files = dir.listFiles() ?: return emptyList()
+        val ra = ArrayList<DongKhop>()
+        for (f in files) {
+            val loi = try {
+                decode(f.readText())
+            } catch (e: Exception) {
+                // Một bản ghi hỏng không được phép làm hỏng cả lần tìm.
+                Log.d(TAG, "Ban ghi hong, bo qua khi tim", e)
+                null
+            } ?: continue
+
+            val cau = loi.lines.firstOrNull { normalizeForCompare(it.text).contains(kim) }
+                ?: continue
+            ra += DongKhop(f.name, cau.text)
+        }
+        return ra
+    }
+
     /** Xoa bot ban ghi cu nhat khi qua nhieu file. */
     private fun trimIfNeeded() {
         val files = dir.listFiles() ?: return

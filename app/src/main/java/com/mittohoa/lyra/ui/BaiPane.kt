@@ -1259,6 +1259,22 @@ private fun MatLoi(
     /** Mục lục việc làm được với bài này — xem `MucLucBai`. */
     var moMucLuc by remember { mutableStateOf(false) }
 
+    // Tấm chọn mốc hẹn giờ. Là một tấm THỨ HAI chứ không nhét năm mốc thành
+    // năm dòng trong mục lục chính: mục lục ấy là danh sách VIỆC, còn năm mốc
+    // giờ chỉ là năm cách làm một việc trong số đó.
+    var moHenGio by remember { mutableStateOf(false) }
+    val henGio by Lyra.henGio.collectAsStateWithLifecycle()
+
+    // Chi de biet bai dai bao nhieu: khong biet thi khong hen duoc kieu "het
+    // bai nay". Doc thang tu `Lyra` chu khong them mot tham so nua vao mot ham
+    // da nhan hai chuc tham so.
+    val baiDangPhat by Lyra.now.collectAsStateWithLifecycle()
+
+    // Tam chon toc do, tam thu ba. Toc do TUNG chi song trong dai luyen tap -
+    // mot tinh nang da lam xong ma khong ai tim ra, con te hon chua lam.
+    var moTocDo by remember { mutableStateOf(false) }
+    val tocDo by Lyra.tocDo.collectAsStateWithLifecycle()
+
     val listState = rememberLazyListState()
     val translated = (translation as? TranslationState.Done)?.lines ?: emptyList()
 
@@ -1294,65 +1310,6 @@ private fun MatLoi(
         }
     }
 
-    if (lyrics.isEmpty) {
-        // Không có lời thì VẪN CÓ BÌA. Từ lúc bìa thôi là một mặt riêng, nhánh
-        // này là chỗ duy nhất còn lại có thể vô tình nuốt mất nó — và một bài
-        // không tìm ra lời mà cũng mất luôn ảnh bìa thì trang bài trắng trơn.
-        Column(Modifier.fillMaxSize()) {
-            // Đệm phải khai LẠI ở đây. Nhánh kia lấy nó từ `contentPadding` của
-            // `LazyColumn`, mà nhánh này không có `LazyColumn` nào.
-            Column(Modifier.padding(start = 26.dp, end = 26.dp, top = 30.dp)) { khoiBia() }
-            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    LyraMark(size = 54.dp, busy = loading)
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        if (loading) "Đang tìm lời…" else "Chưa tìm thấy lời cho bài này",
-                        color = mau.chuMo,
-                        fontSize = 14.5.sp
-                    )
-                    if (!loading) {
-                        Spacer(Modifier.height(22.dp))
-                        Box(
-                            Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(accent)
-                                .clickable(onClick = onEditLyrics)
-                                .padding(horizontal = 28.dp, vertical = 14.dp)
-                        ) {
-                            Text(
-                                "Tự nhập lời",
-                                color = Color.White,
-                                fontSize = 14.5.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-
-                        // ĐƯỜNG SỬA THẺ PHẢI CÓ Ở ĐÂY, không chỉ trong dải lời
-                        // nhắc — nhánh này thoát sớm trước cả dải đó.
-                        //
-                        // Và đây đúng là chỗ cần nó nhất: mọi nguồn lời đều tìm
-                        // theo tên bài với tên ca sĩ, nên một tệp thẻ trống thì
-                        // "chưa tìm thấy lời" là kết quả tất yếu — mà lối thoát
-                        // duy nhất bày ra lại là gõ tay cả bài.
-                        if (Lyra.laNhacTrongMay()) {
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                "Thẻ bài này trống hoặc sai? Sửa thẻ",
-                                color = mau.chuMo,
-                                fontSize = 13.5.sp,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(50))
-                                    .clickable(onClick = onSuaThe)
-                                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        return
-    }
 
     // ĐIỀU KIỆN của từng mục, viết MỘT LẦN ở đây.
     //
@@ -1428,6 +1385,8 @@ private fun MatLoi(
 
     val soNhac = listOf(
         tinLoi != null,
+        henGio != null,
+        tocDo != 1f,
         nhacChuaCanGio,
         baoKhongTua,
         baoGhi != null,
@@ -1518,6 +1477,35 @@ private fun MatLoi(
                 )
             }
 
+            // HẸN GIỜ ĐANG CHẠY LÀ TIN, không phải lời mời — nó đúng với hôm
+            // nay, giờ này, và sẽ hết. Đúng loại thuộc về dải này.
+            //
+            // Phải bày ra chứ không giấu trong mục lục: một cái đồng hồ sắp tắt
+            // nhạc mà không nhìn thấy được thì tới lúc nhạc im, người dùng
+            // tưởng app hỏng. Bấm vào là bỏ — đó là việc duy nhất người ta muốn
+            // làm với nó.
+            henGio?.let {
+                Notice(
+                    accent = accent,
+                    text = "Sẽ tắt nhạc — " + conLaiChu(it) + ".",
+                    onClick = { Lyra.boHenGio() },
+                    action = "Bỏ hẹn",
+                    onAction = { Lyra.boHenGio() }
+                )
+            }
+
+            // Tốc độ khác 1× cũng là tin, và là tin dễ quên nhất: đặt 1,5× cho
+            // một bản thu dài rồi hôm sau mở một bài hát lên thấy giọng lạ, mà
+            // không có gì trên màn hình nói vì sao.
+            if (tocDo != 1f) {
+                Notice(
+                    accent = accent,
+                    text = "Đang phát ở " + tocDoChu(tocDo) + ".",
+                    action = "Về 1×",
+                    onAction = { Lyra.datTocDo(nguCanhGhi, 1f) }
+                )
+            }
+
             if (baoKhongTua) {
                 Notice(
                     accent = accent,
@@ -1575,36 +1563,102 @@ private fun MatLoi(
             onMucLuc = { moMucLuc = true }
         )
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 26.dp, end = 26.dp, top = 30.dp, bottom = 46.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            item(key = "bia") {
-                Column {
-                    khoiBia()
-                    // Nới rộng hơn khoảng cách giữa hai câu lời: chỗ này là
-                    // chuyển từ hình sang chữ, không phải câu này sang câu kế.
-                    Spacer(Modifier.height(18.dp))
+        // KHÔNG CÓ LỜI THÌ VẪN GIỮ NGUYÊN ĐẦU TRANG.
+        //
+        // Nhánh này TỪNG thoát sớm ngay đầu hàm, trước cả dải lời nhắc lẫn hàng
+        // "Việc khác" — nên bài không tìm ra lời cũng mất luôn đường vào mục
+        // lục. Đo được trên máy: đặt hẹn giờ tắt nhạc xong chuyển sang một bài
+        // không có lời là ô báo "sẽ tắt nhạc" biến mất, dù đồng hồ vẫn chạy.
+        //
+        // Và đây đúng là chỗ CẦN mục lục nhất: sửa thẻ nhạc là lối thoát chính
+        // cho một bài không tìm ra lời, mà nó lại nằm trong cái mục lục vừa bị
+        // giấu đi. Cách chữa cũ là chép riêng một đường sửa thẻ vào nhánh này —
+        // vá được một chỗ, nhưng tới lượt hẹn giờ thì lỗi cũ trở lại y nguyên.
+        if (lyrics.isEmpty) {
+            Column(Modifier.fillMaxSize()) {
+                // Đệm phải khai LẠI ở đây. Nhánh kia lấy nó từ `contentPadding` của
+                // `LazyColumn`, mà nhánh này không có `LazyColumn` nào.
+                Column(Modifier.padding(start = 26.dp, end = 26.dp, top = 30.dp)) { khoiBia() }
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        LyraMark(size = 54.dp, busy = loading)
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            if (loading) "Đang tìm lời…" else "Chưa tìm thấy lời cho bài này",
+                            color = mau.chuMo,
+                            fontSize = 14.5.sp
+                        )
+                        if (!loading) {
+                            Spacer(Modifier.height(22.dp))
+                            Box(
+                                Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(accent)
+                                    .clickable(onClick = onEditLyrics)
+                                    .padding(horizontal = 28.dp, vertical = 14.dp)
+                            ) {
+                                Text(
+                                    "Tự nhập lời",
+                                    color = Color.White,
+                                    fontSize = 14.5.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+    
+                            // ĐƯỜNG SỬA THẺ VẪN GIỮ Ở ĐÂY dù mục lục giờ đã với
+                            // tới được: mọi nguồn lời đều tìm theo tên bài với
+                            // tên ca sĩ, nên một tệp thẻ trống thì "chưa tìm
+                            // thấy lời" là kết quả tất yếu, và đó đúng là việc
+                            // cần làm tiếp. Một cú chạm thẳng tới nó đáng hơn
+                            // hai cú qua mục lục.
+                            if (Lyra.laNhacTrongMay()) {
+                                Spacer(Modifier.height(12.dp))
+                                Text(
+                                    "Thẻ bài này trống hoặc sai? Sửa thẻ",
+                                    color = mau.chuMo,
+                                    fontSize = 13.5.sp,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .clickable(onClick = onSuaThe)
+                                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 26.dp, end = 26.dp, top = 30.dp, bottom = 46.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                item(key = "bia") {
+                    Column {
+                        khoiBia()
+                        // Nới rộng hơn khoảng cách giữa hai câu lời: chỗ này là
+                        // chuyển từ hình sang chữ, không phải câu này sang câu kế.
+                        Spacer(Modifier.height(18.dp))
+                    }
+                }
 
-            itemsIndexed(lyrics.lines, key = { i, _ -> i }) { i, line ->
-                DongLoi(
-                    chiSo = i,
-                    line = line,
-                    dangHat = trustTiming && i == active,
-                    xa = if (trustTiming && active >= 0)
-                        (i - active).absoluteValue.coerceAtMost(4) else 0,
-                    tinMoc = trustTiming,
-                    banDich = translated.getOrNull(i).orEmpty(),
-                    effect = effect,
-                    quet = quet,
-                    accent = accent,
-                    onCham = { onChamDong(i) },
-                    onNhanGiu = { onSyncToLine(i) }
-                )
+                itemsIndexed(lyrics.lines, key = { i, _ -> i }) { i, line ->
+                    DongLoi(
+                        chiSo = i,
+                        line = line,
+                        dangHat = trustTiming && i == active,
+                        xa = if (trustTiming && active >= 0)
+                            (i - active).absoluteValue.coerceAtMost(4) else 0,
+                        tinMoc = trustTiming,
+                        banDich = translated.getOrNull(i).orEmpty(),
+                        effect = effect,
+                        quet = quet,
+                        accent = accent,
+                        onCham = { onChamDong(i) },
+                        onNhanGiu = { onSyncToLine(i) }
+                    )
+                }
             }
         }
     }
@@ -1630,6 +1684,29 @@ private fun MatLoi(
                         viSao = if (lyrics.isEmpty) "Chưa có lời nào để căn."
                         else "Lời này đã có mốc thời gian rồi."
                     ) { moMucLuc = false; onCanGio() },
+                    // HẸN GIỜ đứng ngay đây, giữa mấy việc về lời, vì nó là
+                    // việc duy nhất trong mục lục này KHÔNG nói về lời — và
+                    // người tìm nó sẽ tìm ở chỗ chứa "mọi thứ còn lại".
+                    //
+                    // Chạy được cả với nhạc ở app khác: AURA điều khiển được
+                    // phiên media của họ. Nên không có điều kiện `dungDuoc` nào.
+                    // TỐC ĐỘ RA KHỎI CHỖ GIẤU. Nó vốn chỉ hiện trong dải luyện
+                    // tập, nên người muốn nghe sách nói ở 1,5× không có đường
+                    // nào tới — một tính năng đã làm xong mà không ai tìm ra
+                    // thì tệ hơn một tính năng chưa làm: công đã bỏ, giá trị
+                    // bằng không, và không ai biết để mà đòi.
+                    MucViec(
+                        nhan = "Tốc độ phát",
+                        mota = if (tocDo != 1f) "Đang ở " + tocDoChu(tocDo) + "."
+                        else "Chậm lại để nghe rõ lời, hoặc nhanh lên cho sách nói.",
+                        dungDuoc = Lyra.laLyraPhat(),
+                        viSao = "Chỉ đổi được tốc độ cho nhạc AURA tự phát."
+                    ) { moMucLuc = false; moTocDo = true },
+                    MucViec(
+                        nhan = if (henGio != null) "Đổi hoặc bỏ hẹn giờ" else "Hẹn giờ tắt nhạc",
+                        mota = henGio?.let { "Đang hẹn — " + conLaiChu(it) }
+                            ?: "Tắt nhạc sau một lúc, kể cả nhạc đang phát ở app khác."
+                    ) { moMucLuc = false; moHenGio = true },
                     MucViec(
                         nhan = "Ghi lời ra tệp .lrc",
                         mota = "Đặt cạnh bài nhạc — trình phát khác đọc được, gỡ app vẫn còn.",
@@ -1661,7 +1738,97 @@ private fun MatLoi(
                 onDong = { moMucLuc = false }
             )
         }
+
+        if (moHenGio) {
+            MucLucBai(
+                accent = accent,
+                muc = buildList {
+                    // BỎ HẸN đứng ĐẦU khi đang có hẹn. Người mở lại tấm này lúc
+                    // đồng hồ đang chạy phần lớn là để bỏ, không phải để đổi —
+                    // họ vừa đổi ý về chuyện đi ngủ.
+                    if (henGio != null) {
+                        add(
+                            MucViec(
+                                nhan = "Bỏ hẹn giờ",
+                                mota = "Đang hẹn — " + conLaiChu(henGio!!)
+                            ) { moHenGio = false; Lyra.boHenGio() }
+                        )
+                    }
+                    add(
+                        MucViec(
+                            nhan = "Hết bài này",
+                            mota = "Nghe trọn bài đang phát rồi tắt.",
+                            // Không biết bài dài bao nhiêu thì không hẹn được.
+                            // Đường phát trực tuyến có lúc chưa kịp báo độ dài.
+                            dungDuoc = (baiDangPhat?.duration ?: 0L) > 0L,
+                            viSao = "Chưa biết bài này dài bao nhiêu."
+                        ) { moHenGio = false; Lyra.datHenGio(nguCanhGhi, Lyra.KieuHen.HetBai) }
+                    )
+                    for (phut in MOC_HEN_GIO) {
+                        add(
+                            MucViec(
+                                nhan = "$phut phút",
+                                mota = if (phut >= 60) "Một tiếng nữa thì tắt."
+                                else "Tắt sau $phut phút nữa."
+                            ) { moHenGio = false; Lyra.datHenGio(nguCanhGhi, Lyra.KieuHen.Phut(phut)) }
+                        )
+                    }
+                },
+                onDong = { moHenGio = false }
+            )
+        }
+
+        if (moTocDo) {
+            MucLucBai(
+                accent = accent,
+                muc = MOC_TOC_DO.map { v ->
+                    MucViec(
+                        nhan = tocDoChu(v) + if (v == 1f) "  ·  bình thường" else "",
+                        mota = when {
+                            v < 1f -> "Chậm lại — nghe rõ từng chữ."
+                            v == 1f -> "Đúng tốc độ bản thu."
+                            else -> "Nhanh lên — hợp với sách nói và bản thu dài."
+                        },
+                        // Mục đang chọn thì mờ đi kèm lý do, thay vì bày một
+                        // dòng bấm vào không đổi gì.
+                        dungDuoc = kotlin.math.abs(tocDo - v) >= 0.01f,
+                        viSao = "Đang ở tốc độ này."
+                    ) { moTocDo = false; Lyra.datTocDo(nguCanhGhi, v) }
+                },
+                onDong = { moTocDo = false }
+            )
+        }
     }
+}
+
+/** Mấy mốc hẹn giờ bày sẵn. */
+private val MOC_HEN_GIO = listOf(15, 30, 45, 60)
+
+/**
+ * Mấy mốc tốc độ bày sẵn.
+ *
+ * Lên tới 2× chứ không dừng ở 1,25× như dải luyện tập: dải ấy sinh ra để tập
+ * hát theo nên chỉ cần quanh mức thường, còn ở đây có cả người nghe sách nói và
+ * bản thu buổi diễn — với họ 1,5× và 2× mới là mốc hay dùng nhất.
+ */
+private val MOC_TOC_DO = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+
+/** "1,25×" — dấu phẩy thập phân, và bỏ số 0 thừa ở đuôi. */
+private fun tocDoChu(v: Float): String =
+    if (v == 1f) "1×" else v.toString().trimEnd('0').trimEnd('.').replace('.', ',') + "×"
+
+/**
+ * Còn bao lâu nữa thì tắt, viết cho người đọc.
+ *
+ * Làm tròn LÊN theo phút, và dưới một phút thì nói "sắp tắt" chứ không đếm
+ * giây: một con số giây nhảy liên tục ở góc màn hình lúc người ta đang chuẩn bị
+ * ngủ là đúng thứ không nên bày ra.
+ */
+private fun conLaiChu(hen: Lyra.HenGio): String {
+    val conLai = hen.hetLuc - android.os.SystemClock.elapsedRealtime()
+    if (conLai <= 60_000L) return "sắp tắt"
+    val phut = ((conLai + 59_999L) / 60_000L).toInt()
+    return "còn khoảng $phut phút"
 }
 
 /**

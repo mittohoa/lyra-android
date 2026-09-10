@@ -54,6 +54,7 @@ import com.mittohoa.lyra.sources.Track
 import com.mittohoa.lyra.translate.TranslationRepository
 import com.mittohoa.lyra.translate.TranslationState
 import kotlinx.coroutines.CoroutineScope
+import com.mittohoa.lyra.lyrics.normalizeForCompare
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
@@ -511,6 +512,105 @@ object Lyra {
     private val _playlists = MutableStateFlow<List<Playlist>>(emptyList())
     val playlists: StateFlow<List<Playlist>> = _playlists.asStateFlow()
 
+    // ---- Hen gio tat nhac ----
+
+    /** Cach dat gio: sau bao nhieu phut, hay khi bai dang phat het. */
+    sealed class KieuHen {
+        data class Phut(val so: Int) : KieuHen()
+        data object HetBai : KieuHen()
+    }
+
+    /**
+     * Mot lan hen gio dang chay.
+     *
+     * `hetLuc` theo dong ho `elapsedRealtime` chu khong phai gio thuc: gio thuc
+     * nhay duoc khi may dong bo lai voi mang, va mot cu nhay nhu the bien "con
+     * mười phút" thanh "da qua han" giua chung.
+     */
+    data class HenGio(val kieu: KieuHen, val hetLuc: Long)
+
+    private val _henGio = MutableStateFlow<HenGio?>(null)
+    val henGio: StateFlow<HenGio?> = _henGio.asStateFlow()
+
+    private val chuongHenGio = Runnable {
+        _henGio.value = null
+        appContext?.let { dungPhat(it) }
+    }
+
+    /**
+     * Dat gio tat nhac.
+     *
+     * TAT DUOC CA NHAC CUA APP KHAC. Day la cho AURA lam duoc thu ma mot hen
+     * gio thong thuong khong lam: no dieu khien duoc phien media cua Zing hay
+     * YouTube, nen mot lan hen gio o day phu len bat ke ai dang phat. Nguoi ngu
+     * quen khong can biet luc do minh dang mo app nao.
+     *
+     * GIOI HAN da biet: dem gio bang `Handler` cua tien trinh. Tien trinh nay
+     * song vi dang co nhac phat - may khong ngu sau khi dang phat am thanh -
+     * nen dong ho chay. Nhung neu he thong giet tien trinh (het bo nho, nguoi
+     * dung vuot app khoi danh sach gan day) thi lan hen gio do mat luon, im
+     * lang. Doi lay mot bao thuc cua he thong thi phai xin them quyen, ma quyen
+     * do thi dat hon thu no mua.
+     */
+    fun datHenGio(context: Context, kieu: KieuHen) {
+        appContext = context.applicationContext
+        handler.removeCallbacks(chuongHenGio)
+
+        val conLai = doDaiHen(kieu)
+        if (conLai == null) {
+            // "Het bai nay" ma khong biet bai dai bao nhieu thi khong hen duoc.
+            // Bo han con hon dat mot cai gio doan bua roi tat giua bai.
+            _henGio.value = null
+            return
+        }
+
+        _henGio.value = HenGio(kieu, SystemClock.elapsedRealtime() + conLai)
+        handler.postDelayed(chuongHenGio, conLai)
+    }
+
+    fun boHenGio() {
+        handler.removeCallbacks(chuongHenGio)
+        _henGio.value = null
+    }
+
+    /** Bao lau nua thi tat, tinh tu bay gio. `null` khi chua tinh duoc. */
+    private fun doDaiHen(kieu: KieuHen): Long? = when (kieu) {
+        is KieuHen.Phut -> kieu.so * 60_000L
+        KieuHen.HetBai -> {
+            val n = _now.value
+            val conLai = if (n == null || n.duration <= 0L) null
+            else (n.duration - livePosition()).coerceAtLeast(0L)
+            conLai
+        }
+    }
+
+    /**
+     * Tinh lai han cho kieu "het bai nay" moi khi ban tin media doi.
+     *
+     * Khong tinh lai thi tua mot cai la han sai han: dat gio o giay thu 10 cua
+     * mot bai bon phut, roi keo toi giay thu 200, thi con lai 30 giay that ma
+     * dong ho van dem tiep 230 giay - nhac tat giua bai sau.
+     *
+     * Doi BAI thi thoi han han: "het bai nay" da lam xong viec cua no. Nhung
+     * bai doi vi bai truoc HET, ma luc do chuong da reo va nhac da dung roi -
+     * nen duong nay chi cham toi khi nguoi dung tu bam sang bai khac.
+     */
+    private fun soatHenGio() {
+        val hen = _henGio.value ?: return
+        if (hen.kieu !is KieuHen.HetBai) return
+        val context = appContext ?: return
+        datHenGio(context, hen.kieu)
+    }
+
+    /** Dung nhac, di dung con duong cua vai dang dong. */
+    private fun dungPhat(context: Context) {
+        if (tuPhat()) {
+            Playback.pause(context)
+            return
+        }
+        watcher.dieuKhien { if (now.value?.isPlaying == true) pause() }
+    }
+
     // ---- Lich su nghe ----
 
     private val _lichSuNghe = MutableStateFlow<List<LanNghe>>(emptyList())
@@ -867,27 +967,102 @@ object Lyra {
     }
 
     /** Phat ca thu vien tu mot bai. */
+    /**
+     * Phat mot bai, xep ca thu vien lam hang doi tu bai do tro di.
+     *
+     * Bai khong con trong thu vien thi khong lam gi: tep co the vua bi xoa hoac
+     * rut the nho ra, va phat mot dia chi chet thi bo may phat bao mot loi kho
+     * hieu roi im.
+     */
+    fun phatTrongThuVien(context: Context, bai: Track) {
+        val i = _library.value.indexOfFirst { it.playbackUri == bai.playbackUri }
+        if (i < 0) return
+        playFromLibrary(context, i)
+    }
+
     fun playFromLibrary(context: Context, index: Int) {
         _dangXem.value = null
         _nguonHangDoi.value = "Nhạc trong máy"
         Playback.playQueue(context, _library.value, index)
     }
 
+    /** Một bài tìm ra nhờ LỜI của nó, kèm đúng câu đã khớp. */
+    data class BaiKhopLoi(val bai: Track, val cau: String)
+
+    private val _ketQuaLoi = MutableStateFlow<List<BaiKhopLoi>>(emptyList())
+    val ketQuaLoi: StateFlow<List<BaiKhopLoi>> = _ketQuaLoi.asStateFlow()
+
     fun search(query: String) {
         searchJob?.cancel()
         if (query.isBlank()) {
             _results.value = emptyList()
+            _ketQuaLoi.value = emptyList()
             _searching.value = false
             return
         }
         _searching.value = true
         searchJob = scope.launch {
+            // Tim trong LOI chay truoc va o luong nen: no chi doc dia, khong
+            // goi mang, nen xong truoc phan tim online va nguoi dung thay ket
+            // qua som hon.
+            _ketQuaLoi.value = withContext(Dispatchers.IO) { timTheoLoi(query) }
             val found = Catalog.search(query)
             _results.value = found
             _searching.value = false
-            Log.i(TAG, "Tim \"$query\": ${found.size} ket qua")
+            Log.i(TAG, "Tim \"$query\": ${found.size} ket qua, ${_ketQuaLoi.value.size} theo loi")
         }
     }
+
+    /**
+     * Nhung bai trong may co LOI chua chuoi dang tim.
+     *
+     * Noi tu kho loi ve bai bang cach bam ten: kho loi khong giu duong dan tep,
+     * no chi biet ca si va ten bai. Nen di tu THU VIEN sang - bam ten tung bai
+     * roi hoi kho xem ban ghi do co nam trong so vua khop khong.
+     *
+     * Lay ca LOI TU NHAP. Do la lời người dùng tự gõ, tức là bài họ quan tâm
+     * nhất; bỏ nó ra thì đúng những bài ấy lại là những bài không tìm được.
+     */
+    private fun timTheoLoi(query: String): List<BaiKhopLoi> {
+        val thu = _library.value
+        if (thu.isEmpty()) return emptyList()
+
+        val theoKhoa = HashMap<String, String>()
+        cache?.timTrongLoi(query)?.forEach { theoKhoa[it.khoa] = it.cau }
+
+        val kim = normalizeForCompare(query)
+        // Loi tu nhap khong nam trong kho dem, phai hoi rieng. Doi chieu theo
+        // TEN chu khong theo khoa: hai kho bam ten theo hai cach khac nhau.
+        val theoTen = HashMap<String, String>()
+        if (kim.isNotBlank()) {
+            manual?.tatCa()?.forEach { ban ->
+                val cau = ban.loi.split('\n')
+                    .firstOrNull { normalizeForCompare(it).contains(kim) } ?: return@forEach
+                theoTen[normalizeForCompare(ban.caSi) + "|" + normalizeForCompare(ban.tenBai)] =
+                    cau.trim()
+            }
+        }
+        if (theoKhoa.isEmpty() && theoTen.isEmpty()) return emptyList()
+
+        val ra = ArrayList<BaiKhopLoi>()
+        for (bai in thu) {
+            val cau = theoTen[
+                normalizeForCompare(bai.artist) + "|" + normalizeForCompare(bai.title)
+            ] ?: cache?.khoaCua(bai.artist, bai.title)?.let { theoKhoa[it] } ?: continue
+            ra += BaiKhopLoi(bai, cau)
+            if (ra.size >= TRAN_KHOP_LOI) break
+        }
+        return ra
+    }
+
+    /**
+     * Nhieu nhat chung nay bai tim ra theo loi.
+     *
+     * Mot chuoi ngan nhu "yeu" khop hang tram bai, va mot danh sach nhu the
+     * khong tra loi duoc cau hoi nao - no chi day phan ket qua theo TEN, thu
+     * nguoi dung nhieu kha nang dang tim hon, xuong duoi tam nhin.
+     */
+    private const val TRAN_KHOP_LOI = 30
 
     fun playFromResults(context: Context, index: Int) {
         _dangXem.value = null
@@ -1450,6 +1625,10 @@ object Lyra {
                 // phai ghi ca luc nhac chay o app khac voi ca ba thu do deu tat.
                 // Dong nay thi doi bai nao, bam phat nao cung co mot nhip.
                 nhoLichSu()
+
+                // Han cua kieu "het bai nay" phai tinh lai moi lan ban tin doi:
+                // tua mot cai la con lai bao nhieu doi han.
+                soatHenGio()
             }
         }
 
