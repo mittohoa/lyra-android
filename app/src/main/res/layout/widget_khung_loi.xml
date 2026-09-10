@@ -10,46 +10,65 @@
   Không có nút bấm nào. Widget này không phải bộ điều khiển nhạc thu nhỏ — thứ
   đó thẻ media trên màn hình khoá đã làm, và làm tốt hơn. Nó chỉ làm đúng một
   việc mà không widget nhạc nào làm: bày ra câu đang hát.
+
+  NỀN LÀ MỘT `ImageView` RIÊNG, không phải `android:background` của khung.
+  `RemoteViews` không có đường nào đổi màu một `background` mà vẫn giữ góc bo:
+  `setBackgroundColor` thay luôn cả hình bo góc bằng một mảng màu vuông, còn
+  `setBackgroundTintList` thì chỉ có từ Android 12, mà app này chạy từ Android 8.
+  Tô màu một `ImageView` bằng `setColorFilter` thì đời máy nào cũng nhận, và
+  hình bo góc vẫn nguyên.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/khung_loi_goc"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_vertical"
-    android:padding="16dp"
-    android:background="@drawable/nen_widget">
+    android:layout_height="match_parent">
 
-    <!--
-      Tên bài, cỡ nhỏ, ở trên. Câu lời tự nó không nói đang bài nào — và một
-      câu chữ trôi nổi không rõ của bài gì thì đọc xong không biết để làm gì.
-    -->
-    <TextView
-        android:id="@+id/khung_loi_ten_bai"
+    <ImageView
+        android:id="@+id/khung_loi_nen"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:textSize="11sp"
-        android:letterSpacing="0.06"
-        android:textColor="@color/chu_widget_mo"
-        android:fontFamily="sans-serif-medium"
-        android:text="@string/widget_chua_co_nhac" />
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:contentDescription="@null"
+        android:src="@drawable/nen_widget" />
 
-    <!--
-      Câu đang hát. `maxLines=4` chứ không phải 1: người ta thu nhỏ widget lại
-      thì bốn dòng không vừa và Android tự cắt, nhưng kéo rộng ra thì một câu
-      dài phải xuống dòng chứ không được cắt cụt giữa chừng.
-    -->
-    <TextView
-        android:id="@+id/khung_loi_cau"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="7dp"
-        android:maxLines="4"
-        android:ellipsize="end"
-        android:textSize="19sp"
-        android:lineSpacingExtra="3dp"
-        android:textColor="@color/chu_widget"
-        android:text="@string/widget_moi_mo_nhac" />
-</LinearLayout>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:padding="16dp">
+
+        <!--
+          Tên bài, cỡ nhỏ, ở trên. Câu lời tự nó không nói đang bài nào — và một
+          câu chữ trôi nổi không rõ của bài gì thì đọc xong không biết để làm gì.
+        -->
+        <TextView
+            android:id="@+id/khung_loi_ten_bai"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="11sp"
+            android:letterSpacing="0.06"
+            android:textColor="@color/chu_widget_mo"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/widget_chua_co_nhac" />
+
+        <!--
+          Câu đang hát. `maxLines=4` chứ không phải 1: người ta thu nhỏ widget lại
+          thì bốn dòng không vừa và Android tự cắt, nhưng kéo rộng ra thì một câu
+          dài phải xuống dòng chứ không được cắt cụt giữa chừng.
+        -->
+        <TextView
+            android:id="@+id/khung_loi_cau"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:maxLines="4"
+            android:ellipsize="end"
+            android:textSize="19sp"
+            android:lineSpacingExtra="3dp"
+            android:textColor="@color/chu_widget"
+            android:text="@string/widget_moi_mo_nhac" />
+    </LinearLayout>
+</FrameLayout>

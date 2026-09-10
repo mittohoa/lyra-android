@@ -44,7 +44,10 @@ class KhungLoiWidget : AppWidgetProvider() {
         manager: AppWidgetManager,
         ids: IntArray
     ) {
-        ve(context, manager, ids, tenBai, cau, false)
+        // `mauTruoc` chu khong phai `null`: he thong goi day khi tha widget
+        // xuong hoac khi may xoay, va luc do nhac co the dang phat. Dung `null`
+        // thi widget nhay ve nen giay mot nhip roi moi doi lai mau bia.
+        ve(context, manager, ids, tenBai, cau, false, mauTruoc)
         Lyra.widgetDoi(context)
     }
 
@@ -75,6 +78,8 @@ class KhungLoiWidget : AppWidgetProvider() {
          */
         private var tenBai: String? = null
         private var cau: String? = null
+        private var dangTimTruoc: Boolean? = null
+        private var mauTruoc: Int? = null
 
         /**
          * Có widget nào đang nằm trên màn hình không — NHỚ LẠI CÂU TRẢ LỜI.
@@ -106,15 +111,37 @@ class KhungLoiWidget : AppWidgetProvider() {
          *   việc khác nhau và phải nói khác nhau — báo "chưa có lời" trong lúc
          *   còn đang tìm là kết luận sớm.
          */
-        fun dat(context: Context, tenBaiMoi: String?, cauMoi: String?, dangTim: Boolean) {
-            if (tenBaiMoi == tenBai && cauMoi == cau) return
+        fun dat(
+            context: Context,
+            tenBaiMoi: String?,
+            cauMoi: String?,
+            dangTim: Boolean,
+            /**
+             * Màu nền, lấy từ ảnh bìa. `null` khi bài không có bìa — lúc đó
+             * widget dùng nền giấy mờ.
+             */
+            mauBia: Int? = null
+        ) {
+            // Tính CẢ `dangTim` và màu vào phép so.
+            //
+            // Trước đây chỉ so tên bài với câu, nên hai đường này đứt lặng lẽ:
+            // bài tìm mãi không ra lời thì `dangTim` chuyển false mà chữ không
+            // đổi, và widget đứng mãi ở "đang tìm lời"; còn đổi sang bài khác
+            // cùng tên khác bìa thì màu nền không theo.
+            if (tenBaiMoi == tenBai && cauMoi == cau &&
+                dangTim == dangTimTruoc && mauBia == mauTruoc
+            ) {
+                return
+            }
             tenBai = tenBaiMoi
             cau = cauMoi
+            dangTimTruoc = dangTim
+            mauTruoc = mauBia
 
             val manager = AppWidgetManager.getInstance(context)
             val ids = maSo(context, manager)
             if (ids.isEmpty()) return
-            ve(context, manager, ids, tenBaiMoi, cauMoi, dangTim)
+            ve(context, manager, ids, tenBaiMoi, cauMoi, dangTim, mauBia)
         }
 
         private fun maSo(
@@ -134,10 +161,39 @@ class KhungLoiWidget : AppWidgetProvider() {
             ids: IntArray,
             tenBai: String?,
             cau: String?,
-            dangTim: Boolean
+            dangTim: Boolean,
+            mauBia: Int?
         ) {
             if (ids.isEmpty()) return
             val view = RemoteViews(context.packageName, R.layout.widget_khung_loi)
+
+            // NỀN TRONG SUỐT MỜ, ăn màu theo ảnh bìa.
+            //
+            // Không có bìa thì về màu giấy — cùng màu với trang trong app, nên
+            // widget vẫn là một mảnh của app chứ không phải một ô lạ nằm giữa
+            // màn hình chính.
+            //
+            // Để mờ chứ không đặc: một mảng màu đặc trên hình nền là một cái
+            // hộp dán đè lên, còn để ảnh nền ăn qua thì widget nằm TRONG màn
+            // hình chính. Đây cũng là cách Android vẽ mọi thứ khác trên đó.
+            //
+            // `setImageAlpha` chứ không nhét alpha vào chính màu tô:
+            // `setColorFilter` trộn theo kiểu SRC_ATOP, tức nó pha màu vào hình
+            // chứ không làm hình trong đi — hình vẫn đặc nguyên, chỉ nhạt màu.
+            // Muốn thấy được ảnh nền phía sau thì phải hạ alpha của cả hình.
+            //
+            // Chọn chữ đen hay trắng bằng ĐỘ SÁNG của màu tô chứ không đoán
+            // theo màu: bìa album có đủ mọi màu, và một quy tắc kiểu "màu nào
+            // cũng dùng chữ trắng" sẽ hỏng ngay ở cái bìa vàng đầu tiên.
+            val nen = mauBia ?: NEN_GIAY
+            val chuDam = sangHay(nen)
+            view.setInt(R.id.khung_loi_nen, "setColorFilter", nen)
+            view.setInt(R.id.khung_loi_nen, "setImageAlpha", DUC_NEN)
+            view.setTextColor(R.id.khung_loi_cau, if (chuDam) CHU_TREN_NEN_SANG else CHU_TREN_NEN_TOI)
+            view.setTextColor(
+                R.id.khung_loi_ten_bai,
+                if (chuDam) CHU_MO_TREN_NEN_SANG else CHU_MO_TREN_NEN_TOI
+            )
 
             view.setTextViewText(
                 R.id.khung_loi_ten_bai,
@@ -171,5 +227,45 @@ class KhungLoiWidget : AppWidgetProvider() {
 
             ids.forEach { manager.updateAppWidget(it, view) }
         }
+
+        /**
+         * Nền này sáng hay tối — để quyết định chữ đen hay chữ trắng.
+         *
+         * Dùng ĐỘ SÁNG CẢM NHẬN chứ không lấy trung bình ba kênh màu: mắt người
+         * nhạy với xanh lá hơn hẳn xanh dương, nên một nền vàng và một nền xanh
+         * dương có cùng trung bình lại sáng khác hẳn nhau. Lấy trung bình thì
+         * chữ trắng trên nền vàng — đọc gần như không ra.
+         *
+         * Ngưỡng 0,6 chứ không phải 0,5: giữa hai lỗi thì chữ đen trên nền hơi
+         * tối vẫn đọc được, còn chữ trắng trên nền hơi sáng thì mất hẳn.
+         */
+        internal fun sangHay(mau: Int): Boolean {
+            val r = ((mau shr 16) and 0xFF) / 255f
+            val g = ((mau shr 8) and 0xFF) / 255f
+            val b = (mau and 0xFF) / 255f
+            return (0.299f * r + 0.587f * g + 0.114f * b) > 0.6f
+        }
+
+        /** Nền khi bài không có ảnh bìa. Cùng màu giấy với các trang trong app. */
+        private const val NEN_GIAY = 0xFFFBF6EC.toInt()
+
+        /**
+         * Độ đục của nền, 0–255.
+         *
+         * 0xD9 là chừng 85%. Đủ trong để thấy ảnh nền phía sau — đó là điều
+         * đang muốn — mà vẫn đủ đặc để câu lời đọc được trên một hình nền bất
+         * kỳ. Trong hơn nữa thì một tấm ảnh nền nhiều chi tiết sẽ cắt vụn chữ,
+         * và widget này sinh ra chỉ để đọc được một câu.
+         *
+         * Không làm mờ nhoè được ảnh nền phía sau: `RemoteViews` không có
+         * đường nào bảo hệ thống làm nhoè, và widget thì do launcher vẽ chứ
+         * không phải app.
+         */
+        private const val DUC_NEN = 0xD9
+
+        private const val CHU_TREN_NEN_SANG = 0xFF191510.toInt()
+        private const val CHU_MO_TREN_NEN_SANG = 0x99191510.toInt()
+        private const val CHU_TREN_NEN_TOI = 0xFFFFFFFF.toInt()
+        private const val CHU_MO_TREN_NEN_TOI = 0xB3FFFFFF.toInt()
     }
 }

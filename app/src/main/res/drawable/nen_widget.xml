@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Nền của widget: bo góc, màu giấy như trong app.
+  Nền của widget: một hình bo góc TRẮNG ĐẶC, để mã tô màu lên.
+
+  Trắng đặc chứ không phải màu giấy: `setColorFilter` nhân màu lên hình có sẵn,
+  nên hình phải trắng thì màu tô ra mới đúng màu được yêu cầu. Hình có màu sẵn
+  thì mọi màu tô đều bị màu ấy kéo lệch đi.
 
   Bo 24dp cho khớp với cách Android 12 trở lên bo mọi widget. Máy cũ hơn không
   tự bo thì hình này lo, nên hai bên nhìn ra cùng một thứ.
@@ -8,5 +12,5 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <corners android:radius="24dp" />
-    <solid android:color="@color/nen_giay" />
+    <solid android:color="#FFFFFFFF" />
 </shape>

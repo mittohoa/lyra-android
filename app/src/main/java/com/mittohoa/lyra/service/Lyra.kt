@@ -41,6 +41,8 @@ import com.mittohoa.lyra.download.DownloadResult
 import com.mittohoa.lyra.download.Downloads
 import com.mittohoa.lyra.player.Artwork
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.compose.ui.graphics.toArgb
+import com.mittohoa.lyra.ui.dominantColor
 import com.mittohoa.lyra.player.CanBangAm
 import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.sources.Catalog
@@ -1347,6 +1349,9 @@ object Lyra {
      */
     private var widgetBai: String? = null
     private var widgetCau: String? = null
+    private var widgetDangTai: Boolean? = null
+    private var widgetBiaDaTinh: android.graphics.Bitmap? = null
+    private var widgetMau: Int? = null
 
     /**
      * Bao lâu nữa thì gọi nhịp lần sau.
@@ -1709,23 +1714,61 @@ object Lyra {
             ?.text?.takeIf { it.isNotBlank() }
 
         val doiBai = n.title != widgetBai
+        val dangTai = lyricsRepoOrNull?.loading?.value == true
 
         // Dong trong giua hai doan thi GIU NGUYEN cau vua hat, khong tra widget
         // ve trang. File .lrc nao cung co nhung dong trong nhu vay, va tra ve
         // roi hien lai cu vai giay mot lan bien man hinh chinh thanh mot cho
         // nhap nhay - trong khi cai nguoi ta muon chi la doc duoc cau vua nghe.
         if (cau == null && !doiBai) return
+
+        // KHONG DAY LAI THU DA NAM SAN TREN WIDGET.
+        //
+        // Do duoc bang nhat ky khi thu voi NhacCuaTui: dung mot cau bi day len
+        // MUOI LAN MOI GIAY suot ca bai. `widgetCau` von duoc ghi o duoi nhung
+        // khong cho nao doc, nen cai chan duy nhat la dong `cau == null` ngay
+        // tren - ma dong do chi chan luc KHONG co cau.
+        //
+        // Moi lan day la mot lan dung `RemoteViews` roi goi qua tien trinh cua
+        // launcher. Cau chu chi doi vai giay mot lan, nen chin muoi chin phan
+        // tram so lan goi ay khong doi mot diem anh nao.
+        //
+        // Tinh ca `dangTai`: khong co no thi bai tim mai khong ra loi se ket
+        // thuc bang cai vong quay quay mai tren widget - tua khong doi, cau van
+        // null, nen khong con lan day nao de tat no di.
+        if (!doiBai && cau == widgetCau && dangTai == widgetDangTai) return
+
         Log.d(TAG, "widget: day '${n.title}' / '$cau'")
 
         widgetBai = n.title
         widgetCau = cau
+        widgetDangTai = dangTai
+
+        // MAU NEN LAY TU ANH BIA, tinh o day chu khong trong `KhungLoiWidget`.
+        //
+        // `dominantColor` doc tung diem anh, va widget thi duoc ve tu ca nhip
+        // 10 lan moi giay lan tu broadcast cua he thong - de viec doc anh o do
+        // la doc lai cung mot anh hang tram lan. O day no chi chay khi cau chu
+        // that su doi, tuc vai giay mot lan.
+        //
+        // Uu tien anh AURA tu tai, roi moi toi anh app khac gui kem ban tin
+        // media - cung thu tu voi mau nen cua trang Bai, de hai cho khong ra
+        // hai mau cho cung mot bai.
+        val bia = _artwork.value ?: n.artwork
+        val mauNen = if (bia === widgetBiaDaTinh) widgetMau
+        else {
+            widgetBiaDaTinh = bia
+            widgetMau = dominantColor(bia)?.toArgb()
+            widgetMau
+        }
 
         // Bo doan lap ten ca si o dau ten bai - xem `tenBaiDeHien`.
         KhungLoiWidget.dat(
             context,
             tenBaiDeHien(n.artist, n.title),
             cau,
-            lyricsRepoOrNull?.loading?.value == true
+            dangTai,
+            mauNen
         )
     }
 
