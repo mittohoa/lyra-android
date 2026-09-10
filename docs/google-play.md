@@ -128,25 +128,23 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.27 — nghe gần đây, và trang Bài gọn lại.
+Bản 0.3.28 — hẹn giờ tắt nhạc, và tìm được cả trong lời.
 
-• Nghe gần đây: xem lại mình đã nghe gì, kể cả nhạc ở app khác. Sao lưu ra tệp, xoá lúc nào cũng được
-• Nghe dở tới đâu, lần sau mở lại từ đó — video và bài dài
-• Chọn bản lời khác khi AURA lấy nhầm; sửa tên bài / ca sĩ trong app
-• Sắp xếp và lọc thư viện: album, tên bài, ca sĩ, mới thêm; nhạc hoặc video
-• Trang Bài dồn ô lời nhắc vào mục "Việc khác" — chỗ đọc lời rộng gấp ba
+• Hẹn giờ tắt nhạc: sau 15/30/45/60 phút hoặc hết bài đang nghe. Tắt được cả nhạc phát ở app khác
+• Tìm trong LỜI: gõ một câu bạn nhớ, không cần dấu, ra bài có câu đó
+• Đổi tốc độ phát 0,5×–2× — trước đây nút này bị giấu trong chế độ luyện tập
+• Bài chưa có lời cũng mở được mục "Việc khác" — trước đây mục này biến mất
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.27 — recently played, and a tidier song page.
+Version 0.3.28 — a sleep timer, and search that reads the lyrics.
 
-• Recently played: what you listened to, including music in other apps. Back it up to a file, clear it any time
-• Picks up where you stopped — video and long recordings
-• Pick different lyrics when AURA gets it wrong; fix a song's title or artist in-app
-• Sort and filter your library: album, title, artist, recently added; music or video only
-• The song page folds its notices into an "Other" menu — three times the room for lyrics
+• Sleep timer: after 15/30/45/60 minutes, or at the end of the song. Works on music playing in other apps too
+• Search the LYRICS: type a line you remember and get the song it belongs to
+• Playback speed 0.5x–2x — this was buried inside practice mode before
+• Songs with no lyrics can open the "Other" menu — it used to disappear on them
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).

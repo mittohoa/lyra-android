@@ -10,8 +10,8 @@ import java.util.Properties
  * mot ban gop mang ten cua ban truoc, va do la loai nham lan khong ai phat hien
  * cho toi luc nop nham file len Play.
  */
-val maPhienBan = 38
-val tenPhienBan = "0.3.27"
+val maPhienBan = 39
+val tenPhienBan = "0.3.28"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -146,6 +146,26 @@ android {
      * chay duoc o moi may, chi la no nang.
      */
     val dungBanGop = gradle.startParameter.taskNames.any { it.contains("undle") }
+
+    // GOI CA HAI TRONG MOT LENH THI DUNG HAN, khong lam bua roi im.
+    //
+    // Co `dungBanGop` doc CA DANH SACH viec cua lenh dang chay, khong doc
+    // rieng tung viec. Nen `gradlew bundlePlayRelease assembleSideloadRelease`
+    // lam co bat len cho ca hai, va ban cai tay ra duy nhat mot goi gom - mat
+    // ban arm64 hai muoi mot MB, chi con ban bay muoi MB. Khong bao loi, khong
+    // canh bao; chi la mot thu muc ket qua thieu ba tep ma khong ai de y.
+    //
+    // Da dam vao that: lan dung 0.3.28 goi ca hai viec mot luot, va cho toi
+    // luc di gom tep phat hanh moi thay thieu.
+    //
+    // Khong the vua tach goi vua dung ban gop trong mot lan chay - do la gioi
+    // han cua AGP, khong phai lua chon o day. Nen viec dung dan la chay hai
+    // lenh, va cho nay noi thang dieu do ra.
+    val goiAssemble = gradle.startParameter.taskNames.any { it.contains("ssemble") }
+    check(!(dungBanGop && goiAssemble)) {
+        "Dung goi 'bundle' va 'assemble' trong cung mot lenh gradle: ban cai tay " +
+            "se mat cac goi tach theo CPU. Chay hai lenh rieng."
+    }
 
     splits {
         abi {
