@@ -128,23 +128,21 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.29 — tải sẵn lời để tìm được cả trong lời, và ba thứ nhỏ.
+Bản 0.3.30 — widget trong mờ, ăn màu theo ảnh bìa.
 
-• Tải lời cho cả thư viện một lượt, rồi gõ một câu bạn nhớ là ra bài
-• Nghe nhiều nhất: xem bài nào bạn mở đi mở lại
-• Yêu thích: một chạm ngay lúc bài đang hát
-• Cân bằng âm, chọn theo bộ mẫu có sẵn của máy
+• Widget khung lời giờ trong mờ và đổi màu theo bìa bài đang phát, không còn là một ô đặc dán đè lên màn hình chính
+• Chữ tự đổi đen hoặc trắng cho hợp nền, kể cả bìa màu vàng hay xanh đậm
+• Bớt hẳn phần tính lặp mỗi giây khi widget đang bật
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.29 — download lyrics up front so search can read them, plus three small things.
+Version 0.3.30 — a translucent widget that picks up the album colour.
 
-• Fetch lyrics for your whole library at once, then type a line you remember to find the song
-• Most played: see which songs you keep coming back to
-• Favourites: one tap while the song is playing
-• Equalizer, using the presets your phone already has
+• The lyrics widget is now translucent and takes its colour from the current album art, instead of sitting on your home screen as a solid block
+• Text switches between dark and light to stay readable on any cover colour
+• Much less repeated work each second while the widget is on
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
