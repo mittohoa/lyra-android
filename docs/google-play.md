@@ -128,23 +128,23 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.28 — hẹn giờ tắt nhạc, và tìm được cả trong lời.
+Bản 0.3.29 — tải sẵn lời để tìm được cả trong lời, và ba thứ nhỏ.
 
-• Hẹn giờ tắt nhạc: sau 15/30/45/60 phút hoặc hết bài đang nghe. Tắt được cả nhạc phát ở app khác
-• Tìm trong LỜI: gõ một câu bạn nhớ, không cần dấu, ra bài có câu đó
-• Đổi tốc độ phát 0,5×–2× — trước đây nút này bị giấu trong chế độ luyện tập
-• Bài chưa có lời cũng mở được mục "Việc khác" — trước đây mục này biến mất
+• Tải lời cho cả thư viện một lượt, rồi gõ một câu bạn nhớ là ra bài
+• Nghe nhiều nhất: xem bài nào bạn mở đi mở lại
+• Yêu thích: một chạm ngay lúc bài đang hát
+• Cân bằng âm, chọn theo bộ mẫu có sẵn của máy
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.28 — a sleep timer, and search that reads the lyrics.
+Version 0.3.29 — download lyrics up front so search can read them, plus three small things.
 
-• Sleep timer: after 15/30/45/60 minutes, or at the end of the song. Works on music playing in other apps too
-• Search the LYRICS: type a line you remember and get the song it belongs to
-• Playback speed 0.5x–2x — this was buried inside practice mode before
-• Songs with no lyrics can open the "Other" menu — it used to disappear on them
+• Fetch lyrics for your whole library at once, then type a line you remember to find the song
+• Most played: see which songs you keep coming back to
+• Favourites: one tap while the song is playing
+• Equalizer, using the presets your phone already has
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
