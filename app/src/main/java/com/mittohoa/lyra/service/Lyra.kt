@@ -657,7 +657,7 @@ object Lyra {
     /** Doc mot tep sao luu vao kho. Tron chu khong ghi de - xem `LichSuNghe.gop`. */
     fun nhapLichSu(context: Context, raw: String): SaoLuuLichSu.KetQua {
         val cac = SaoLuuLichSu.nhap(raw)
-        if (cac.isEmpty()) return SaoLuuLichSu.KetQua(0, 0, 1)
+        if (cac.isEmpty()) return SaoLuuLichSu.KetQua(0, 0, 0, 1)
         return khoLichSu(context).gop(cac)
     }
 
@@ -716,7 +716,7 @@ object Lyra {
                 val nghe = phan[SaoLuuTatCa.PHAN_NGHE]
                     ?.takeIf { it.isNotBlank() }
                     ?.let { nhapLichSu(context, it) }
-                    ?: SaoLuuLichSu.KetQua(0, 0, 0)
+                    ?: SaoLuuLichSu.KetQua(0, 0, 0, 0)
 
                 // Yeu thich: THEM vao chu khong thay the, cung le voi lich su.
                 // Khoi phuc tren mot may da danh dau vai bai ma xoa sach di thi

@@ -61,7 +61,7 @@ object SaoLuuTatCa {
     /** Số việc đã khôi phục, để màn hình nói thật thay vì báo "xong". */
     data class KetQua(
         val loi: SaoLuuLoi.KetQua = SaoLuuLoi.KetQua(0, 0, 0),
-        val nghe: SaoLuuLichSu.KetQua = SaoLuuLichSu.KetQua(0, 0, 0),
+        val nghe: SaoLuuLichSu.KetQua = SaoLuuLichSu.KetQua(0, 0, 0, 0),
         val thich: Int = 0,
         val coCanBang: Boolean = false,
         val hong: Boolean = false

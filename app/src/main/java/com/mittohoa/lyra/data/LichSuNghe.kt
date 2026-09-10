@@ -135,12 +135,19 @@ class LichSuNghe(context: Context) {
      * để nói thật thay vì báo "xong" cho một việc chẳng thay đổi gì.
      */
     fun gop(cac: List<LanNghe>): SaoLuuLichSu.KetQua {
-        if (cac.isEmpty()) return SaoLuuLichSu.KetQua(0, 0, 0)
+        if (cac.isEmpty()) return SaoLuuLichSu.KetQua(0, 0, 0, 0)
 
         val theoKhoa = LinkedHashMap<String, LanNghe>()
         for (l in _lichSu.value) theoKhoa[l.khoa] = l
 
-        var them = 0
+        // ĐẾM RIÊNG BÀI MỚI VÀ BÀI LÀM MỚI.
+        //
+        // Gộp làm một con số thì câu báo nói hẹp: khôi phục mười chín dòng mà
+        // đa số là bài máy đã có, tổng chỉ nhích một, và người đọc tưởng mất
+        // dữ liệu. Cả hai đều là việc thật, chỉ khác nhau ở chỗ một cái làm
+        // danh sách DÀI ra còn một cái làm nó MỚI hơn.
+        var themMoi = 0
+        var capNhat = 0
         var daCo = 0
         for (l in cac) {
             if (l.ten.isBlank() && l.caSi.isBlank()) continue
@@ -154,14 +161,14 @@ class LichSuNghe(context: Context) {
             // chẳng nghe thêm bài nào. Lấy cái lớn hơn thì việc khôi phục lặp
             // lại bao nhiêu lần cũng cho ra cùng một kết quả.
             theoKhoa[l.khoa] = l.copy(soLan = maxOf(l.soLan, cu?.soLan ?: 0))
-            them++
+            if (cu == null) themMoi++ else capNhat++
         }
-        if (them == 0) return SaoLuuLichSu.KetQua(0, daCo, 0)
+        if (themMoi == 0 && capNhat == 0) return SaoLuuLichSu.KetQua(0, 0, daCo, 0)
 
         val moi = theoKhoa.values.sortedByDescending { it.luc }.take(TRAN)
         _lichSu.value = moi
         ghiDia(moi)
-        return SaoLuuLichSu.KetQua(them, daCo, 0)
+        return SaoLuuLichSu.KetQua(themMoi, capNhat, daCo, 0)
     }
 
     /** Xoá sạch. Không có bước hoàn tác — bên gọi phải hỏi trước. */

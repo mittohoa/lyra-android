@@ -37,8 +37,27 @@ object SaoLuuLichSu {
     const val NHAN = "LYRA-NGHE"
     const val PHIEN_BAN = 1
 
-    /** Kết quả khôi phục, để màn hình nói thật con số thay vì "xong". */
-    data class KetQua(val them: Int, val daCo: Int, val hong: Int)
+    /**
+     * Kết quả khôi phục, để màn hình nói thật con số thay vì "xong".
+     *
+     * TÁCH `themMoi` KHỎI `capNhat`, và đây là chỗ từng nói hẹp. Trước đây cả
+     * hai gộp làm một con số, nên khôi phục mười chín dòng mà đa số là bài máy
+     * đã có thì màn hình báo "đã khôi phục 19 lần nghe" trong khi tổng chỉ nhích
+     * đúng một. Không sai — mười chín dòng đã được áp thật — nhưng người đọc
+     * hiểu thành "thêm 19", rồi nhìn con số tổng và tưởng mất dữ liệu.
+     *
+     * `daCo` khác cả hai: đó là những dòng trong tệp CŨ HƠN thứ máy đang giữ,
+     * nên không đổi được gì.
+     */
+    data class KetQua(
+        val themMoi: Int,
+        val capNhat: Int,
+        val daCo: Int,
+        val hong: Int
+    ) {
+        /** Có đổi được gì không — dùng để biết có phải ghi đĩa hay không. */
+        val coDoi: Boolean get() = themMoi > 0 || capNhat > 0
+    }
 
     fun xuat(cac: List<LanNghe>): String = buildString {
         append(NHAN).append('\t').append(PHIEN_BAN).append('\n')

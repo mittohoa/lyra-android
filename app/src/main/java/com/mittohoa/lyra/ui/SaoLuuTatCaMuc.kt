@@ -166,7 +166,23 @@ internal fun SaoLuuTatCaMuc(accent: Color) {
 private fun keChiTiet(kq: com.mittohoa.lyra.data.SaoLuuTatCa.KetQua): String {
     val phan = buildList {
         if (kq.loi.them > 0) add("${kq.loi.them} bài lời")
-        if (kq.nghe.them > 0) add("${kq.nghe.them} lần nghe")
+
+        // TÁCH "THÊM MỚI" KHỎI "LÀM MỚI".
+        //
+        // Gộp làm một con số thì câu báo nói hẹp, và người đọc hiểu sai theo
+        // đúng hướng đáng lo nhất: khôi phục mười chín dòng mà đa số là bài máy
+        // đã có, dòng đếm ở trên chỉ nhích một, và họ tưởng mười tám dòng kia
+        // đã mất. Cả hai đều là việc thật — một cái làm danh sách DÀI ra, một
+        // cái làm nó MỚI hơn — nên nói ra cả hai.
+        //
+        // Hai MỤC RIÊNG chứ không phải một mục có dấu hai chấm: câu báo này là
+        // một danh sách ngăn bằng dấu phẩy, nên "lần nghe: thêm 1, làm mới 2"
+        // nằm lẫn giữa "3 bài lời" và "5 bài yêu thích" thì không biết dấu
+        // phẩy nào thuộc về ai.
+        val n = kq.nghe
+        if (n.themMoi > 0) add("${n.themMoi} lần nghe mới")
+        if (n.capNhat > 0) add("${n.capNhat} lần nghe được cập nhật")
+
         if (kq.thich > 0) add("${kq.thich} bài yêu thích")
         if (kq.coCanBang) add("lựa chọn cân bằng âm")
     }
