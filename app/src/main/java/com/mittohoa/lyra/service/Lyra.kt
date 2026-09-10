@@ -1716,11 +1716,21 @@ object Lyra {
         val doiBai = n.title != widgetBai
         val dangTai = lyricsRepoOrNull?.loading?.value == true
 
+        // Bai KHONG CO LOI ma viec tim vua xong. Day la lan day duy nhat tat
+        // duoc dong "dang tim loi" tren widget: tu day tro di ten bai khong
+        // doi, cau van null, nen khong con dip nao nua.
+        //
+        // Phai kem dieu kien KHONG CO LOI. Bai co loi ma dung luc tim xong lai
+        // roi vao mot dong trong giua hai doan thi cau cung null, va day luc do
+        // se ghi "chua co loi cho bai nay" len mot bai co loi han hoi.
+        val coLoi = loi != null && loi.lines.isNotEmpty()
+        val vuaTimXong = !coLoi && dangTai != widgetDangTai
+
         // Dong trong giua hai doan thi GIU NGUYEN cau vua hat, khong tra widget
         // ve trang. File .lrc nao cung co nhung dong trong nhu vay, va tra ve
         // roi hien lai cu vai giay mot lan bien man hinh chinh thanh mot cho
         // nhap nhay - trong khi cai nguoi ta muon chi la doc duoc cau vua nghe.
-        if (cau == null && !doiBai) return
+        if (cau == null && !doiBai && !vuaTimXong) return
 
         // KHONG DAY LAI THU DA NAM SAN TREN WIDGET.
         //
@@ -1733,9 +1743,9 @@ object Lyra {
         // launcher. Cau chu chi doi vai giay mot lan, nen chin muoi chin phan
         // tram so lan goi ay khong doi mot diem anh nao.
         //
-        // Tinh ca `dangTai`: khong co no thi bai tim mai khong ra loi se ket
-        // thuc bang cai vong quay quay mai tren widget - tua khong doi, cau van
-        // null, nen khong con lan day nao de tat no di.
+        // Tinh ca `dangTai` o day nua, cho truong hop bai CO loi: luc tim xong,
+        // cau da co roi nhung cai co van phai duoc chot lai, khong thi lan sau
+        // no doi mot minh se khong ai nhan ra.
         if (!doiBai && cau == widgetCau && dangTai == widgetDangTai) return
 
         Log.d(TAG, "widget: day '${n.title}' / '$cau'")
