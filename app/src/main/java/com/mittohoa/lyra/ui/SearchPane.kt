@@ -109,7 +109,8 @@ fun SearchPane(
     onXoaMotLanNghe: (String) -> Unit,
     onXoaLichSu: () -> Unit,
     ketQuaLoi: List<Lyra.BaiKhopLoi>,
-    onPhatBaiKhopLoi: (Track) -> Unit
+    onPhatBaiKhopLoi: (Track) -> Unit,
+    baiYeuThich: List<Track>
 ) {
     // Màn hình lịch sử PHỦ LÊN trang này, cùng lẽ với màn hình danh sách phát:
     // mở ra là một việc ngắn — xem, bấm, rồi đóng.
@@ -354,6 +355,33 @@ fun SearchPane(
                 }
                 if (playlists.isNotEmpty()) item(key = "dsphat") {
                     PlaylistRow(playlists, accent, onOpen = onOpenPlaylist)
+                }
+
+                // YÊU THÍCH đứng SAU danh sách phát: nó là một danh sách nữa,
+                // chỉ khác ở chỗ người dùng dựng nó bằng một cú chạm mỗi lần
+                // thay vì ngồi xếp. Cùng loại thì đứng cùng chỗ.
+                if (baiYeuThich.isNotEmpty()) item(key = "yeuthich") {
+                    Text(
+                        "Yêu thích  ·  ${baiYeuThich.size} bài",
+                        color = mau.chuRatMo,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp)
+                    )
+                }
+                if (baiYeuThich.isNotEmpty()) {
+                    items(baiYeuThich, key = { "yt:" + it.playbackUri }) { track ->
+                        TrackRow(
+                            track = track,
+                            accent = accent,
+                            playing = track.playbackUri == playingUri,
+                            onPlay = { onPhatBaiKhopLoi(track) },
+                            onEnqueue = { onEnqueue(track) },
+                            download = null,
+                            onDownload = {}
+                        )
+                    }
+                    item(key = "yeuthich:day") { Spacer(Modifier.height(14.dp)) }
                 }
 
                 // LỐI VÀO THƯ VIỆN PHẢI CÒN Ở ĐÂY.

@@ -15,7 +15,7 @@ import java.util.Locale
  * ĐỊNH DẠNG — chữ trơn, mỗi lần nghe một dòng, các cột cách nhau bằng tab:
  *
  *     LYRA-NGHE  1
- *     <lúc>  <địa chỉ>  <app>  <ca sĩ>  <tên bài>  <giờ đọc được>
+ *     <lúc>  <địa chỉ>  <app>  <ca sĩ>  <tên bài>  <số lần>  <giờ đọc được>
  *
  * Không dùng JSON, cùng lẽ với [SaoLuuLoi]: tệp này người dùng sẽ mở ra xem, và
  * một dòng JSON dài ngoằng thì không ai đọc nổi.
@@ -49,6 +49,7 @@ object SaoLuuLichSu {
                 .append(don(l.app)).append('\t')
                 .append(don(l.caSi)).append('\t')
                 .append(don(l.ten)).append('\t')
+                .append(l.soLan).append('\t')
                 .append(if (l.luc > 0L) gio.format(Date(l.luc)) else "")
                 .append('\n')
         }
@@ -84,7 +85,13 @@ object SaoLuuLichSu {
                 ten = ten,
                 caSi = caSi,
                 app = cot[2],
-                luc = luc
+                luc = luc,
+                // CỘT SỐ LẦN THÊM SAU, nên tệp cũ không có nó. Thiếu thì đọc
+                // thành 1 — "đã nghe ít nhất một lần" là điều duy nhất chắc
+                // chắn đúng với một dòng đã nằm trong lịch sử. Không tăng số
+                // phiên bản tệp vì bản đọc cũ vẫn đọc được tệp mới: nó chỉ lấy
+                // năm cột đầu và bỏ qua phần đuôi.
+                soLan = cot.getOrNull(5)?.trim()?.toIntOrNull()?.coerceAtLeast(1) ?: 1
             )
         }
         return ra

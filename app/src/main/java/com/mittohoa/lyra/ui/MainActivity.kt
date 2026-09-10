@@ -203,6 +203,7 @@ class MainActivity : ComponentActivity() {
             val playlists by Lyra.playlists.collectAsStateWithLifecycle()
             val lichSu by Lyra.lichSuNghe.collectAsStateWithLifecycle()
             val ketQuaLoi by Lyra.ketQuaLoi.collectAsStateWithLifecycle()
+            val yeuThich by Lyra.yeuThich.collectAsStateWithLifecycle()
             val downloads by Lyra.downloads.collectAsStateWithLifecycle()
             val banMoi by Lyra.banMoi.collectAsStateWithLifecycle()
             val capNhat by Lyra.capNhat.collectAsStateWithLifecycle()
@@ -343,6 +344,9 @@ class MainActivity : ComponentActivity() {
                 // bam mot bai la y muon nghe tiep tu do tro di trong thu vien,
                 // khong phai nghe dung ba bai vua khop mot chu roi im.
                 onPhatBaiKhopLoi = { Lyra.phatTrongThuVien(this, it) },
+                // Doc lai moi lan danh sach yeu thich hoac thu vien doi: bai
+                // da xoa khoi may thi cung phai roi khoi day.
+                baiYeuThich = remember(yeuThich, library) { Lyra.baiYeuThich() },
                 chuDe = chuDe,
                 onChuDeChange = {
                     chuDe = it

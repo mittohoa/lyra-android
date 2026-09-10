@@ -21,6 +21,7 @@ import com.mittohoa.lyra.data.TranslatePrefs
 import com.mittohoa.lyra.data.TranslateSettings
 import com.mittohoa.lyra.data.TranslationCache
 import com.mittohoa.lyra.data.UpdateChecker
+import com.mittohoa.lyra.data.YeuThich
 import com.mittohoa.lyra.update.ApkInstaller
 import androidx.core.content.res.ResourcesCompat
 import com.mittohoa.lyra.data.ChuDePrefs
@@ -39,6 +40,8 @@ import com.mittohoa.lyra.overlay.OverlayHost
 import com.mittohoa.lyra.download.DownloadResult
 import com.mittohoa.lyra.download.Downloads
 import com.mittohoa.lyra.player.Artwork
+import androidx.media3.exoplayer.ExoPlayer
+import com.mittohoa.lyra.player.CanBangAm
 import com.mittohoa.lyra.player.Playback
 import com.mittohoa.lyra.sources.Catalog
 import com.mittohoa.lyra.sources.KieuXep
@@ -57,6 +60,8 @@ import kotlinx.coroutines.CoroutineScope
 import com.mittohoa.lyra.lyrics.normalizeForCompare
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import android.graphics.Bitmap
@@ -164,6 +169,11 @@ object Lyra {
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 refreshLocalNow()
+                // Gan can bang am o day chu khong luc dung bo phat: phien am
+                // thanh chi co that khi bo phat da mo duong ra, ma truoc bai
+                // dau tien thi no chua mo. Gan som la gan vao so 0 - khong tac
+                // dung, va khong bao gi.
+                if (isPlaying) ganCanBang()
                 if (isPlaying) startTick()
             }
 
@@ -986,6 +996,156 @@ object Lyra {
         Playback.playQueue(context, _library.value, index)
     }
 
+    // ---- Can bang am ----
+
+    private var canBang: CanBangAm? = null
+
+    /** Doi moi lan gan lai hay doi bo mau, de man hinh Chinh ve lai. */
+    private val _nhipCanBang = MutableStateFlow(0)
+    val nhipCanBang: StateFlow<Int> = _nhipCanBang.asStateFlow()
+
+    fun boCanBang(context: Context): CanBangAm =
+        canBang ?: CanBangAm(context.applicationContext).also { canBang = it }
+
+    private fun ganCanBang() {
+        val p = localPlayer as? ExoPlayer ?: return
+        val kho = canBang ?: appContext?.let { boCanBang(it) } ?: return
+        kho.gan(p.audioSessionId)
+        _nhipCanBang.value++
+    }
+
+    fun datBatCanBang(context: Context, bat: Boolean) {
+        boCanBang(context).datBat(bat)
+        _nhipCanBang.value++
+    }
+
+    fun datMauCanBang(context: Context, i: Int) {
+        boCanBang(context).datMau(i)
+        _nhipCanBang.value++
+    }
+
+    // ---- Yeu thich ----
+
+    private var khoYeuThich: YeuThich? = null
+
+    private val _yeuThich = MutableStateFlow<Set<String>>(emptySet())
+    val yeuThich: StateFlow<Set<String>> = _yeuThich.asStateFlow()
+
+    private fun khoYeu(context: Context): YeuThich =
+        khoYeuThich ?: YeuThich(context.applicationContext).also { kho ->
+            khoYeuThich = kho
+            scope.launch { kho.bo.collect { _yeuThich.value = it } }
+        }
+
+    /**
+     * Danh dau hoac bo danh dau bai DANG PHAT.
+     *
+     * Chi lam duoc voi nhac AURA tu phat: dau moc la dia chi tep, ma nhac o
+     * Zing hay YouTube thi khong co dia chi nao ben nay giu duoc.
+     */
+    fun doiYeuThich(context: Context) {
+        val diaChi = Playback.currentTrack?.uri ?: return
+        if (!laLyraPhat()) return
+        khoYeu(context).doi(diaChi)
+    }
+
+    fun doiYeuThich(context: Context, bai: Track) {
+        khoYeu(context).doi(bai.playbackUri)
+    }
+
+    /** Nhung bai yeu thich con thay trong thu vien, moi danh dau len truoc. */
+    fun baiYeuThich(): List<Track> {
+        val thu = _library.value.associateBy { it.playbackUri }
+        return _yeuThich.value.mapNotNull { thu[it] }
+    }
+
+    // ---- Tai loi san cho ca thu vien ----
+
+    /**
+     * Tien do mot lan tai loi cho ca thu vien.
+     *
+     * `daCo` dem so bai kho DA CO LOI, khong dem so lan goi mang: nguoi dung
+     * muon biet "tim duoc bao nhieu bai", con so lan goi mang la chuyen cua may.
+     */
+    data class TienTaiLoi(val daXet: Int, val tong: Int, val daCo: Int, val xong: Boolean)
+
+    private val _tienTaiLoi = MutableStateFlow<TienTaiLoi?>(null)
+    val tienTaiLoi: StateFlow<TienTaiLoi?> = _tienTaiLoi.asStateFlow()
+
+    private var jobTaiLoi: Job? = null
+
+    /**
+     * Tai san loi cho moi bai trong thu vien.
+     *
+     * VI SAO CAN. O tim doc duoc ca loi bai hat, nhung chi doc duoc loi DA NAM
+     * TRONG KHO - tuc nhung bai da tung mo. Mot thu vien nam tram bai ma moi
+     * nghe hai chuc thi o tim gan nhu trong, va man hinh phai dung ra xin loi.
+     * Lan tai nay bien no tu mot meo hay thanh mot tinh nang that.
+     *
+     * DI TUNG BAI MOT, CO NGHI GIUA HAI LAN. LRCLIB la kho mo, mien phi, chay
+     * bang tien quyen gop; ban ba tram lan goi song song vao do la cach nhanh
+     * nhat de ca app bi chan. Cham hon thi chi la doi lau hon mot chut, ma lan
+     * nay von la viec chay nen.
+     *
+     * BO QUA BAI KHO DA CO. Chay lan hai chi ton mang cho phan con thieu, nen
+     * bam lai sau khi them nhac vao thu vien la viec re.
+     */
+    fun taiLoiChoThuVien(context: Context) {
+        if (jobTaiLoi?.isActive == true) return
+        appContext = context.applicationContext
+        chuanBi(context)
+
+        val bai = _library.value
+        if (bai.isEmpty()) {
+            _tienTaiLoi.value = TienTaiLoi(0, 0, 0, xong = true)
+            return
+        }
+
+        jobTaiLoi = scope.launch {
+            val kho = lyricsRepo
+            var daCo = 0
+            _tienTaiLoi.value = TienTaiLoi(0, bai.size, 0, xong = false)
+            for ((i, b) in bai.withIndex()) {
+                if (!isActive) break
+                // Da co san thi khong goi mang, va cung khong nghi.
+                val sanCo = kho.daCoLoi(b.artist, b.title)
+                val co = if (sanCo) true
+                else {
+                    val duoc = runCatching { kho.taiVaNho(b.artist, b.title, b.durationMs) }
+                        .getOrDefault(false)
+                    delay(NGHI_GIUA_HAI_LAN_MS)
+                    duoc
+                }
+                if (co) daCo++
+                _tienTaiLoi.value = TienTaiLoi(i + 1, bai.size, daCo, xong = false)
+            }
+            _tienTaiLoi.value = _tienTaiLoi.value?.copy(xong = true)
+            Log.i(TAG, "Tai loi thu vien xong: $daCo/${bai.size}")
+        }
+    }
+
+    fun thoiTaiLoi() {
+        jobTaiLoi?.cancel()
+        _tienTaiLoi.value = _tienTaiLoi.value?.copy(xong = true)
+    }
+
+    /** Bao nhieu bai trong thu vien da co loi trong kho. */
+    fun demBaiCoLoi(context: Context): Int {
+        chuanBi(context)
+        val kho = lyricsRepo
+        return _library.value.count { kho.daCoLoi(it.artist, it.title) }
+    }
+
+    /**
+     * Nghi giua hai lan goi mang khi tai ca thu vien.
+     *
+     * LRCLIB khong cong bo mot han muc cu the, nen con so nay chon theo le
+     * thuong cua mot ben dung nho: cham hon han mot nguoi dung binh thuong co
+     * the sinh ra. Nam tram bai mat chung hai phut - dai, nhung day la viec
+     * chay nen va nguoi dung khong ngoi nhin.
+     */
+    private const val NGHI_GIUA_HAI_LAN_MS = 250L
+
     /** Một bài tìm ra nhờ LỜI của nó, kèm đúng câu đã khớp. */
     data class BaiKhopLoi(val bai: Track, val cau: String)
 
@@ -1699,6 +1859,7 @@ object Lyra {
         // tao kho truoc khi `chuanBi` chay, va dung hai kho cho mot tep tren dia
         // thi ben nay ghi de mat ban cua ben kia.
         khoLichSu(context)
+        khoYeu(context)
     }
 
     /**

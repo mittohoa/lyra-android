@@ -174,6 +174,28 @@ class LyricsRepository(
     suspend fun lookup(artist: String, title: String, durationMs: Long): Lyrics? =
         resolve(artist, title, durationMs)
 
+    /** Kho đã có lời của bài này chưa. Không gọi mạng. */
+    fun daCoLoi(artist: String, title: String): Boolean = cache?.get(artist, title) != null
+
+    /**
+     * Tải lời một bài rồi CẤT VÀO KHO, không đụng tới bài đang phát.
+     *
+     * `lookup` không cất — nó sinh ra cho việc tải một bài về máy, nơi lời chỉ
+     * cần một lần rồi ghi thẳng ra tệp. Ở đây thì cất mới là mục đích: cả việc
+     * tải sẵn cho thư viện lẫn ô tìm trong lời đều đọc từ kho.
+     *
+     * Trả `true` khi sau lệnh này kho CÓ lời của bài — kể cả khi nó đã có sẵn
+     * từ trước. Bên gọi đếm số bài có lời, không đếm số lần gọi mạng.
+     */
+    suspend fun taiVaNho(artist: String, title: String, durationMs: Long): Boolean {
+        val kho = cache ?: return false
+        if (kho.get(artist, title) != null) return true
+        val found = resolve(artist, title, durationMs) ?: return false
+        if (found.isEmpty) return false
+        kho.put(artist, title, found)
+        return true
+    }
+
     /**
      * Cac ban loi khac cho bai dang phat, de nguoi dung tu chon.
      *

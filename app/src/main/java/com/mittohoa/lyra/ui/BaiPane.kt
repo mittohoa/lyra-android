@@ -163,6 +163,7 @@ fun BaiPane(
     toanManHinh: Boolean
 ) {
     val ngucanh = androidx.compose.ui.platform.LocalContext.current
+    val yeuThich by Lyra.yeuThich.collectAsStateWithLifecycle()
     var naming by remember { mutableStateOf(false) }
 
     // Chế độ luyện tập: lặp một đoạn và đổi tốc độ.
@@ -298,7 +299,10 @@ fun BaiPane(
                     luyenTap = true
                     dongA = null
                 }
-            }
+            },
+            yeuThichDuoc = Lyra.laNhacTrongMay(),
+            dangYeuThich = queue.getOrNull(queueIndex)?.playbackUri in yeuThich,
+            onYeuThich = { Lyra.doiYeuThich(ngucanh) }
         )
 
         Box(Modifier.weight(1f)) {
@@ -706,7 +710,10 @@ private fun DaiNguCanh(
     onChiaSe: () -> Unit,
     luyenTapDuoc: Boolean,
     dangLuyenTap: Boolean,
-    onLuyenTap: () -> Unit
+    onLuyenTap: () -> Unit,
+    yeuThichDuoc: Boolean,
+    dangYeuThich: Boolean,
+    onYeuThich: () -> Unit
 ) {
     Row(
         Modifier
@@ -767,6 +774,33 @@ private fun DaiNguCanh(
             }
         }
         Spacer(Modifier.width(8.dp))
+
+        // TRÁI TIM ĐỨNG Ở DẢI NÀY, không nằm trong mục lục "Việc khác".
+        //
+        // Đánh dấu một bài phải là MỘT cú chạm ngay lúc nó đang hát — đó đúng
+        // là lúc người ta biết mình thích nó. Nhét vào mục lục là hai cú chạm ở
+        // đúng khoảnh khắc ấy, và với hai cú chạm thì gần như không ai làm.
+        //
+        // Chỉ hiện với nhạc AURA tự phát: dấu mốc là địa chỉ tệp, mà nhạc ở
+        // Zing hay YouTube thì bên này không có địa chỉ nào để giữ.
+        if (yeuThichDuoc) {
+            Box(
+                Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (dangYeuThich) accent else mau.nenChim.copy(alpha = DUC_CHIP))
+                    .clickable(onClick = onYeuThich),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    if (dangYeuThich) "♥" else "♡",
+                    color = if (dangYeuThich) Color.White else mau.chuMo,
+                    fontSize = 16.sp
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+        }
+
         if (luyenTapDuoc) {
             Box(
                 Modifier

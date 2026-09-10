@@ -24,7 +24,37 @@ import java.security.MessageDigest
  */
 class LyricCache(context: Context) {
 
-    private val dir = File(context.cacheDir, "lyrics").apply { mkdirs() }
+    /**
+     * ĐÃ CHUYỂN TỪ `cacheDir` SANG `filesDir`, và đây là một đổi ý có lý do.
+     *
+     * Hồi kho này chỉ là bộ nhớ đệm thì `cacheDir` đúng: mất thì gọi mạng lại,
+     * chậm hơn chứ không hỏng gì. Từ khi ô tìm đọc được cả lời (`timTrongLoi`)
+     * và người dùng bấm "tải lời cho cả thư viện", nội dung ở đây thành thứ họ
+     * ĐÃ BỎ CÔNG LÀM — có khi là hai chục phút chờ tải năm trăm bài. Hệ thống
+     * được phép dọn sạch `cacheDir` bất cứ lúc nào máy đầy, và một cú dọn như
+     * thế xoá luôn kết quả tìm mà không báo gì.
+     *
+     * Cả kho lời của hai nghìn bài chỉ chừng sáu MB. Đổi sáu MB lấy việc không
+     * bao giờ mất im lặng là đổi rẻ.
+     */
+    private val dir = File(context.filesDir, "lyrics").apply { mkdirs() }
+
+    init {
+        // Dọn nhà một lần từ chỗ cũ. Không chuyển thì mọi bài đã tra lời từ
+        // trước bản này bỗng thành chưa có, và lần tải cả thư viện đầu tiên
+        // phải gọi mạng lại từ đầu cho những bài kho đã biết câu trả lời.
+        val cu = File(context.cacheDir, "lyrics")
+        if (cu.isDirectory) {
+            cu.listFiles()?.forEach { f ->
+                val moi = File(dir, f.name)
+                if (!moi.exists() && !f.renameTo(moi)) {
+                    runCatching { f.copyTo(moi, overwrite = false) }
+                }
+            }
+            runCatching { cu.deleteRecursively() }
+        }
+    }
+
     private val memory = object : LinkedHashMap<String, Lyrics>(16, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Lyrics>?) =
             size > MEMORY_ENTRIES
@@ -140,14 +170,14 @@ class LyricCache(context: Context) {
      * câu hỏi tự nhiên nhất, mà lại là câu duy nhất nó không trả lời được. Lời
      * thì đã nằm sẵn trong máy rồi; chỉ là chưa ai tra ngược.
      *
-     * CHỈ TÌM TRONG LỜI ĐÃ TẢI VỀ, và màn hình phải nói ra điều đó. Kho này chỉ
-     * có lời của những bài đã từng mở; một thư viện năm trăm bài mà mới nghe
-     * hai mươi thì chỉ hai mươi bài ấy tìm được. Không nói trước thì người dùng
+     * CHỈ TÌM TRONG LỜI ĐÃ CÓ TRONG KHO, và màn hình phải nói ra điều đó. Kho
+     * chỉ có lời của những bài đã từng mở, hoặc đã tải sẵn bằng "tải lời cho cả
+     * thư viện" — xem `Lyra.taiLoiChoThuVien`. Không nói trước thì người dùng
      * tìm một bài họ biết chắc là có lời, không ra, và kết luận là app hỏng.
      *
-     * Đọc cả thư mục mỗi lần tìm chứ không dựng chỉ mục: trần là 400 bản ghi
-     * vài KB một cái, và việc này chạy ở luồng nền sau một nhịp ngừng gõ. Một
-     * chỉ mục thì phải dựng lại mỗi lần kho đổi, và sai chỉ mục là sai lặng lẽ.
+     * Đọc cả thư mục mỗi lần tìm chứ không dựng chỉ mục: mỗi bản ghi vài KB, và
+     * việc này chạy ở luồng nền sau một nhịp ngừng gõ. Một chỉ mục thì phải
+     * dựng lại mỗi lần kho đổi, và sai chỉ mục là sai lặng lẽ.
      */
     fun timTrongLoi(needle: String): List<DongKhop> {
         val kim = normalizeForCompare(needle)
@@ -183,6 +213,14 @@ class LyricCache(context: Context) {
     private companion object {
         const val TAG = "AuraCache"
         const val MEMORY_ENTRIES = 24
-        const val DISK_ENTRIES = 400
+        /**
+         * Tran so ban ghi giu tren dia.
+         *
+         * Nang tu 400 len tren tran quet thu vien (2000 bai, xem `LocalLibrary`):
+         * de 400 thi "tai loi cho ca thu vien" cua mot thu vien lon tu an mot
+         * phan ket qua cua chinh no ngay trong luc chay, va phan bi an di lai la
+         * phan tai truoc - im lang, khong ai biet.
+         */
+        const val DISK_ENTRIES = 2_500
     }
 }

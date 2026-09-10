@@ -196,7 +196,8 @@ fun HomeScreen(
     onXoaMotLanNghe: (String) -> Unit,
     onXoaLichSu: () -> Unit,
     ketQuaLoi: List<Lyra.BaiKhopLoi>,
-    onPhatBaiKhopLoi: (com.mittohoa.lyra.sources.Track) -> Unit
+    onPhatBaiKhopLoi: (com.mittohoa.lyra.sources.Track) -> Unit,
+    baiYeuThich: List<com.mittohoa.lyra.sources.Track>
 ) {
     // Mau nen lay tu anh bia. Doi bai thi chuyen mau tu tu chu khong nhay cai -
     // nhay mau la thu mat nhat khi nghe nhac.
@@ -364,7 +365,8 @@ fun HomeScreen(
                         onXoaMotLanNghe = onXoaMotLanNghe,
                         onXoaLichSu = onXoaLichSu,
                         ketQuaLoi = ketQuaLoi,
-                        onPhatBaiKhopLoi = onPhatBaiKhopLoi
+                        onPhatBaiKhopLoi = onPhatBaiKhopLoi,
+                        baiYeuThich = baiYeuThich
                     )
                     1 -> BaiPane(
                         now = now,
@@ -1260,6 +1262,24 @@ internal fun TunePane(
             tomTat = "Sao lưu và khôi phục danh sách bài bạn đã nghe"
         ) {
             SaoLuuLichSuMuc(accent)
+        }
+
+        // Đặt NGAY DƯỚI mục thư mục quét và mấy mục sao lưu: cả ba đều nói về
+        // kho dữ liệu của app chứ không nói về cách app trông ra sao.
+        Muc(
+            tieuDe = "Cân bằng âm",
+            accent = accent,
+            tomTat = "Chọn một bộ mẫu âm thanh cho nhạc AURA tự phát"
+        ) {
+            CanBangAmMuc(accent)
+        }
+
+        Muc(
+            tieuDe = "Tải lời cho cả thư viện",
+            accent = accent,
+            tomTat = "Có sẵn lời thì ô tìm đọc được cả lời bài hát"
+        ) {
+            TaiLoiMuc(accent)
         }
 
         Muc(

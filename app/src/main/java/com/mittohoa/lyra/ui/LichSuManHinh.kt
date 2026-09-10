@@ -146,7 +146,21 @@ fun LichSuManHinh(
     // vế, và một hộp thoại phủ kín màn hình cho một vế thì nặng hơn việc nó hỏi.
     var hoiXoa by remember { mutableStateOf(false) }
 
+    // HAI CÁCH XẾP CÙNG MỘT DANH SÁCH, không phải hai màn hình.
+    //
+    // "Gần đây" và "Nghe nhiều nhất" trả lời hai câu hỏi khác nhau về đúng một
+    // mớ dữ liệu — dựng riêng một màn hình cho câu thứ hai là chép lại cả phần
+    // xoá, phần bấm phát, phần đếm, để rồi hai bản lệch nhau lúc nào không hay.
+    var theoSoLan by remember { mutableStateOf(false) }
+
     val nhom = remember(lichSu) { chiaTheoNgay(lichSu) }
+
+    // Chỉ những bài nghe từ hai lần trở lên. Một danh sách "nghe nhiều nhất" mà
+    // đuôi của nó toàn bài nghe đúng một lần thì nó chỉ là danh sách gần đây
+    // xếp ngược, và cái tên trở thành nói quá.
+    val nhieuNhat = remember(lichSu) {
+        lichSu.filter { it.soLan > 1 }.sortedByDescending { it.soLan }
+    }
 
     Column(Modifier.fillMaxSize().background(mau.nen)) {
         Row(
@@ -196,7 +210,33 @@ fun LichSuManHinh(
             )
         }
 
+        // Hàng chọn chỉ hiện khi CÓ bài nghe lại. Chưa nghe lại bài nào thì
+        // "Nghe nhiều nhất" bấm vào là một trang trống, và một nút dẫn tới chỗ
+        // trống thì thà đừng có.
+        if (nhieuNhat.isNotEmpty()) {
+            Row(
+                Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                VienLichSu("Gần đây", !theoSoLan, accent) { theoSoLan = false }
+                VienLichSu("Nghe nhiều nhất", theoSoLan, accent) { theoSoLan = true }
+            }
+        }
+
         LazyColumn(contentPadding = PaddingValues(bottom = 110.dp)) {
+            if (theoSoLan) {
+                items(nhieuNhat, key = { "nhieu:" + it.khoa }) { lan ->
+                    DongLichSu(
+                        lan,
+                        accent,
+                        hienSoLan = true,
+                        onChon = { onChon(lan) },
+                        onXoa = { onXoaMot(lan.khoa) }
+                    )
+                }
+                return@LazyColumn
+            }
+
             nhom.forEach { (ngay, ds) ->
                 item(key = "ngay:$ngay") {
                     Text(
@@ -221,6 +261,8 @@ fun LichSuManHinh(
 private fun DongLichSu(
     lan: LanNghe,
     accent: Color,
+    /** Bày số lần nghe. Chỉ có nghĩa ở danh sách xếp theo số lần. */
+    hienSoLan: Boolean = false,
     onChon: () -> Unit,
     onXoa: () -> Unit
 ) {
@@ -241,7 +283,7 @@ private fun DongLichSu(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                nhanDuoi(lan),
+                if (hienSoLan) "${lan.soLan} lần  ·  " + nhanDuoi(lan) else nhanDuoi(lan),
                 color = mau.chuRatMo,
                 fontSize = 12.5.sp,
                 maxLines = 1,
@@ -268,6 +310,22 @@ private fun DongLichSu(
             Text("×", color = mau.chuRatMo, fontSize = 17.sp)
         }
     }
+}
+
+/** Viên chọn cách xếp. Cùng hình dáng với hàng chọn ở trang Tìm. */
+@Composable
+private fun VienLichSu(nhan: String, dangChon: Boolean, accent: Color, onBam: () -> Unit) {
+    Text(
+        nhan,
+        color = if (dangChon) Color.White else mau.chuMo,
+        fontSize = 12.5.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (dangChon) accent else mau.nenChim)
+            .clickable(onClick = onBam)
+            .padding(horizontal = 14.dp, vertical = 7.dp)
+    )
 }
 
 /** Bao nhiêu thẻ bày ra ở hàng ngang. Quá số này thì mới có nút "Xem hết". */

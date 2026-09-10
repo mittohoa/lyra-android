@@ -26,7 +26,19 @@ data class LanNghe(
     /** Tên gói của app đã phát. Rỗng khi chính AURA phát. */
     val app: String = "",
     /** Mili-giây đồng hồ thật. Dùng để xếp và để nói "hôm qua", "tuần trước". */
-    val luc: Long = 0L
+    val luc: Long = 0L,
+    /**
+     * Đã nghe bài này bao nhiêu lần.
+     *
+     * Gộp mỗi bài một dòng trả lời được "nghe lúc nào" mà nuốt mất "nghe bao
+     * nhiêu lần" — mà đó mới là câu dựng ra được mục *nghe nhiều nhất*. Con số
+     * này là thứ duy nhất giữ lại được điều đó sau khi gộp.
+     *
+     * Mặc định 1 chứ không phải 0, và điều đó có nghĩa cho cả dữ liệu cũ: mọi
+     * dòng ghi từ trước bản này đọc lên thành "đã nghe một lần" — đúng ở mức
+     * tối thiểu, thay vì thành "chưa nghe lần nào" là sai hẳn.
+     */
+    val soLan: Int = 1
 ) {
     /**
      * Khoá gộp: cùng một bài nghe lại nhiều lần chỉ chiếm MỘT dòng.
@@ -89,10 +101,17 @@ class LichSuNghe(context: Context) {
     fun ghi(lan: LanNghe) {
         if (lan.ten.isBlank() && lan.caSi.isBlank()) return
         val cu = _lichSu.value
+
+        // CỘNG DỒN SỐ LẦN của bản cũ cùng khoá. Bên gọi không biết mình đã nghe
+        // bài này bao nhiêu lần trước đó — nó chỉ báo "vừa nghe xong một lần" —
+        // nên việc cộng là của kho.
+        val truoc = cu.firstOrNull { it.khoa == lan.khoa }
+        val dua = if (truoc == null) lan else lan.copy(soLan = truoc.soLan + 1)
+
         // Bỏ bản cũ CÙNG KHOÁ rồi chèn lên đầu: nghe lại một bài là làm mới chỗ
         // của nó trong lịch sử, không phải thêm một dòng nữa.
         val moi = ArrayList<LanNghe>(minOf(cu.size + 1, TRAN))
-        moi.add(lan)
+        moi.add(dua)
         for (c in cu) {
             if (c.khoa == lan.khoa) continue
             if (moi.size >= TRAN) break
@@ -130,7 +149,11 @@ class LichSuNghe(context: Context) {
                 daCo++
                 continue
             }
-            theoKhoa[l.khoa] = l
+            // Số lần lấy CÁI LỚN HƠN, không cộng hai bên. Cộng thì khôi phục
+            // cùng một tệp hai lần là số lần nghe tăng gấp đôi, mà người dùng
+            // chẳng nghe thêm bài nào. Lấy cái lớn hơn thì việc khôi phục lặp
+            // lại bao nhiêu lần cũng cho ra cùng một kết quả.
+            theoKhoa[l.khoa] = l.copy(soLan = maxOf(l.soLan, cu?.soLan ?: 0))
             them++
         }
         if (them == 0) return SaoLuuLichSu.KetQua(0, daCo, 0)

@@ -76,6 +76,31 @@ class SaoLuuLichSuTest {
         assertEquals(500L, lai[0].luc)
     }
 
+    // ---- Số lần nghe ----
+
+    @Test fun `so lan di qua tep sao luu con nguyen`() {
+        val co = listOf(LanNghe("lyra://may/1", "A", "X", "", 500L, soLan = 7))
+        assertEquals(7, SaoLuuLichSu.nhap(SaoLuuLichSu.xuat(co))[0].soLan)
+    }
+
+    @Test fun `tep cu khong co cot so lan thi doc thanh mot`() {
+        // Định dạng cũ: lúc, địa chỉ, app, ca sĩ, tên, giờ đọc được. Cột thứ
+        // sáu là chữ chứ không phải số — đọc lên phải ra 1, không ra 0 và cũng
+        // không làm hỏng cả dòng.
+        val cu = "LYRA-NGHE\t1\n1000\tlyra://may/1\t\tCa Sĩ\tTên Bài\t2026-01-01 00:00\n"
+        val ra = SaoLuuLichSu.nhap(cu)
+        assertEquals(1, ra.size)
+        assertEquals(1, ra[0].soLan)
+        assertEquals("Tên Bài", ra[0].ten)
+    }
+
+    @Test fun `so lan bang khong hay am thi keo len mot`() {
+        val hong = "LYRA-NGHE\t1\n1000\tlyra://may/1\t\tCa Sĩ\tTên Bài\t0\t\n"
+        assertEquals(1, SaoLuuLichSu.nhap(hong)[0].soLan)
+        val am = "LYRA-NGHE\t1\n1000\tlyra://may/1\t\tCa Sĩ\tTên Bài\t-5\t\n"
+        assertEquals(1, SaoLuuLichSu.nhap(am)[0].soLan)
+    }
+
     @Test fun `tep xuong dong kieu Windows van doc duoc`() {
         val chu = SaoLuuLichSu.xuat(mau).replace("\n", "\r\n")
         assertEquals(mau, SaoLuuLichSu.nhap(chu))
