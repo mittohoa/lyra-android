@@ -128,21 +128,17 @@ Play hỏi mục này ở **mỗi** bản phát hành, kể cả bản thử ngh
 được nhưng không nên: người test đọc đúng chỗ này để biết cần thử cái gì.
 
 ```
-Bản 0.3.30 — widget trong mờ, ăn màu theo ảnh bìa.
+Bản 0.3.31 — sửa một lỗi hiển thị trên widget.
 
-• Widget khung lời giờ trong mờ và đổi màu theo bìa bài đang phát, không còn là một ô đặc dán đè lên màn hình chính
-• Chữ tự đổi đen hoặc trắng cho hợp nền, kể cả bìa màu vàng hay xanh đậm
-• Bớt hẳn phần tính lặp mỗi giây khi widget đang bật
+• Bài không tìm ra lời thì widget đứng mãi ở "Đang tìm lời…", trong khi màn hình app đã ghi đúng là không có. Giờ hai chỗ nói cùng một chuyện
 ```
 
 ### Ghi chú phát hành — tiếng Anh (tối đa 500 ký tự)
 
 ```
-Version 0.3.30 — a translucent widget that picks up the album colour.
+Version 0.3.31 — fixes one thing the widget showed wrong.
 
-• The lyrics widget is now translucent and takes its colour from the current album art, instead of sitting on your home screen as a solid block
-• Text switches between dark and light to stay readable on any cover colour
-• Much less repeated work each second while the widget is on
+• When a song had no lyrics, the widget stayed on "Looking for lyrics…" forever, while the app screen already said there were none. Both now say the same thing
 ```
 
 Ghi chú của các bản trước nằm trong lịch sử git (`git log docs/google-play.md`).
