@@ -1268,6 +1268,17 @@ internal fun TunePane(
             CanBangAmMuc(accent)
         }
 
+        // NGAY CANH CAN BANG AM: ca hai deu doi chinh tieng nhac cua bo phat,
+        // va ca hai deu khong voi toi duoc nhac o app khac. De hai thu cung
+        // gioi han ay nam canh nhau thi cai gioi han do noi mot lan la du.
+        Muc(
+            tieuDe = "Mờ dần và khoảng lặng",
+            accent = accent,
+            tomTat = "Cách AURA nối hai bài, và có cắt đoạn im lặng hay không"
+        ) {
+            AmThanhMuc(accent)
+        }
+
         Muc(
             tieuDe = "Tải lời cho cả thư viện",
             accent = accent,

@@ -40,6 +40,7 @@ import com.mittohoa.lyra.ui.MainActivity
 class LyraPlaybackService : MediaLibraryService() {
 
     private var session: MediaLibraryService.MediaLibrarySession? = null
+    private var chuyenMuot: ChuyenMuot? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -86,6 +87,7 @@ class LyraPlaybackService : MediaLibraryService() {
             .build()
 
         Lyra.attachPlayer(player)
+        chuyenMuot = ChuyenMuot(this, player)
     }
 
     /** Cham vao the media thi mo lai AURA, khong dung lai tu dau. */
@@ -229,6 +231,10 @@ class LyraPlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        // Bo nghe TRUOC khi huy bo phat: `thoi` cham vao player, ma sau
+        // `release()` thi moi cai cham deu nem loi.
+        chuyenMuot?.thoi()
+        chuyenMuot = null
         Lyra.detachPlayer()
         session?.run {
             player.release()

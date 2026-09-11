@@ -57,8 +57,29 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+      TAT SAO LUU NGAM CUA ANDROID, va day la lua chon co chu y.
+
+      `allowBackup` mac dinh la bat, va voi targetSdk 36 ma khong khai
+      `dataExtractionRules` thi Android chep TOAN BO `filesDir` len Google
+      Drive - trong do co `lich-su-nghe.json`, dung cai tep ma man hinh Sao
+      luu tu goi la "mot thu rieng tu".
+
+      Da do that tren may: `dumpsys backup` liet ke goi nay trong muc "Ever
+      backed up" VA trong hang doi sao luu day du. No khong phai chuyen ly
+      thuyet - no da chay roi.
+
+      Diem ban cua app nay la no dung ngoai nghe MOI app nhac khac, nen ban
+      ghi ay nhay cam hon han du lieu cua mot trinh nghe nhac thuong. Day
+      len dam may sau lung nguoi dung, khong hoi mot cau, la sai.
+
+      Cai gia: cai lai app la mat. Nhung man hinh Sao luu VAN NOI DUNG dieu
+      do tu truoc toi nay - "go app hoac doi may la mat het" - va gio thi
+      cau ay thanh su that thay vi mot nua su that. Duong sao luu do nguoi
+      dung cam lai nam ngay duoi cau ay.
+    -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@drawable/ic_launcher"

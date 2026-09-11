@@ -108,8 +108,19 @@ object SaoLuuTatCa {
         var hien: StringBuilder? = null
         for (i in 1 until dong.size) {
             val d = dong[i]
-            if (d.startsWith("=== ")) {
-                val ten = d.removePrefix("=== ").trim()
+            val ten = d.removePrefix("=== ").trim()
+            // CHỈ NHẬN ĐÚNG BỐN TÊN PHẦN, không nhận mọi dòng mở đầu bằng "=== ".
+            //
+            // Lời bài hát là chữ NGƯỜI DÙNG TỰ GÕ, và không có gì cấm một câu
+            // bắt đầu bằng "=== ". Nhận bừa thì một câu như thế cắt đôi tệp
+            // ngay giữa phần lời: nửa sau rơi vào một phần mang tên là chính
+            // câu hát đó, và mọi thứ sau nó biến mất khỏi bản khôi phục.
+            //
+            // Không phải chuyện giả định — chỗ này lộ ra khi cho bộ đọc bên
+            // Windows đọc một tệp do chính bên này sinh ra, xem
+            // `XuatMauSaoLuuTest`. Bộ đọc phần lời thì an toàn vì nó ĐẾM SỐ
+            // DÒNG, nhưng bộ cắt ngoài này chạy trước nó.
+            if (d.startsWith("=== ") && ten in CAC_PHAN) {
                 hien = ra.getOrPut(ten) { StringBuilder() }
                 continue
             }
@@ -117,6 +128,9 @@ object SaoLuuTatCa {
         }
         return ra.mapValues { it.value.toString() }
     }
+
+    /** Tên các phần hợp lệ. Ngoài danh sách này thì chỉ là một dòng chữ. */
+    private val CAC_PHAN = setOf(PHAN_LOI, PHAN_NGHE, PHAN_THICH, PHAN_CANBANG)
 
     /** Đọc phần yêu thích: mỗi dòng một địa chỉ. */
     fun docThich(phan: String): List<String> =

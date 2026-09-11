@@ -14,6 +14,7 @@ import com.mittohoa.lyra.data.ManualLyricStore
 import com.mittohoa.lyra.data.SaoLuuLichSu
 import com.mittohoa.lyra.data.SaoLuuLoi
 import com.mittohoa.lyra.data.SaoLuuTatCa
+import com.mittohoa.lyra.data.SaoLuuTuDong
 import com.mittohoa.lyra.data.OffsetStore
 import com.mittohoa.lyra.data.Playlist
 import com.mittohoa.lyra.data.PlaylistStore
@@ -2006,6 +2007,30 @@ object Lyra {
         khoLichSu(context)
         khoYeu(context)
     }
+
+    // ---- Tu sao luu ra thu muc nguoi dung chon ----
+
+    private var tuSaoLuu: SaoLuuTuDong? = null
+
+    fun khoTuSaoLuu(context: Context): SaoLuuTuDong =
+        tuSaoLuu ?: SaoLuuTuDong(context.applicationContext).also { tuSaoLuu = it }
+
+    /**
+     * Ngo dong ho mot cai, qua han thi ghi mot ban sao luu.
+     *
+     * Goi luc mo app. Gan het moi lan goi roi vao nhanh khong lam gi, va vi
+     * `soat` chi dung noi dung khi that su ghi nen nhanh do khong doc mot kho
+     * du lieu nao.
+     */
+    suspend fun soatSaoLuuTuDong(context: Context): SaoLuuTuDong.KetQua =
+        withContext(Dispatchers.IO) {
+            khoTuSaoLuu(context).soat { xuatTatCa(context) }
+        }
+
+    suspend fun ghiSaoLuuNgay(context: Context): SaoLuuTuDong.KetQua =
+        withContext(Dispatchers.IO) {
+            khoTuSaoLuu(context).ghiNgay { xuatTatCa(context) }
+        }
 
     /**
      * Khung noi dang hien hay khong.

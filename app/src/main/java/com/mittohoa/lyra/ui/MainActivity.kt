@@ -32,6 +32,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.annotation.RequiresApi
 import com.mittohoa.lyra.BuildConfig
 import com.mittohoa.lyra.R
@@ -46,6 +47,7 @@ import com.mittohoa.lyra.data.KieuChu
 import com.mittohoa.lyra.service.Lyra
 import com.mittohoa.lyra.sources.MediaKind
 import com.mittohoa.lyra.service.LyraTileService
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -234,6 +236,14 @@ class MainActivity : ComponentActivity() {
         // choi quyen doc ca may se khong bao gio thay bai nao, dung nhung
         // nguoi da chon cach can trong nhat.
         Lyra.loadLibrary(this)
+
+        // NGO DONG HO SAO LUU, mot lan moi lan mo app.
+        //
+        // O `onCreate` chu khong `onResume`: quay lai app sau khi keo bang
+        // thong bao xuong cung goi `onResume`, va mot viec cham dia thi khong
+        // nen chay lai moi lan nhu the. Gan het moi lan goi roi vao nhanh
+        // "chua toi han" va khong doc mot kho du lieu nao - xem `SaoLuuTuDong.soat`.
+        lifecycleScope.launch { Lyra.soatSaoLuuTuDong(this@MainActivity) }
 
         setContent {
             // Mat giay: giay sang, muc toi, hay theo may. Giu o day chu khong

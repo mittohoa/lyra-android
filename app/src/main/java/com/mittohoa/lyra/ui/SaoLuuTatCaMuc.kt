@@ -154,6 +154,18 @@ internal fun SaoLuuTatCaMuc(accent: Color) {
             fontSize = 12.5.sp,
             lineHeight = 18.sp
         )
+
+        // LỐI THOÁT NẰM NGAY DƯỚI LỜI CẢNH BÁO. Câu ở trên nói dữ liệu mất
+        // được; để người đọc tự đi tìm cách phòng ở một mục khác thì gần như
+        // không ai đi.
+        Spacer(Modifier.height(18.dp))
+        Text(
+            "Tự lưu",
+            color = mau.chu,
+            fontSize = 14.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        TuSaoLuuMuc(accent)
     }
 }
 

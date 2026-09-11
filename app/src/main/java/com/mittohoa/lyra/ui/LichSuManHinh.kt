@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mittohoa.lyra.data.LanNghe
+import com.mittohoa.lyra.data.TuanNghe
 import java.util.Calendar
 
 /**
@@ -146,12 +147,12 @@ fun LichSuManHinh(
     // vế, và một hộp thoại phủ kín màn hình cho một vế thì nặng hơn việc nó hỏi.
     var hoiXoa by remember { mutableStateOf(false) }
 
-    // HAI CÁCH XẾP CÙNG MỘT DANH SÁCH, không phải hai màn hình.
+    // BA CÁCH NHÌN CÙNG MỘT DANH SÁCH, không phải ba màn hình.
     //
-    // "Gần đây" và "Nghe nhiều nhất" trả lời hai câu hỏi khác nhau về đúng một
-    // mớ dữ liệu — dựng riêng một màn hình cho câu thứ hai là chép lại cả phần
-    // xoá, phần bấm phát, phần đếm, để rồi hai bản lệch nhau lúc nào không hay.
-    var theoSoLan by remember { mutableStateOf(false) }
+    // Mỗi cách trả lời một câu khác nhau về đúng một mớ dữ liệu — dựng riêng
+    // một màn hình cho mỗi câu là chép lại cả phần xoá, phần bấm phát, phần
+    // đếm, để rồi ba bản lệch nhau lúc nào không hay.
+    var cach by remember { mutableStateOf(CachXem.GAN_DAY) }
 
     val nhom = remember(lichSu) { chiaTheoNgay(lichSu) }
 
@@ -161,6 +162,8 @@ fun LichSuManHinh(
     val nhieuNhat = remember(lichSu) {
         lichSu.filter { it.soLan > 1 }.sortedByDescending { it.soLan }
     }
+
+    val tuan = remember(lichSu) { TuanNghe.tinh(lichSu) }
 
     Column(Modifier.fillMaxSize().background(mau.nen)) {
         Row(
@@ -210,21 +213,37 @@ fun LichSuManHinh(
             )
         }
 
-        // Hàng chọn chỉ hiện khi CÓ bài nghe lại. Chưa nghe lại bài nào thì
+        // Mỗi thẻ chỉ hiện khi nó DẪN TỚI CHỖ CÓ GÌ. Chưa nghe lại bài nào thì
         // "Nghe nhiều nhất" bấm vào là một trang trống, và một nút dẫn tới chỗ
-        // trống thì thà đừng có.
-        if (nhieuNhat.isNotEmpty()) {
+        // trống thì thà đừng có. Cùng lẽ cho "Bảy ngày qua".
+        if (nhieuNhat.isNotEmpty() || !tuan.trong) {
             Row(
                 Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                VienLichSu("Gần đây", !theoSoLan, accent) { theoSoLan = false }
-                VienLichSu("Nghe nhiều nhất", theoSoLan, accent) { theoSoLan = true }
+                VienLichSu("Gần đây", cach == CachXem.GAN_DAY, accent) {
+                    cach = CachXem.GAN_DAY
+                }
+                if (nhieuNhat.isNotEmpty()) {
+                    VienLichSu("Nghe nhiều nhất", cach == CachXem.NHIEU_NHAT, accent) {
+                        cach = CachXem.NHIEU_NHAT
+                    }
+                }
+                if (!tuan.trong) {
+                    VienLichSu("Bảy ngày qua", cach == CachXem.TUAN, accent) {
+                        cach = CachXem.TUAN
+                    }
+                }
             }
         }
 
         LazyColumn(contentPadding = PaddingValues(bottom = 110.dp)) {
-            if (theoSoLan) {
+            if (cach == CachXem.TUAN) {
+                item(key = "tuan") { TomTatTuan(tuan, accent) }
+                return@LazyColumn
+            }
+
+            if (cach == CachXem.NHIEU_NHAT) {
                 items(nhieuNhat, key = { "nhieu:" + it.khoa }) { lan ->
                     DongLichSu(
                         lan,
@@ -254,6 +273,94 @@ fun LichSuManHinh(
                 }
             }
         }
+    }
+}
+
+/** Ba cách nhìn cùng một danh sách. */
+private enum class CachXem { GAN_DAY, NHIEU_NHAT, TUAN }
+
+/**
+ * Bảy ngày qua, kể bằng chữ chứ không bằng biểu đồ.
+ *
+ * KHÔNG VẼ BIỂU ĐỒ. Bốn con số thì một câu văn đọc nhanh hơn mọi thứ hình vẽ,
+ * và một cái cột bảy ngày với hai bài mỗi ngày trông chỉ như lỗi hiển thị.
+ *
+ * NÓI "BÀI" CHỨ KHÔNG NÓI "LẦN", và đó không phải chuyện chữ nghĩa. Lịch sử
+ * gộp mỗi bài một dòng và chỉ giữ lần nghe gần nhất, nên số ở đây là số BÀI
+ * khác nhau — xem [TuanNghe]. Viết "bạn nghe 12 lần" là bịa ra một con số máy
+ * không hề biết.
+ */
+@Composable
+private fun TomTatTuan(t: TuanNghe.TomTat, accent: Color) {
+    Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 18.dp)) {
+        Text(
+            "${t.soBai} bài",
+            color = mau.chu,
+            fontSize = 34.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            when (val l = t.lech) {
+                null -> "trong bảy ngày qua"
+                0 -> "trong bảy ngày qua — đúng bằng tuần trước"
+                else -> "trong bảy ngày qua, " +
+                    (if (l > 0) "hơn tuần trước $l bài" else "kém tuần trước ${-l} bài")
+            },
+            color = mau.chuRatMo,
+            fontSize = 13.sp,
+            lineHeight = 19.sp
+        )
+
+        // CHỖ NÀY LÀ THỨ RIÊNG CỦA AURA. Không app nhạc nào kể cho bạn nghe
+        // được bao nhiêu bài của mình so với bao nhiêu bài ở app khác, vì
+        // chúng chỉ thấy phần của chúng. AURA đứng ngoài nên thấy cả hai.
+        if (t.tuAppKhac > 0) {
+            Spacer(Modifier.height(18.dp))
+            Text(
+                "${t.tuAura} bài AURA phát, ${t.tuAppKhac} bài ở app khác.",
+                color = mau.chuMo,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+        }
+
+        if (t.caSi.isNotEmpty()) {
+            Spacer(Modifier.height(18.dp))
+            Text("Nghe nhiều nhất", color = mau.chuMo, fontSize = 13.sp)
+            Spacer(Modifier.height(6.dp))
+            for (c in t.caSi) {
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        c.ten,
+                        color = mau.chu,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "${c.soBai} bài",
+                        color = accent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "Đếm theo BÀI, không phải theo lần: lịch sử gộp mỗi bài một dòng " +
+                "nên một bài nghe mười lần trong tuần vẫn là một bài. Bài nghe " +
+                "cả tuần này lẫn tuần trước chỉ tính vào tuần này.",
+            color = mau.chuRatMo,
+            fontSize = 12.sp,
+            lineHeight = 17.sp
+        )
     }
 }
 
