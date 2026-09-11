@@ -1,5 +1,6 @@
 package com.mittohoa.lyra.ui
 
+import com.mittohoa.lyra.data.NhatKySuCo
 import android.app.PictureInPictureParams
 import android.content.res.Configuration
 import android.util.Rational
@@ -220,6 +221,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // GAN BO BAT LOI SOM NHAT CO THE. Loi xay ra truoc dong nay thi khong
+        // ai ghi lai duoc, nen no phai dung trong cung.
+        NhatKySuCo.gan(this)
         docLoiTat(intent)
         // Dựng lối tắt nhấn-giữ-biểu-tượng. Phải làm lúc chạy chứ không khai
         // được trong XML — xem `LoiTat` để biết vì sao.

@@ -59,6 +59,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.LocalTextStyle
@@ -68,6 +73,7 @@ import androidx.compose.foundation.verticalScroll
 import com.mittohoa.lyra.data.ChuDe
 import com.mittohoa.lyra.data.LanNghe
 import com.mittohoa.lyra.data.KieuChu
+import com.mittohoa.lyra.data.NhatKySuCo
 import com.mittohoa.lyra.data.LyricEffect
 import com.mittohoa.lyra.data.OverlayLook
 import com.mittohoa.lyra.data.TranslateSettings
@@ -552,7 +558,7 @@ private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        PANES.forEachIndexed { i, _ ->
+        PANES.forEachIndexed { i, ten ->
             val chon = i == current
             // Vạch của trang đang mở dài ra chứ không đổi màu suông: chiều dài
             // đọc được bằng đuôi mắt, còn màu thì không khi đang nhìn chỗ khác.
@@ -564,6 +570,24 @@ private fun Pill(current: Int, accent: Color, onPick: (Int) -> Unit) {
                     // trúng, mà 44dp là mức tối thiểu cho một chỗ bấm được.
                     .clip(RoundedCornerShape(50))
                     .clickable { onPick(i) }
+                    // BA VẠCH NÀY TRƯỚC ĐÂY KHÔNG CÓ TÊN.
+                    //
+                    // Với mắt thì chiều dài vạch nói ra trang nào đang mở.
+                    // Với TalkBack thì chúng là ba ô trống: đọc lên không ra
+                    // chữ nào, và người khiếm thị không có cách nào biết app
+                    // này còn hai trang nữa, nói gì tới chuyển sang.
+                    //
+                    // Đo được: bản kết xuất giao diện gắn cờ `NAF` (not
+                    // accessible friendly) cho đúng ba ô này.
+                    //
+                    // `Role.Tab` chứ không để mặc định là nút: nó cho bộ đọc
+                    // màn hình nói ra "thẻ 2 trên 3", tức là vị trí trong cả
+                    // nhóm — thứ mà ở đây chính là thông tin quan trọng nhất.
+                    .semantics {
+                        contentDescription = ten
+                        role = Role.Tab
+                        selected = chon
+                    }
                     .padding(vertical = 14.dp, horizontal = 6.dp)
             ) {
                 Box(
@@ -1285,6 +1309,24 @@ internal fun TunePane(
             tomTat = "Có sẵn lời thì ô tìm đọc được cả lời bài hát"
         ) {
             TaiLoiMuc(accent)
+        }
+
+        val ctxSuCo = LocalContext.current
+        // TU AN khi chua co lan nao. Mot muc ten "Su co" nam chinh inh trong
+        // Cai dat cua mot app chua he hong chi lam nguoi dung lo.
+        //
+        // Giu bang mot bien trang thai chu khong doc thang tu dia moi lan dung
+        // lai: xoa nhat ky thi muc nay phai bien mat NGAY, chu khong ngoi lai
+        // do doc ra "AURA da tu tat 0 lan".
+        var coSuCo by remember { mutableStateOf(NhatKySuCo.dem(ctxSuCo) > 0) }
+        if (coSuCo) {
+            Muc(
+                tieuDe = "Sự cố",
+                accent = accent,
+                tomTat = "AURA đã tự tắt — xem lại và gửi đi nếu bạn muốn"
+            ) {
+                SuCoMuc(accent) { coSuCo = false }
+            }
         }
 
         Muc(

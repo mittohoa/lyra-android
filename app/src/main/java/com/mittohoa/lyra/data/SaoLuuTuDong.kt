@@ -98,8 +98,7 @@ class SaoLuuTuDong(context: Context) {
      */
     fun soat(bayGio: Long = System.currentTimeMillis(), noiDung: () -> String): KetQua {
         val goc = thuMuc() ?: return KetQua.ChuaToiHan
-        val han = lanCuoi() + soNgay() * MOT_NGAY_MS
-        if (bayGio < han) return KetQua.ChuaToiHan
+        if (!toiHan(lanCuoi(), soNgay(), bayGio)) return KetQua.ChuaToiHan
         return ghi(goc, bayGio, noiDung)
     }
 
@@ -198,6 +197,28 @@ class SaoLuuTuDong(context: Context) {
         private const val KEY_LAN_CUOI = "lan-cuoi"
 
         private const val MOT_NGAY_MS = 24L * 60 * 60 * 1000
+
+        /**
+         * Đã tới lúc ghi một bản mới chưa.
+         *
+         * Tách ra khỏi [soat] để kiểm được: đây là phép quyết định DUY NHẤT
+         * của cả tính năng, và sai ở đây thì không có gì báo — người dùng chỉ
+         * thấy bản sao lưu không bao giờ mới.
+         *
+         * ĐỒNG HỒ CHẠY LÙI CŨNG LÀ TỚI HẠN. Người dùng chỉnh tay ngày giờ, hay
+         * máy đồng bộ lại sau khi hết pin, là `bayGio` có thể nhảy về trước
+         * [lanCuoi]. So thẳng `bayGio < hạn` thì lúc ấy hạn nằm ở tương lai xa
+         * và không bao giờ tới — tính năng chết lặng, vĩnh viễn, không ai biết.
+         * Mốc nằm ở tương lai so với bây giờ thì nó sai, và ghi một bản thừa
+         * rẻ hơn nhiều so với thôi ghi hẳn.
+         */
+        internal fun toiHan(lanCuoi: Long, soNgay: Int, bayGio: Long): Boolean {
+            // Chưa ghi lần nào: ghi ngay, để người vừa bật lên thấy nó chạy
+            // thật chứ không phải chờ hết một tuần rồi mới biết.
+            if (lanCuoi <= 0L) return true
+            if (bayGio < lanCuoi) return true
+            return bayGio - lanCuoi >= soNgay * MOT_NGAY_MS
+        }
 
         /** Mặc định mỗi tuần một bản. */
         const val SO_NGAY_MAC_DINH = 7

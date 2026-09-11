@@ -1,11 +1,17 @@
 package com.mittohoa.lyra.service
 
+import com.mittohoa.lyra.data.NhatKySuCo
 import android.service.notification.NotificationListenerService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /**
  * Neo cua ca app.
@@ -41,7 +47,17 @@ class LyraNotificationListener : NotificationListenerService() {
     }
     private var daDangKy = false
 
+    /**
+     * Luong nen rieng cua dich vu nay.
+     *
+     * Huy o `onDestroy` chu khong o `onListenerDisconnected`: he thong ngat
+     * roi noi lai la chuyen thuong xay ra, va huy o do thi sau lan noi lai dau
+     * tien moi viec dat len luong nay deu roi vao im lang.
+     */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     override fun onListenerConnected() {
+        NhatKySuCo.gan(this)
         Log.i(TAG, "He thong da noi vao - bat dau doc phien media")
         Lyra.watcher.start(this, LyraNotificationListener::class.java)
 
@@ -57,6 +73,17 @@ class LyraNotificationListener : NotificationListenerService() {
             })
             daDangKy = true
         }
+
+        // NGO DONG HO SAO LUU TU DAY NUA, khong chi luc mo app.
+        //
+        // Cach dung ma AURA duoc lam ra de phuc vu la: bat khung loi noi roi
+        // nghe nhac o app khac, ca thang khong mo AURA lan nao. Nhung nguoi ay
+        // truoc day khong bao gio duoc tu luu mot ban nao - ho bat len, doc
+        // thay chu "Dang tu luu", va khong co gi duoc ghi.
+        //
+        // Cho nay song ca khi khong ai mo app, va no duoc noi lai sau moi lan
+        // khoi dong may. `soatSaoLuuTuDong` tu chan khong cho chay day qua.
+        scope.launch { Lyra.soatSaoLuuTuDong(this@LyraNotificationListener) }
     }
 
     override fun onListenerDisconnected() {
@@ -66,6 +93,11 @@ class LyraNotificationListener : NotificationListenerService() {
             runCatching { unregisterReceiver(manHinh) }
             daDangKy = false
         }
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
 
     private companion object {

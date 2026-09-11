@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mittohoa.lyra.data.LanNghe
+import com.mittohoa.lyra.data.LichSuNghe
 import com.mittohoa.lyra.data.TuanNghe
 import java.util.Calendar
 
@@ -179,7 +180,15 @@ fun LichSuManHinh(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    "${lichSu.size} bài",
+                    // NÓI RA KHI ĐÃ ĐẦY. Lịch sử giữ nhiều nhất chừng ấy bài
+                    // rồi lặng lẽ bỏ bài cũ nhất — một người nghe nhiều sẽ mất
+                    // dần phần đuôi mà không có gì báo. Chỉ hiện câu này lúc đã
+                    // chạm trần: nói trước khi chưa tới chỉ là một con số thừa.
+                    if (lichSu.size >= LichSuNghe.TRAN) {
+                        "${lichSu.size} bài — đã đầy, bài cũ nhất rơi ra khi có bài mới"
+                    } else {
+                        "${lichSu.size} bài"
+                    },
                     color = mau.chuRatMo,
                     fontSize = 12.5.sp
                 )

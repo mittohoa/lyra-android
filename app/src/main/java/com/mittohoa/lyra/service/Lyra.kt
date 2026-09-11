@@ -1413,6 +1413,16 @@ object Lyra {
     private const val GHI_CHO_MOI_MS = 5_000L
 
     /**
+     * Nghi bao lau moi ngo dong ho sao luu mot lan. Xem `soatSaoLuuTuDong`.
+     *
+     * Mot tieng: cho goi day dac nhat la moi thong bao nhac moi, ma nhip ghi
+     * sao luu it nhat cung la MOT NGAY. Nghi mot tieng thi mot ngay chi soat
+     * chung hai muoi bon lan - khong dang ke - va van bat duoc moc han trong
+     * vong mot tieng ke tu luc no toi.
+     */
+    private const val NGHI_GIUA_HAI_LAN_SOAT_MS = 60L * 60 * 1000
+
+    /**
      * Cau da dua len the media lan truoc.
      *
      * Giu lai de chi cap nhat khi DOI CAU. The media di qua he thong toi giao
@@ -2016,16 +2026,43 @@ object Lyra {
         tuSaoLuu ?: SaoLuuTuDong(context.applicationContext).also { tuSaoLuu = it }
 
     /**
+     * Chan khong cho ngo dong ho lien tuc. Xem [soatSaoLuuTuDong].
+     *
+     * `0` = chua soat lan nao trong tien trinh nay.
+     */
+    private var lanSoatCuoi = 0L
+
+    /**
      * Ngo dong ho mot cai, qua han thi ghi mot ban sao luu.
      *
-     * Goi luc mo app. Gan het moi lan goi roi vao nhanh khong lam gi, va vi
-     * `soat` chi dung noi dung khi that su ghi nen nhanh do khong doc mot kho
-     * du lieu nao.
+     * GOI TU NHIEU CHO, khong chi luc mo app - va day la mot lo hong co that
+     * trong ban 0.3.34. Truoc do no chi duoc goi tu `MainActivity.onCreate`,
+     * nen ai dung AURA dung theo cach no duoc lam ra - bat khung loi noi roi
+     * nghe nhac o Zing, KHONG MO APP RA - thi tu luu khong bao gio chay. Ho
+     * bat no len, doc thay chu "Dang tu luu", roi hang thang khong co ban nao
+     * duoc ghi. Im lang, dung kieu hong ma chinh tinh nang nay sinh ra de
+     * tranh.
+     *
+     * Gio con duoc goi tu `LyraNotificationListener` - cho ay song ca khi
+     * khong ai mo app, va no khoi dong lai cung may.
+     *
+     * CHAN BANG [NGHI_GIUA_HAI_LAN_SOAT_MS] vi cho goi moi la cho chay day
+     * dac: mot thong bao nhac moi la mot lan goi. Phep chan la mot phep tru
+     * tren mot so nguyen trong bo nho, khong cham dia, nen goi bao nhieu lan
+     * cung khong ton gi.
      */
-    suspend fun soatSaoLuuTuDong(context: Context): SaoLuuTuDong.KetQua =
-        withContext(Dispatchers.IO) {
+    suspend fun soatSaoLuuTuDong(context: Context): SaoLuuTuDong.KetQua {
+        val gio = System.currentTimeMillis()
+        // Dong ho may co the bi keo lui - lay ca hai chieu de khong ket vinh
+        // vien o nhanh "vua soat xong".
+        if (lanSoatCuoi != 0L && kotlin.math.abs(gio - lanSoatCuoi) < NGHI_GIUA_HAI_LAN_SOAT_MS) {
+            return SaoLuuTuDong.KetQua.ChuaToiHan
+        }
+        lanSoatCuoi = gio
+        return withContext(Dispatchers.IO) {
             khoTuSaoLuu(context).soat { xuatTatCa(context) }
         }
+    }
 
     suspend fun ghiSaoLuuNgay(context: Context): SaoLuuTuDong.KetQua =
         withContext(Dispatchers.IO) {

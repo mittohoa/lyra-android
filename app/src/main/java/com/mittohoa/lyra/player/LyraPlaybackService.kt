@@ -1,5 +1,6 @@
 package com.mittohoa.lyra.player
 
+import com.mittohoa.lyra.data.NhatKySuCo
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
@@ -44,6 +45,7 @@ class LyraPlaybackService : MediaLibraryService() {
 
     override fun onCreate() {
         super.onCreate()
+        NhatKySuCo.gan(this)
 
         // Bo qua the ID3 trong file nhac.
         //
