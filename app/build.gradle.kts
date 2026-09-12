@@ -10,8 +10,8 @@ import java.util.Properties
  * mot ban gop mang ten cua ban truoc, va do la loai nham lan khong ai phat hien
  * cho toi luc nop nham file len Play.
  */
-val maPhienBan = 45
-val tenPhienBan = "0.3.34"
+val maPhienBan = 46
+val tenPhienBan = "0.3.35"
 
 plugins {
     alias(libs.plugins.android.application)
