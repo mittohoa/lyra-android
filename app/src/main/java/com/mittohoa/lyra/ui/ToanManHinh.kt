@@ -196,9 +196,9 @@ internal fun ToanManHinh(
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Ghost("◀◀", active = false, accent = accent, onClick = onTruoc)
+                            Ghost("◀◀", moTa = "Bài trước", active = false, accent = accent, onClick = onTruoc)
                             PlayButton(accent = accent, playing = dangPhat, onClick = onPhatDung)
-                            Ghost("▶▶", active = false, accent = accent, onClick = onSau)
+                            Ghost("▶▶", moTa = "Bài sau", active = false, accent = accent, onClick = onSau)
                         }
                     }
                 }

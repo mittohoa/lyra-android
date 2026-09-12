@@ -46,6 +46,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -251,12 +257,23 @@ internal fun Transport(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Ghost("⤨", active = shuffle, accent = accent, onClick = onToggleShuffle)
-        Ghost("◀◀", active = false, accent = accent, onClick = onPrevious)
+        Ghost(
+            "⤨",
+            moTa = if (shuffle) "Tắt trộn bài" else "Trộn bài",
+            active = shuffle,
+            accent = accent,
+            onClick = onToggleShuffle
+        )
+        Ghost("◀◀", moTa = "Bài trước", active = false, accent = accent, onClick = onPrevious)
         PlayButton(accent = accent, playing = playing, onClick = onPlayPause)
-        Ghost("▶▶", active = false, accent = accent, onClick = onNext)
+        Ghost("▶▶", moTa = "Bài sau", active = false, accent = accent, onClick = onNext)
         Ghost(
             if (repeat == REPEAT_ONE) "↻¹" else "↻",
+            moTa = when (repeat) {
+                REPEAT_ONE -> "Đang lặp một bài"
+                REPEAT_OFF -> "Lặp lại"
+                else -> "Đang lặp cả hàng đợi"
+            },
             active = repeat != REPEAT_OFF,
             accent = accent,
             onClick = onCycleRepeat
@@ -276,7 +293,13 @@ internal fun PlayButton(accent: Color, playing: Boolean, onClick: () -> Unit) {
             .scale(scale)
             .clip(RoundedCornerShape(50))
             .background(Brush.verticalGradient(listOf(accent, accent.copy(alpha = 0.78f))))
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            // NÚT CHÍNH CỦA CẢ MÀN HÌNH. Không có tên thì bộ đọc màn hình
+            // đọc ra "tam giác đen chỉ sang phải".
+            .semantics {
+                contentDescription = if (playing) "Tạm dừng" else "Phát"
+                role = Role.Button
+            },
         contentAlignment = Alignment.Center
     ) {
         // Dau to hon han so voi truoc: 23sp trong mot vong tron 72dp thi dau
@@ -289,25 +312,53 @@ internal fun PlayButton(accent: Color, playing: Boolean, onClick: () -> Unit) {
             if (playing) "❚❚" else "▶",
             color = Color.White,
             fontSize = 31.sp,
-            modifier = if (playing) Modifier else Modifier.padding(start = 4.dp)
+            // Hình vẽ thôi — tên thật ("Phát" / "Tạm dừng") nằm ở nút bọc
+            // ngoài. Để nguyên thì bộ đọc màn hình đọc đúng tên nút rồi đọc
+            // thêm tên Unicode của ký tự vào sau.
+            modifier = (if (playing) Modifier else Modifier.padding(start = 4.dp))
+                .clearAndSetSemantics { }
         )
     }
 }
 
+/**
+ * Nút điều khiển vẽ bằng một ký hiệu.
+ *
+ * [moTa] LÀ BẮT BUỘC, không phải tuỳ chọn. Ký hiệu là thứ chỉ con mắt đọc
+ * được; bộ đọc màn hình gặp "◀◀" thì đọc ra tên Unicode của ký tự, không phải
+ * việc nút này làm. Đây lại đúng là những nút được bấm nhiều nhất trong cả
+ * app — bỏ tên cho chúng là khoá cửa ngay lối đi chính.
+ *
+ * Đặt thành tham số bắt buộc chứ không phải một `Modifier` gắn thêm ở ngoài:
+ * ai thêm một nút mới sẽ không dịch được cho tới khi đặt tên cho nó.
+ */
 @Composable
-internal fun Ghost(label: String, active: Boolean, accent: Color, onClick: () -> Unit) {
+internal fun Ghost(
+    label: String,
+    moTa: String,
+    active: Boolean,
+    accent: Color,
+    onClick: () -> Unit
+) {
     Box(
         Modifier
             .size(48.dp)
             .clip(RoundedCornerShape(50))
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .semantics {
+                contentDescription = moTa
+                role = Role.Button
+                selected = active
+            },
         contentAlignment = Alignment.Center
     ) {
         Text(
             label,
             color = if (active) accent else mau.chuMo,
             fontSize = 21.sp,
-            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
+            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+            // Hình vẽ thôi — tên thật nằm ở nút bọc ngoài.
+            modifier = Modifier.clearAndSetSemantics { }
         )
     }
 }

@@ -55,6 +55,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -789,13 +795,29 @@ private fun DaiNguCanh(
                     .size(34.dp)
                     .clip(RoundedCornerShape(50))
                     .background(if (dangYeuThich) accent else mau.nenChim.copy(alpha = DUC_CHIP))
-                    .clickable(onClick = onYeuThich),
+                    .clickable(onClick = onYeuThich)
+                    // TEN THAT CHO NUT CHI CO KY HIEU.
+                    //
+                    // Nhan duy nhat cua nut nay la mot hinh trai tim. Mat
+                    // nhin thay thi hieu ngay; bo doc man hinh doc len ra
+                    // ten Unicode cua ky tu, khong phai viec nut nay lam.
+                    // Nam nut o hang nay deu vay - do duoc bang ban ket
+                    // xuat giao dien.
+                    .semantics {
+                        contentDescription =
+                            if (dangYeuThich) "Bỏ yêu thích" else "Yêu thích"
+                        role = Role.Button
+                    },
                 contentAlignment = Alignment.Center
             ) {
+                // Hinh ve thoi: nhan that nam o `contentDescription` cua
+                // chinh cai nut boc ngoai. De nguyen thi bo doc man hinh doc
+                // them ten Unicode cua ky tu sau khi da doc dung ten nut.
                 Text(
                     if (dangYeuThich) "♥" else "♡",
                     color = if (dangYeuThich) Color.White else mau.chuMo,
-                    fontSize = 16.sp
+                    fontSize = 16.sp,
+                    modifier = Modifier.clearAndSetSemantics { }
                 )
             }
             Spacer(Modifier.width(8.dp))
@@ -807,14 +829,20 @@ private fun DaiNguCanh(
                     .size(34.dp)
                     .clip(RoundedCornerShape(50))
                     .background(if (dangLuyenTap) accent else mau.nenChim.copy(alpha = DUC_CHIP))
-                    .clickable(onClick = onLuyenTap),
+                    .clickable(onClick = onLuyenTap)
+                    .semantics {
+                        contentDescription =
+                            if (dangLuyenTap) "Tắt lặp đoạn A-B" else "Lặp đoạn A-B"
+                        role = Role.Button
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     "AB",
                     color = if (dangLuyenTap) Color.White else mau.chuMo,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clearAndSetSemantics { }
                 )
             }
             Spacer(Modifier.width(8.dp))
@@ -825,10 +853,19 @@ private fun DaiNguCanh(
                     .size(34.dp)
                     .clip(RoundedCornerShape(50))
                     .background(mau.nenChim.copy(alpha = DUC_CHIP))
-                    .clickable(onClick = onChiaSe),
+                    .clickable(onClick = onChiaSe)
+                    .semantics {
+                        contentDescription = "Chia sẻ"
+                        role = Role.Button
+                    },
                 contentAlignment = Alignment.Center
             ) {
-                Text("↗", color = mau.chuMo, fontSize = 17.sp)
+                Text(
+                    "↗",
+                    color = mau.chuMo,
+                    fontSize = 17.sp,
+                    modifier = Modifier.clearAndSetSemantics { }
+                )
             }
             Spacer(Modifier.width(8.dp))
         }
@@ -841,13 +878,19 @@ private fun DaiNguCanh(
                     .size(34.dp)
                     .clip(RoundedCornerShape(50))
                     .background(if (dangXemHangDoi) accent else mau.nenChim.copy(alpha = DUC_CHIP))
-                    .clickable(onClick = onHangDoi),
+                    .clickable(onClick = onHangDoi)
+                    .semantics {
+                        contentDescription = "Hàng đợi"
+                        role = Role.Button
+                        selected = dangXemHangDoi
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     "☰",
                     color = if (dangXemHangDoi) Color.White else mau.chuMo,
-                    fontSize = 15.sp
+                    fontSize = 15.sp,
+                    modifier = Modifier.clearAndSetSemantics { }
                 )
             }
         }
@@ -1925,7 +1968,15 @@ private fun ThanhThuGonNhac(
         ) {
             Text("Việc khác", color = mau.chuMo, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.width(5.dp))
-            Text("⋯", color = mau.chuMo, fontSize = 13.sp)
+            // Ky hieu trang tri: chu "Viec khac" ngay ben canh da noi du. De
+            // nguyen thi bo doc man hinh doc them ten Unicode cua dau ba cham
+            // vao sau mot cau da tron ven.
+            Text(
+                "⋯",
+                color = mau.chuMo,
+                fontSize = 13.sp,
+                modifier = Modifier.clearAndSetSemantics { }
+            )
         }
         // KHÔNG CÓ LỜI NHẮC NÀO THÌ KHÔNG CÓ NÚT. Bày một nút "Thu gọn" cho một
         // dải rỗng là mời người ta bấm để giấu đi thứ không có ở đó, rồi lần

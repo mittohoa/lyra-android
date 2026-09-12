@@ -39,6 +39,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -609,11 +612,23 @@ private fun SearchField(
             .padding(start = 20.dp, end = 22.dp, top = 14.dp, bottom = 10.dp)
             .fillMaxWidth()
     ) {
+    // Chữ gợi ý là một `Text` NẰM CẠNH ô, không phải nhãn của ô.
+    //
+    // Nhìn bằng mắt thì hai thứ chồng lên nhau nên trông như một. Với bộ đọc
+    // màn hình thì chúng là hai thứ rời: ô nhập đọc lên chỉ ra "ô nhập", không
+    // một chữ nào nói phải gõ gì vào đấy. Đo được — bản kết xuất giao diện gắn
+    // cờ `NAF` cho đúng ô này.
+    //
+    // Đặt nhãn ngay trên ô thì bộ đọc nói ra đủ, mà cách bày vẫn y nguyên:
+    // dòng kẻ chân, chữ gợi ý mờ, không thêm một nét nào lên màn hình.
+    val goiY = if (coOnline) "Tên bài, hoặc tên ca sĩ" else "Tìm trong nhạc của bạn"
     Box(Modifier.fillMaxWidth().padding(bottom = 9.dp)) {
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = goiY },
             singleLine = true,
             textStyle = TextStyle(color = mau.chu, fontSize = 15.sp),
             cursorBrush = SolidColor(accent),
@@ -622,10 +637,13 @@ private fun SearchField(
         )
         if (query.isEmpty()) {
             Text(
-                if (coOnline) "Tên bài, hoặc tên ca sĩ"
-                else "Tìm trong nhạc của bạn",
+                goiY,
                 color = mau.chuRatMo,
-                fontSize = 15.sp
+                fontSize = 15.sp,
+                // Bộ đọc màn hình bỏ qua chữ này: nó vừa được đặt làm nhãn của
+                // chính ô nhập ở trên. Để nguyên thì cùng một câu bị đọc hai
+                // lần, một lần cho ô và một lần cho chữ nằm đè lên nó.
+                modifier = Modifier.clearAndSetSemantics { }
             )
         }
     }
